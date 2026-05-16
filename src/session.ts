@@ -126,6 +126,30 @@ function displayChanges(prev: SessionState, next: SessionState): void {
     console.log()
   }
 
+  // Project bullets changed?
+  for (const proj of next.resume.projects) {
+    const prevProj = prev.resume.projects.find((p) => p.id === proj.id)
+    const prevBullets = prevProj?.enhancedBullets?.map((b) => b.enhanced) ?? prevProj?.bullets ?? []
+    const nextBullets = proj.enhancedBullets?.map((b) => b.enhanced) ?? proj.bullets
+
+    const changed = nextBullets.some((b, i) => b !== prevBullets[i])
+    if (!changed) continue
+
+    if (!hasChanges) console.log()
+    hasChanges = true
+    console.log(divider)
+    console.log(chalk.bold(`  Updated — ${proj.name}`))
+    console.log()
+    for (const b of proj.enhancedBullets ?? []) {
+      console.log(chalk.white(`  - ${b.enhanced}`))
+      if (b.needsQuantification) {
+        const placeholder = b.enhanced.match(/\[.+?\]/)?.[0] ?? '[X]'
+        console.log(chalk.yellow(`    ⚠  Needs quantification: ${placeholder}`))
+      }
+    }
+    console.log()
+  }
+
   if (!hasChanges) {
     console.log(chalk.dim('  (No changes detected — try rephrasing your feedback)'))
   }
@@ -143,7 +167,12 @@ function prompt(question: string): Promise<string> {
 
 // Exported for use in export step (Phase 5)
 export function getActiveBullets(resume: Resume): string[] {
-  return resume.experience.flatMap((exp) =>
-    exp.enhancedBullets?.map((b) => b.enhanced) ?? exp.bullets
-  )
+  return [
+    ...resume.experience.flatMap((exp) =>
+      exp.enhancedBullets?.map((b) => b.enhanced) ?? exp.bullets
+    ),
+    ...resume.projects.flatMap((proj) =>
+      proj.enhancedBullets?.map((b) => b.enhanced) ?? proj.bullets
+    ),
+  ]
 }

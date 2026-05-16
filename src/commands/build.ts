@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import ora from 'ora'
 import boxen from 'boxen'
 import { parseTemplate } from '../parser/template.js'
-import { enhanceBullets } from '../ai/enhance-bullets.js'
+import { enhanceBullets, enhanceProjectBullets } from '../ai/enhance-bullets.js'
 import { generateSummary } from '../ai/generate-summary.js'
 import { extractKeywords } from '../ai/extract-keywords.js'
 import { runSession } from '../session.js'
@@ -118,7 +118,25 @@ export async function buildCommand(
     }
   }
 
-  // ── 6. Generate summary ────────────────────────────────────────────────────
+  // ── 6. Enhance project bullets ────────────────────────────────────────────
+  for (const proj of resume.projects) {
+    if (proj.bullets.length === 0) continue
+    const spinner = ora(`Enhancing bullets — ${proj.name}...`).start()
+    try {
+      proj.enhancedBullets = await enhanceProjectBullets(proj)
+      spinner.succeed(
+        chalk.green(
+          `Enhanced ${proj.bullets.length} bullet${proj.bullets.length !== 1 ? 's' : ''} — ${proj.name}`
+        )
+      )
+    } catch (err) {
+      spinner.fail(`Failed to enhance bullets for project: ${proj.name}`)
+      handleAiError(err)
+      process.exit(1)
+    }
+  }
+
+  // ── 8. Generate summary ────────────────────────────────────────────────────
   if (!resume.summary && resume.experience.length > 0) {
     const spinner = ora('Generating professional summary...').start()
     try {
@@ -131,7 +149,7 @@ export async function buildCommand(
     }
   }
 
-  // ── 7. ATS keyword extraction ──────────────────────────────────────────────
+  // ── 9. ATS keyword extraction ──────────────────────────────────────────────
   let keywordResult: KeywordResult | undefined
   if (resume.jobDescription) {
     const spinner = ora('Extracting ATS keywords from job description...').start()
@@ -145,15 +163,15 @@ export async function buildCommand(
     }
   }
 
-  // ── 8. Display results ─────────────────────────────────────────────────────
+  // ── 10. Display results ────────────────────────────────────────────────────
   console.log()
   displayResults(resume, keywordResult)
 
-  // ── 9. Feedback loop + suggestions ────────────────────────────────────────
+  // ── 11. Feedback loop + suggestions ───────────────────────────────────────
   const initialState: SessionState = { resume, keywordResult, suggestions: [] }
   const finalState = await runSession(initialState, raw, templatePath)
 
-  // ── 10. Export ─────────────────────────────────────────────────────────────
+  // ── 12. Export ─────────────────────────────────────────────────────────────
   console.log()
   const outDir = path.join(process.cwd(), 'output')
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
@@ -204,6 +222,24 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
     }
   }
 
+  for (const proj of resume.projects) {
+    if (!proj.enhancedBullets || proj.enhancedBullets.length === 0) continue
+
+    console.log(divider)
+    console.log(chalk.bold(`  ${proj.name}${proj.url ? ` — ${proj.url}` : ''}`))
+    console.log()
+
+    for (const b of proj.enhancedBullets) {
+      console.log(chalk.dim(`  Before: "${b.original}"`))
+      console.log(chalk.white(`  After:  "${b.enhanced}"`))
+      if (b.needsQuantification) {
+        const placeholder = b.enhanced.match(/\[.+?\]/)?.[0] ?? '[X]'
+        console.log(chalk.yellow(`  ⚠  Needs quantification: ${placeholder}`))
+      }
+      console.log()
+    }
+  }
+
   if (resume.summary) {
     console.log(divider)
     console.log(chalk.bold('  Professional Summary'))
@@ -233,9 +269,10 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
     console.log()
   }
 
-  const needsQuant = resume.experience.flatMap((exp) =>
-    (exp.enhancedBullets ?? []).filter((b) => b.needsQuantification)
-  )
+  const needsQuant = [
+    ...resume.experience.flatMap((exp) => (exp.enhancedBullets ?? []).filter((b) => b.needsQuantification)),
+    ...resume.projects.flatMap((proj) => (proj.enhancedBullets ?? []).filter((b) => b.needsQuantification)),
+  ]
   console.log(divider)
   if (needsQuant.length > 0) {
     console.log(

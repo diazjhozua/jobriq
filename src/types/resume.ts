@@ -29,6 +29,7 @@ export interface Project {
   name: string
   url?: string
   bullets: string[]
+  enhancedBullets?: EnhancedBullet[]
 }
 
 export interface Resume {

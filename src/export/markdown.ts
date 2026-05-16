@@ -91,7 +91,8 @@ export function toMarkdown(resume: Resume): string {
       lines.push('')
       const header = proj.url ? `### [${proj.name}](${proj.url})` : `### ${proj.name}`
       lines.push(header)
-      for (const b of proj.bullets) {
+      const bullets = proj.enhancedBullets?.map((b) => b.enhanced) ?? proj.bullets
+      for (const b of bullets) {
         lines.push(`- ${b}`)
       }
     }

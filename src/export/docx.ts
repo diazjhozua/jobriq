@@ -196,7 +196,8 @@ function projectsSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
         spacing: { before: 160, after: 60 },
       })
     )
-    for (const b of proj.bullets) {
+    const bullets = proj.enhancedBullets?.map((b) => b.enhanced) ?? proj.bullets
+    for (const b of bullets) {
       paras.push(
         new Paragraph({
           bullet: { level: 0 },
