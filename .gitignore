@@ -1,5 +1,6 @@
 node_modules/
 dist/
 *.jobriq.json
-*.env
-.env*
+.env
+.env.local
+.env.*.local
