@@ -37,7 +37,10 @@ export function getTheme(name: string = 'classic', cwd: string): ResumeTheme {
     throw new Error(`Failed to parse themes/${name}.json — check for syntax errors`)
   }
 
-  return deepMerge(classic, { ...(raw as object), name }) as ResumeTheme
+  return deepMerge(
+    classic as unknown as Record<string, unknown>,
+    { ...(raw as object), name }
+  ) as unknown as ResumeTheme
 }
 
 function deepMerge(base: Record<string, unknown>, override: Record<string, unknown>): Record<string, unknown> {

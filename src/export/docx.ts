@@ -6,30 +6,32 @@ import {
   HeadingLevel,
   AlignmentType,
   BorderStyle,
+  UnderlineType,
   type IRunOptions,
 } from 'docx'
 import type { Resume } from '../types/resume.js'
+import type { ResumeTheme, SectionName } from '../types/theme.js'
+import { classic } from '../themes/index.js'
 
-const FONT = 'Calibri'
-const COLOR_TEXT = '1A1A1A'
-const COLOR_MUTED = '666666'
-const COLOR_RULE = 'CCCCCC'
+export async function toDocx(resume: Resume, theme: ResumeTheme = classic): Promise<Buffer> {
+  const sectionBuilders: Record<SectionName, () => Paragraph[]> = {
+    summary:    () => summarySection(resume, theme),
+    experience: () => experienceSection(resume, theme),
+    education:  () => educationSection(resume, theme),
+    skills:     () => skillsSection(resume, theme),
+    projects:   () => projectsSection(resume, theme),
+  }
 
-export async function toDocx(resume: Resume): Promise<Buffer> {
   const children: Paragraph[] = [
-    ...headerSection(resume),
-    ...summarySection(resume),
-    ...experienceSection(resume),
-    ...educationSection(resume),
-    ...skillsSection(resume),
-    ...projectsSection(resume),
+    ...headerSection(resume, theme),
+    ...theme.layout.sectionOrder.flatMap((s) => sectionBuilders[s]()),
   ]
 
   const doc = new Document({
     styles: {
       default: {
         document: {
-          run: { font: FONT, size: 22, color: COLOR_TEXT },
+          run: { font: theme.font, size: theme.sizes.body, color: theme.colors.text },
         },
       },
     },
@@ -41,13 +43,23 @@ export async function toDocx(resume: Resume): Promise<Buffer> {
 
 // ── Section builders ─────────────────────────────────────────────────────────
 
-function headerSection(resume: Resume): Paragraph[] {
+function headerSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   const paras: Paragraph[] = []
+  const alignment =
+    theme.layout.headerAlignment === 'left' ? AlignmentType.LEFT : AlignmentType.CENTER
 
   paras.push(
     new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: resume.personal.name, bold: true, size: 36, font: FONT })],
+      alignment,
+      children: [
+        new TextRun({
+          text: resume.personal.name,
+          bold: true,
+          size: theme.sizes.name,
+          font: theme.font,
+          color: theme.colors.accent,
+        }),
+      ],
       spacing: { after: 80 },
     })
   )
@@ -58,8 +70,8 @@ function headerSection(resume: Resume): Paragraph[] {
   if (contact) {
     paras.push(
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [run(contact, { size: 20, color: COLOR_MUTED })],
+        alignment,
+        children: [run(contact, theme, { size: theme.sizes.body - 2, color: theme.colors.muted })],
         spacing: { after: 60 },
       })
     )
@@ -71,8 +83,8 @@ function headerSection(resume: Resume): Paragraph[] {
   if (links) {
     paras.push(
       new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [run(links, { size: 20, color: COLOR_MUTED })],
+        alignment,
+        children: [run(links, theme, { size: theme.sizes.body - 2, color: theme.colors.muted })],
         spacing: { after: 160 },
       })
     )
@@ -81,30 +93,32 @@ function headerSection(resume: Resume): Paragraph[] {
   return paras
 }
 
-function summarySection(resume: Resume): Paragraph[] {
+function summarySection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   if (!resume.summary) return []
   return [
-    sectionHeading('Professional Summary'),
-    rule(),
+    ...sectionDivider('Professional Summary', theme),
     new Paragraph({
-      children: [run(resume.summary)],
+      children: [run(resume.summary, theme)],
       spacing: { after: 200 },
     }),
   ]
 }
 
-function experienceSection(resume: Resume): Paragraph[] {
+function experienceSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   const active = resume.experience.filter((e) => e.company || e.title || e.bullets.length > 0)
   if (active.length === 0) return []
 
-  const paras: Paragraph[] = [sectionHeading('Work Experience'), rule()]
+  const paras: Paragraph[] = [...sectionDivider('Work Experience', theme)]
 
   for (const exp of active) {
     paras.push(
       new Paragraph({
         children: [
-          run(`${exp.title} — ${exp.company}`, { bold: true }),
-          run(`   ${exp.startDate} – ${exp.endDate}`, { color: COLOR_MUTED, size: 20 }),
+          run(`${exp.title} — ${exp.company}`, theme, { bold: true }),
+          run(`   ${exp.startDate} – ${exp.endDate}`, theme, {
+            color: theme.colors.muted,
+            size: theme.sizes.body - 2,
+          }),
         ],
         spacing: { before: 160, after: 60 },
       })
@@ -115,7 +129,7 @@ function experienceSection(resume: Resume): Paragraph[] {
       paras.push(
         new Paragraph({
           bullet: { level: 0 },
-          children: [run(b)],
+          children: [run(b, theme)],
           spacing: { after: 40 },
         })
       )
@@ -125,18 +139,21 @@ function experienceSection(resume: Resume): Paragraph[] {
   return paras
 }
 
-function educationSection(resume: Resume): Paragraph[] {
+function educationSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   const active = resume.education.filter((e) => e.school || e.degree)
   if (active.length === 0) return []
 
-  const paras: Paragraph[] = [sectionHeading('Education'), rule()]
+  const paras: Paragraph[] = [...sectionDivider('Education', theme)]
 
   for (const edu of active) {
     paras.push(
       new Paragraph({
         children: [
-          run(`${edu.degree} in ${edu.field} — ${edu.school}`, { bold: true }),
-          run(`   ${edu.startDate} – ${edu.endDate}`, { color: COLOR_MUTED, size: 20 }),
+          run(`${edu.degree} in ${edu.field} — ${edu.school}`, theme, { bold: true }),
+          run(`   ${edu.startDate} – ${edu.endDate}`, theme, {
+            color: theme.colors.muted,
+            size: theme.sizes.body - 2,
+          }),
         ],
         spacing: { before: 160, after: 60 },
       })
@@ -144,7 +161,7 @@ function educationSection(resume: Resume): Paragraph[] {
     if (edu.gpa) {
       paras.push(
         new Paragraph({
-          children: [run(`GPA: ${edu.gpa}`, { color: COLOR_MUTED })],
+          children: [run(`GPA: ${edu.gpa}`, theme, { color: theme.colors.muted })],
           spacing: { after: 60 },
         })
       )
@@ -154,29 +171,28 @@ function educationSection(resume: Resume): Paragraph[] {
   return paras
 }
 
-function skillsSection(resume: Resume): Paragraph[] {
+function skillsSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   if (resume.skills.length === 0) return []
   return [
-    sectionHeading('Skills'),
-    rule(),
+    ...sectionDivider('Skills', theme),
     new Paragraph({
-      children: [run(resume.skills.join(', '))],
+      children: [run(resume.skills.join(', '), theme)],
       spacing: { after: 200 },
     }),
   ]
 }
 
-function projectsSection(resume: Resume): Paragraph[] {
+function projectsSection(resume: Resume, theme: ResumeTheme): Paragraph[] {
   const active = resume.projects.filter((p) => p.name && p.bullets.length > 0)
   if (active.length === 0) return []
 
-  const paras: Paragraph[] = [sectionHeading('Projects'), rule()]
+  const paras: Paragraph[] = [...sectionDivider('Projects', theme)]
 
   for (const proj of active) {
     const header = proj.url ? `${proj.name} — ${proj.url}` : proj.name
     paras.push(
       new Paragraph({
-        children: [run(header, { bold: true })],
+        children: [run(header, theme, { bold: true })],
         spacing: { before: 160, after: 60 },
       })
     )
@@ -184,7 +200,7 @@ function projectsSection(resume: Resume): Paragraph[] {
       paras.push(
         new Paragraph({
           bullet: { level: 0 },
-          children: [run(b)],
+          children: [run(b, theme)],
           spacing: { after: 40 },
         })
       )
@@ -196,24 +212,52 @@ function projectsSection(resume: Resume): Paragraph[] {
 
 // ── Primitives ───────────────────────────────────────────────────────────────
 
-function run(text: string, opts: IRunOptions = {}): TextRun {
-  return new TextRun({ text, font: FONT, size: 22, ...opts })
+function run(text: string, theme: ResumeTheme, opts: IRunOptions = {}): TextRun {
+  return new TextRun({ text, font: theme.font, size: theme.sizes.body, color: theme.colors.text, ...opts })
 }
 
-function sectionHeading(text: string): Paragraph {
-  return new Paragraph({
-    heading: HeadingLevel.HEADING_2,
-    children: [new TextRun({ text, bold: true, size: 26, font: FONT, color: COLOR_TEXT })],
-    spacing: { before: 240, after: 60 },
-  })
-}
+function sectionDivider(text: string, theme: ResumeTheme): Paragraph[] {
+  const label = theme.layout.headingUppercase ? text.toUpperCase() : text
 
-function rule(): Paragraph {
-  return new Paragraph({
-    border: {
-      bottom: { color: COLOR_RULE, space: 1, style: BorderStyle.SINGLE, size: 4 },
-    },
-    spacing: { after: 120 },
-    children: [],
-  })
+  if (theme.layout.sectionDivider === 'underline') {
+    return [
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        children: [
+          new TextRun({
+            text: label,
+            bold: true,
+            size: theme.sizes.heading,
+            font: theme.font,
+            color: theme.colors.accent,
+            underline: { type: UnderlineType.SINGLE, color: theme.colors.accent },
+          }),
+        ],
+        spacing: { before: 240, after: 120 },
+      }),
+    ]
+  }
+
+  return [
+    new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      children: [
+        new TextRun({
+          text: label,
+          bold: true,
+          size: theme.sizes.heading,
+          font: theme.font,
+          color: theme.colors.accent,
+        }),
+      ],
+      spacing: { before: 240, after: 60 },
+    }),
+    new Paragraph({
+      border: {
+        bottom: { color: theme.colors.rule, space: 1, style: BorderStyle.SINGLE, size: 4 },
+      },
+      spacing: { after: 120 },
+      children: [],
+    }),
+  ]
 }
