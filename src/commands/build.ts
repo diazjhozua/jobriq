@@ -11,11 +11,13 @@ import { runSession } from '../session.js'
 import { toMarkdown, getOutputName } from '../export/markdown.js'
 import { toDocx } from '../export/docx.js'
 import { hasApiKey, getModel, SUPPORTED_MODELS } from '../config.js'
+import { getTheme, BUILTIN_THEMES } from '../themes/index.js'
 import type { Resume, KeywordResult, SessionState } from '../types/resume.js'
+import type { ResumeTheme } from '../types/theme.js'
 
 export async function buildCommand(
   file: string = 'resumes/my-resume.txt',
-  options: { job?: string; model?: string }
+  options: { job?: string; model?: string; design?: string }
 ): Promise<void> {
   // ── 0. Pre-checks ──────────────────────────────────────────────────────────
   if (!hasApiKey()) {
@@ -33,6 +35,16 @@ export async function buildCommand(
       process.exit(1)
     }
     process.env.OPENAI_MODEL = options.model
+  }
+
+  let theme: ResumeTheme
+  try {
+    theme = getTheme(options.design ?? 'classic', process.cwd())
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(chalk.red(`✖ ${msg}`))
+    console.error(chalk.dim(`  Run "jobriq themes" to see available designs.`))
+    process.exit(1)
   }
 
   // ── 1. Load template ───────────────────────────────────────────────────────
@@ -77,7 +89,8 @@ export async function buildCommand(
   )
   console.log()
 
-  console.log(chalk.dim(`  Model: ${getModel()}`))
+  console.log(chalk.dim(`  Model:  ${getModel()}`))
+  console.log(chalk.dim(`  Design: ${theme.name}`))
 
   const totalBullets = resume.experience.reduce((n, e) => n + e.bullets.length, 0)
   const parts = [
@@ -151,7 +164,7 @@ export async function buildCommand(
   const exportSpinner = ora('Exporting...').start()
   try {
     fs.writeFileSync(mdPath, toMarkdown(finalState.resume), 'utf-8')
-    const docxBuffer = await toDocx(finalState.resume)
+    const docxBuffer = await toDocx(finalState.resume, theme)
     fs.writeFileSync(docxPath, docxBuffer)
     exportSpinner.stop()
     console.log(chalk.green(`✔ ${path.basename(mdPath)}`))

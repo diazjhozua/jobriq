@@ -2,6 +2,7 @@
 import { Command } from 'commander'
 import { initCommand } from './commands/init.js'
 import { buildCommand } from './commands/build.js'
+import { themesCommand } from './commands/themes.js'
 
 const program = new Command()
 
@@ -34,6 +35,7 @@ program
   .argument('[file]', 'Template file to build from', 'resumes/my-resume.txt')
   .option('--job <file>', 'Job description .txt file for ATS keyword matching')
   .option('--model <model>', 'OpenAI model to use (overrides OPENAI_MODEL in .env)')
+  .option('--design <name>', 'Resume design to use (default: classic)', 'classic')
   .addHelpText(
     'after',
     `
@@ -41,9 +43,17 @@ Examples:
   jobriq build
   jobriq build resumes/my-resume.txt
   jobriq build resumes/my-resume.txt --job google-swe.txt
+  jobriq build --design modern
+  jobriq build --design harvard
+  jobriq build --design mytheme          (loads themes/mytheme.json)
   jobriq build --model gpt-4o-mini
 `
   )
   .action(buildCommand)
+
+program
+  .command('themes')
+  .description('List available built-in and custom resume designs')
+  .action(themesCommand)
 
 program.parse()
