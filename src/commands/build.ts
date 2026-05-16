@@ -8,12 +8,22 @@ import { enhanceBullets } from '../ai/enhance-bullets.js'
 import { generateSummary } from '../ai/generate-summary.js'
 import { extractKeywords } from '../ai/extract-keywords.js'
 import { runSession } from '../session.js'
+import { toMarkdown, getOutputName } from '../export/markdown.js'
+import { toDocx } from '../export/docx.js'
+import { hasApiKey } from '../config.js'
 import type { Resume, KeywordResult, SessionState } from '../types/resume.js'
 
 export async function buildCommand(
   file: string = 'resume-template.txt',
   options: { job?: string }
 ): Promise<void> {
+  // ── 0. API key pre-check ───────────────────────────────────────────────────
+  if (!hasApiKey()) {
+    console.error(chalk.red('✖ No API key configured.'))
+    console.error(chalk.dim('  Run "jobriq config" to set your OpenAI API key.'))
+    process.exit(1)
+  }
+
   // ── 1. Load template ───────────────────────────────────────────────────────
   const templatePath = path.resolve(process.cwd(), file)
   if (!fs.existsSync(templatePath)) {
@@ -35,7 +45,18 @@ export async function buildCommand(
     resume.jobDescription = fs.readFileSync(jdPath, 'utf-8').trim()
   }
 
-  // ── 3. Header ──────────────────────────────────────────────────────────────
+  // ── 3. Validate resume has content ────────────────────────────────────────
+  const hasContent =
+    resume.personal.name ||
+    resume.experience.some((e) => e.bullets.length > 0) ||
+    resume.summary
+  if (!hasContent) {
+    console.error(chalk.red('✖ Your template appears to be empty.'))
+    console.error(chalk.dim('  Open resume-template.txt and fill in your details first.'))
+    process.exit(1)
+  }
+
+  // ── 4. Header ──────────────────────────────────────────────────────────────
   console.log(
     boxen(chalk.bold.cyan('Jobriq — Building your resume...'), {
       padding: { top: 0, bottom: 0, left: 2, right: 2 },
@@ -53,14 +74,16 @@ export async function buildCommand(
   ]
   console.log(chalk.green('✔') + chalk.dim(` Parsed template (${parts.join(', ')})`))
 
-  // ── 4. Enhance bullets ─────────────────────────────────────────────────────
+  // ── 5. Enhance bullets ─────────────────────────────────────────────────────
   for (const exp of resume.experience) {
     if (exp.bullets.length === 0) continue
-    const spinner = ora(`Enhancing bullets for ${exp.title} at ${exp.company}...`).start()
+    const spinner = ora(`Enhancing bullets — ${exp.title} at ${exp.company}...`).start()
     try {
       exp.enhancedBullets = await enhanceBullets(exp)
       spinner.succeed(
-        chalk.green(`Enhanced ${exp.bullets.length} bullet${exp.bullets.length !== 1 ? 's' : ''} — ${exp.title} at ${exp.company}`)
+        chalk.green(
+          `Enhanced ${exp.bullets.length} bullet${exp.bullets.length !== 1 ? 's' : ''} — ${exp.title} at ${exp.company}`
+        )
       )
     } catch (err) {
       spinner.fail(`Failed to enhance bullets for ${exp.company}`)
@@ -69,7 +92,7 @@ export async function buildCommand(
     }
   }
 
-  // ── 5. Generate summary ────────────────────────────────────────────────────
+  // ── 6. Generate summary ────────────────────────────────────────────────────
   if (!resume.summary && resume.experience.length > 0) {
     const spinner = ora('Generating professional summary...').start()
     try {
@@ -82,7 +105,7 @@ export async function buildCommand(
     }
   }
 
-  // ── 6. ATS keyword extraction ──────────────────────────────────────────────
+  // ── 7. ATS keyword extraction ──────────────────────────────────────────────
   let keywordResult: KeywordResult | undefined
   if (resume.jobDescription) {
     const spinner = ora('Extracting ATS keywords from job description...').start()
@@ -96,25 +119,45 @@ export async function buildCommand(
     }
   }
 
-  // ── 7. Display results ─────────────────────────────────────────────────────
+  // ── 8. Display results ─────────────────────────────────────────────────────
   console.log()
   displayResults(resume, keywordResult)
 
-  // ── Feedback loop + suggestions (Phase 4) ─────────────────────────────────
+  // ── 9. Feedback loop + suggestions ────────────────────────────────────────
   const initialState: SessionState = { resume, keywordResult, suggestions: [] }
   const finalState = await runSession(initialState, raw, templatePath)
 
-  // ── Export (Phase 5) ───────────────────────────────────────────────────────
+  // ── 10. Export ─────────────────────────────────────────────────────────────
   console.log()
-  console.log(chalk.dim('Export to Markdown + Word coming in Phase 5.'))
+  const outDir = process.cwd()
+  const baseName = getOutputName(finalState.resume.personal.name)
+  const mdPath = path.join(outDir, `${baseName}.md`)
+  const docxPath = path.join(outDir, `${baseName}.docx`)
+
+  const exportSpinner = ora('Exporting...').start()
+  try {
+    fs.writeFileSync(mdPath, toMarkdown(finalState.resume), 'utf-8')
+    const docxBuffer = await toDocx(finalState.resume)
+    fs.writeFileSync(docxPath, docxBuffer)
+    exportSpinner.stop()
+    console.log(chalk.green(`✔ ${path.basename(mdPath)}`))
+    console.log(chalk.green(`✔ ${path.basename(docxPath)}`))
+  } catch (err) {
+    exportSpinner.fail('Export failed')
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(chalk.red(`  ${msg}`))
+    process.exit(1)
+  }
+
+  console.log()
+  console.log(chalk.dim('All done! Your resume is ready.'))
 }
 
-// ── Display helpers ──────────────────────────────────────────────────────────
+// ── Display helpers ───────────────────────────────────────────────────────────
 
 function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
   const divider = chalk.dim('─'.repeat(56))
 
-  // Enhanced bullets per experience
   for (const exp of resume.experience) {
     if (!exp.enhancedBullets || exp.enhancedBullets.length === 0) continue
 
@@ -134,7 +177,6 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
     }
   }
 
-  // Professional summary
   if (resume.summary) {
     console.log(divider)
     console.log(chalk.bold('  Professional Summary'))
@@ -145,7 +187,6 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
     console.log()
   }
 
-  // ATS keywords
   if (keywordResult) {
     console.log(divider)
     console.log(chalk.bold('  ATS Keywords'))
@@ -165,14 +206,15 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
     console.log()
   }
 
-  // Quantification warnings summary
   const needsQuant = resume.experience.flatMap((exp) =>
     (exp.enhancedBullets ?? []).filter((b) => b.needsQuantification)
   )
   console.log(divider)
   if (needsQuant.length > 0) {
     console.log(
-      chalk.yellow(`\n  ⚠  ${needsQuant.length} bullet${needsQuant.length !== 1 ? 's' : ''} need quantification (marked above)\n`)
+      chalk.yellow(
+        `\n  ⚠  ${needsQuant.length} bullet${needsQuant.length !== 1 ? 's' : ''} need quantification (marked above)\n`
+      )
     )
   } else {
     console.log(chalk.green('\n  ✔ All bullets are quantified\n'))
