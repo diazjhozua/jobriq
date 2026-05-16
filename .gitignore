@@ -1,6 +1,7 @@
 node_modules/
 dist/
 output/
+resumes/
 *.jobriq.json
 .env
 .env.local

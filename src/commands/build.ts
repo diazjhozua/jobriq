@@ -14,7 +14,7 @@ import { hasApiKey, getModel, SUPPORTED_MODELS } from '../config.js'
 import type { Resume, KeywordResult, SessionState } from '../types/resume.js'
 
 export async function buildCommand(
-  file: string = 'resume-template.txt',
+  file: string = 'resumes/my-resume.txt',
   options: { job?: string; model?: string }
 ): Promise<void> {
   // ── 0. Pre-checks ──────────────────────────────────────────────────────────

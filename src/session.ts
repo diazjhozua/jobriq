@@ -72,7 +72,7 @@ export async function runSession(
       const updatedRaw = writeSuggestionsBlock(raw, state.suggestions)
       fs.writeFileSync(templatePath, updatedRaw, 'utf-8')
       console.log(
-        chalk.dim(`→ Suggestions written to ${templatePath.split(/[\\/]/).pop()}  `) +
+        chalk.dim(`→ Suggestions written to ${templatePath}  `) +
           chalk.dim('Edit and re-run "jobriq build" to improve further.')
       )
     } catch {
