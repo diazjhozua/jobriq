@@ -1,5 +1,5 @@
 import type { WorkExperience } from '../types/resume.js'
-import { getClient, SYSTEM_PROMPT } from './client.js'
+import { getClient, SYSTEM_PROMPT, activeModel } from './client.js'
 
 export async function generateSummary(
   experience: WorkExperience[],
@@ -34,7 +34,7 @@ ${expText}
 Respond with only the summary text — no quotes, no labels, no extra explanation.`
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: activeModel(),
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },

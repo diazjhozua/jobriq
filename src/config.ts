@@ -1,31 +1,39 @@
-import Conf from 'conf'
+import dotenv from 'dotenv'
+import path from 'path'
+import os from 'os'
 
-interface StoreSchema {
-  openaiKey: string
-}
+// Load ~/.jobriq/.env first, then local .env (local overrides global)
+dotenv.config({ path: path.join(os.homedir(), '.jobriq', '.env'), quiet: true })
+dotenv.config({ path: path.join(process.cwd(), '.env'), quiet: true })
 
-const store = new Conf<StoreSchema>({
-  projectName: 'jobriq',
-  encryptionKey: 'jobriq-key-encryption',
-})
+export const DEFAULT_MODEL = 'gpt-4o'
+
+export const SUPPORTED_MODELS = [
+  { id: 'gpt-4o',        label: 'Best balance of quality and speed (recommended)' },
+  { id: 'gpt-4.1',       label: 'Highest quality, best instruction following' },
+  { id: 'gpt-4o-mini',   label: 'Faster and cheaper, good for quick iterations' },
+  { id: 'gpt-4.1-mini',  label: 'Good balance of quality and cost' },
+]
 
 export function getApiKey(): string | undefined {
-  return store.get('openaiKey') as string | undefined
+  return process.env.OPENAI_API_KEY
 }
 
-export function setApiKey(key: string): void {
-  store.set('openaiKey', key)
+export function getModel(): string {
+  return process.env.OPENAI_MODEL ?? DEFAULT_MODEL
+}
+
+export function getBaseUrl(): string | undefined {
+  return process.env.OPENAI_BASE_URL
 }
 
 export function hasApiKey(): boolean {
   const key = getApiKey()
-  return typeof key === 'string' && key.startsWith('sk-')
+  return typeof key === 'string' && key.length > 0
 }
 
 export function requireApiKey(): string {
   const key = getApiKey()
-  if (!key || !key.startsWith('sk-')) {
-    throw new Error('OpenAI API key not configured. Run: jobriq config')
-  }
+  if (!key) throw new Error('OPENAI_API_KEY not set. Copy .env.template to .env and fill in your key.')
   return key
 }

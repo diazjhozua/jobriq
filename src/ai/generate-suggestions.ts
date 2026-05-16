@@ -1,5 +1,5 @@
 import type { Resume, KeywordResult } from '../types/resume.js'
-import { getClient, SYSTEM_PROMPT } from './client.js'
+import { getClient, SYSTEM_PROMPT, activeModel } from './client.js'
 
 export async function generateSuggestions(
   resume: Resume,
@@ -47,7 +47,7 @@ Respond with a JSON object:
 }`
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: activeModel(),
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },

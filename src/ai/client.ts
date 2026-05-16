@@ -1,13 +1,20 @@
 import OpenAI from 'openai'
-import { requireApiKey } from '../config.js'
+import { requireApiKey, getModel, getBaseUrl } from '../config.js'
 
 let _client: OpenAI | null = null
 
 export function getClient(): OpenAI {
   if (!_client) {
-    _client = new OpenAI({ apiKey: requireApiKey() })
+    _client = new OpenAI({
+      apiKey: requireApiKey(),
+      baseURL: getBaseUrl(),
+    })
   }
   return _client
+}
+
+export function activeModel(override?: string): string {
+  return override ?? getModel()
 }
 
 export const SYSTEM_PROMPT = `You are an expert resume writer with 20 years of experience helping professionals land their dream jobs at top companies like Google, Amazon, and Microsoft.

@@ -10,18 +10,28 @@ import { extractKeywords } from '../ai/extract-keywords.js'
 import { runSession } from '../session.js'
 import { toMarkdown, getOutputName } from '../export/markdown.js'
 import { toDocx } from '../export/docx.js'
-import { hasApiKey } from '../config.js'
+import { hasApiKey, getModel, SUPPORTED_MODELS } from '../config.js'
 import type { Resume, KeywordResult, SessionState } from '../types/resume.js'
 
 export async function buildCommand(
   file: string = 'resume-template.txt',
-  options: { job?: string }
+  options: { job?: string; model?: string }
 ): Promise<void> {
-  // ── 0. API key pre-check ───────────────────────────────────────────────────
+  // ── 0. Pre-checks ──────────────────────────────────────────────────────────
   if (!hasApiKey()) {
-    console.error(chalk.red('✖ No API key configured.'))
-    console.error(chalk.dim('  Run "jobriq config" to set your OpenAI API key.'))
+    console.error(chalk.red('✖ OPENAI_API_KEY is not set.'))
+    console.error(chalk.dim('  Copy .env.template to .env and add your OpenAI API key.'))
     process.exit(1)
+  }
+
+  if (options.model) {
+    const valid = SUPPORTED_MODELS.map((m) => m.id)
+    if (!valid.includes(options.model)) {
+      console.error(chalk.red(`✖ Unknown model "${options.model}".`))
+      console.error(chalk.dim(`  Supported: ${valid.join(', ')}`))
+      process.exit(1)
+    }
+    process.env.OPENAI_MODEL = options.model
   }
 
   // ── 1. Load template ───────────────────────────────────────────────────────
@@ -65,6 +75,8 @@ export async function buildCommand(
     })
   )
   console.log()
+
+  console.log(chalk.dim(`  Model: ${getModel()}`))
 
   const totalBullets = resume.experience.reduce((n, e) => n + e.bullets.length, 0)
   const parts = [

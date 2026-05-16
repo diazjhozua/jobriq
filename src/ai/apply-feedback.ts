@@ -1,5 +1,5 @@
 import type { SessionState } from '../types/resume.js'
-import { getClient, SYSTEM_PROMPT } from './client.js'
+import { getClient, SYSTEM_PROMPT, activeModel } from './client.js'
 
 interface FeedbackChanges {
   summary?: string
@@ -41,7 +41,7 @@ Rules:
 - Preserve [X unit] placeholders where quantification is still needed`
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: activeModel(),
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
