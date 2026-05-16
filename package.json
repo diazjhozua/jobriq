@@ -1,0 +1,44 @@
+{
+  "name": "jobriq",
+  "version": "0.1.0",
+  "description": "AI-powered resume builder CLI",
+  "type": "module",
+  "bin": {
+    "jobriq": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diazjhozua/jobriq.git"
+  },
+  "keywords": ["resume", "cv", "ai", "cli"],
+  "author": "Jhozua Diaz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/diazjhozua/jobriq/issues"
+  },
+  "homepage": "https://github.com/diazjhozua/jobriq#readme",
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "conf": "^15.1.0",
+    "docx": "^9.6.1",
+    "nanoid": "^5.1.11",
+    "openai": "^6.38.0",
+    "ora": "^9.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "tsx": "^4.22.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
