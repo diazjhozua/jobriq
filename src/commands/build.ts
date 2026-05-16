@@ -7,6 +7,7 @@ import { parseTemplate } from '../parser/template.js'
 import { enhanceBullets } from '../ai/enhance-bullets.js'
 import { generateSummary } from '../ai/generate-summary.js'
 import { extractKeywords } from '../ai/extract-keywords.js'
+import { runSession } from '../session.js'
 import type { Resume, KeywordResult, SessionState } from '../types/resume.js'
 
 export async function buildCommand(
@@ -99,11 +100,13 @@ export async function buildCommand(
   console.log()
   displayResults(resume, keywordResult)
 
-  // ── Session state for Phase 4 (feedback loop) ─────────────────────────────
-  const _state: SessionState = { resume, keywordResult, suggestions: [] }
-  // feedback loop + export wired in Phase 4 & 5
+  // ── Feedback loop + suggestions (Phase 4) ─────────────────────────────────
+  const initialState: SessionState = { resume, keywordResult, suggestions: [] }
+  const finalState = await runSession(initialState, raw, templatePath)
+
+  // ── Export (Phase 5) ───────────────────────────────────────────────────────
   console.log()
-  console.log(chalk.dim('Feedback loop and export coming in the next phase.'))
+  console.log(chalk.dim('Export to Markdown + Word coming in Phase 5.'))
 }
 
 // ── Display helpers ──────────────────────────────────────────────────────────
