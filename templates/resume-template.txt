@@ -1,0 +1,66 @@
+================================================================================
+JOBRIQ RESUME TEMPLATE
+Fill in your details below. Run "jobriq build resume-template.txt" when ready.
+Lines starting with # are comments — read by AI but not included in the export.
+================================================================================
+
+[PERSONAL]
+Name:
+Email:
+Phone:
+Location:
+LinkedIn:
+GitHub:
+Website:
+
+[SUMMARY]
+# Leave Content blank to have AI generate it from your experience.
+# Type: objective  (less than 2 years of experience)
+#       professional  (2 or more years of experience)
+Type: professional
+Content:
+
+[EXPERIENCE]
+Company:
+Title:
+Start:
+End:
+- (describe what you worked on or accomplished)
+- (add more bullets as needed)
+- (delete unused lines)
+
+[EXPERIENCE]
+Company:
+Title:
+Start:
+End:
+-
+-
+-
+
+[EDUCATION]
+School:
+Degree:
+Field:
+Start:
+End:
+GPA:
+
+[SKILLS]
+# Comma-separated list of your skills
+# Example: JavaScript, TypeScript, React, Node.js, PostgreSQL, Docker, AWS
+
+[PROJECT]
+Name:
+URL:
+- (describe what you built and its impact)
+-
+
+[JOB DESCRIPTION]
+# Optional. Paste the job description here (title, responsibilities, requirements).
+# Or use: jobriq build resume-template.txt --job job-description.txt
+# Leave blank to skip ATS keyword matching.
+
+[AI SUGGESTIONS]
+# This section is automatically updated after each "jobriq build" run.
+# Review these, update your template, then re-run "jobriq build" to improve.
