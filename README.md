@@ -179,6 +179,10 @@ End: Present
 
 **Jhozua Diaz** — [@diazjhozua](https://github.com/diazjhozua)
 
+## Acknowledgements
+
+The AI resume enhancement workflow in Jobriq is inspired by **[I've Reviewed 1,000+ Resumes — Here's How to Use AI to Land More Interviews](https://www.youtube.com/watch?v=KprWxa9WtIk)** by [Neeraj Mathrani](https://www.youtube.com/@neerajmathrani). His 8-step framework — turning tasks into accomplishments, quantifying results, ATS keyword matching, and the objective vs. professional summary distinction — directly shaped how Jobriq's AI pipeline works.
+
 ## License
 
 MIT
