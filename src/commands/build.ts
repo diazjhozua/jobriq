@@ -20,7 +20,8 @@ export async function buildCommand(
   // ── 0. Pre-checks ──────────────────────────────────────────────────────────
   if (!hasApiKey()) {
     console.error(chalk.red('✖ OPENAI_API_KEY is not set.'))
-    console.error(chalk.dim('  Copy .env.template to .env and add your OpenAI API key.'))
+    console.error(chalk.dim('  Set it in ~/.jobriq/.env (global) or .env in your current directory.'))
+    console.error(chalk.dim('  See .env.template for the required format.'))
     process.exit(1)
   }
 
@@ -141,7 +142,8 @@ export async function buildCommand(
 
   // ── 10. Export ─────────────────────────────────────────────────────────────
   console.log()
-  const outDir = process.cwd()
+  const outDir = path.join(process.cwd(), 'output')
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
   const baseName = getOutputName(finalState.resume.personal.name)
   const mdPath = path.join(outDir, `${baseName}.md`)
   const docxPath = path.join(outDir, `${baseName}.docx`)
@@ -236,10 +238,16 @@ function displayResults(resume: Resume, keywordResult?: KeywordResult): void {
 function handleAiError(err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err)
   if (msg.includes('401') || msg.includes('Incorrect API key')) {
-    console.error(chalk.red('  Invalid API key. Run: jobriq config'))
+    console.error(chalk.red('  Invalid API key. Check OPENAI_API_KEY in your .env'))
   } else if (msg.includes('429')) {
     console.error(chalk.red('  Rate limit exceeded. Wait a moment and try again.'))
   } else {
     console.error(chalk.red(`  Error: ${msg}`))
+    if (err instanceof Error && 'status' in err) {
+      console.error(chalk.dim(`  Status: ${(err as any).status}`))
+    }
+    if (err instanceof Error && 'error' in err && (err as any).error) {
+      console.error(chalk.dim(`  Detail: ${JSON.stringify((err as any).error)}`))
+    }
   }
 }

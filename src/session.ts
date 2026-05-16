@@ -48,8 +48,9 @@ export async function runSession(
   try {
     state.suggestions = await generateSuggestions(state.resume, state.keywordResult)
     spinner.succeed(chalk.green('Suggestions ready'))
-  } catch {
-    spinner.warn('Could not generate suggestions — continuing without them')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    spinner.warn(`Could not generate suggestions — ${msg}`)
   }
 
   // ── Display suggestions ────────────────────────────────────────────────────
@@ -66,15 +67,17 @@ export async function runSession(
   }
 
   // ── Write suggestions back to template ────────────────────────────────────
-  try {
-    const updatedRaw = writeSuggestionsBlock(raw, state.suggestions)
-    fs.writeFileSync(templatePath, updatedRaw, 'utf-8')
-    console.log(
-      chalk.dim(`→ Suggestions written to ${templatePath.split(/[\\/]/).pop()}`) +
-        chalk.dim('  Edit and re-run "jobriq build" to improve further.')
-    )
-  } catch {
-    console.error(chalk.yellow('⚠  Could not write suggestions back to template.'))
+  if (state.suggestions.length > 0) {
+    try {
+      const updatedRaw = writeSuggestionsBlock(raw, state.suggestions)
+      fs.writeFileSync(templatePath, updatedRaw, 'utf-8')
+      console.log(
+        chalk.dim(`→ Suggestions written to ${templatePath.split(/[\\/]/).pop()}  `) +
+          chalk.dim('Edit and re-run "jobriq build" to improve further.')
+      )
+    } catch {
+      console.error(chalk.yellow('⚠  Could not write suggestions back to template.'))
+    }
   }
 
   return state

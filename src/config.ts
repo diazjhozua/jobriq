@@ -24,7 +24,8 @@ export function getModel(): string {
 }
 
 export function getBaseUrl(): string | undefined {
-  return process.env.OPENAI_BASE_URL
+  const url = process.env.OPENAI_BASE_URL
+  return url && url.length > 0 ? url : undefined
 }
 
 export function hasApiKey(): boolean {

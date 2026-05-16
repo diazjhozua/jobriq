@@ -1,5 +1,5 @@
 import type { Resume, KeywordResult } from '../types/resume.js'
-import { getClient, SYSTEM_PROMPT, activeModel } from './client.js'
+import { getClient, SYSTEM_PROMPT, activeModel, parseJsonResponse } from './client.js'
 
 export async function generateSuggestions(
   resume: Resume,
@@ -52,9 +52,8 @@ Respond with a JSON object:
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
     ],
-    response_format: { type: 'json_object' },
   })
 
-  const parsed = JSON.parse(response.choices[0].message.content ?? '{}')
+  const parsed = parseJsonResponse(response.choices[0].message.content ?? '{}')
   return (parsed.suggestions ?? []) as string[]
 }

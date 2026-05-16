@@ -1,5 +1,5 @@
 import type { Resume, KeywordResult } from '../types/resume.js'
-import { getClient, SYSTEM_PROMPT, activeModel } from './client.js'
+import { getClient, SYSTEM_PROMPT, activeModel, parseJsonResponse } from './client.js'
 
 export async function extractKeywords(jobDescription: string, resume: Resume): Promise<KeywordResult> {
   const client = getClient()
@@ -42,10 +42,9 @@ Rules:
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
     ],
-    response_format: { type: 'json_object' },
   })
 
-  const parsed = JSON.parse(response.choices[0].message.content ?? '{}')
+  const parsed = parseJsonResponse(response.choices[0].message.content ?? '{}')
   return {
     matched: (parsed.matched ?? []) as string[],
     missing: (parsed.missing ?? []) as string[],
