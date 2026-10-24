@@ -1,0 +1,175 @@
+using System.ClientModel;
+using System.Text.Json;
+using Jobriq.Application.Abstractions;
+using Jobriq.Domain.Resumes;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using OpenAI;
+using OpenAI.Chat;
+
+namespace Jobriq.Infrastructure.Ai;
+
+internal sealed class OpenAiResumeAiService(
+    IConfiguration configuration,
+    ILogger<OpenAiResumeAiService> logger) : IResumeAiService
+{
+    private const string DefaultModel = "gpt-4o";
+
+    private ChatClient? chatClient;
+
+    public void EnsureAvailable()
+    {
+        if (string.IsNullOrWhiteSpace(ResolveApiKey()))
+        {
+            throw new MissingApiKeyException();
+        }
+    }
+
+    public async Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
+        WorkExperience experience,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(Prompts.EnhanceExperience(experience), cancellationToken);
+        EnhanceResponse? response = Parse<EnhanceResponse>(content);
+
+        return response?.Bullets ?? [];
+    }
+
+    public async Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
+        Project project,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(Prompts.EnhanceProject(project), cancellationToken);
+        EnhanceResponse? response = Parse<EnhanceResponse>(content);
+
+        return response?.Bullets ?? [];
+    }
+
+    public async Task<string> GenerateSummaryAsync(
+        IReadOnlyList<WorkExperience> experience,
+        SummaryType summaryType,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(Prompts.GenerateSummary(experience, summaryType), cancellationToken);
+
+        return content.Trim();
+    }
+
+    public async Task<KeywordMatch> ExtractKeywordsAsync(
+        string jobDescription,
+        ResumeProfile profile,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(Prompts.ExtractKeywords(jobDescription, profile), cancellationToken);
+        KeywordResponse? response = Parse<KeywordResponse>(content);
+
+        return new KeywordMatch
+        {
+            Matched = response?.Matched ?? [],
+            Missing = response?.Missing ?? []
+        };
+    }
+
+    private async Task<string> CompleteAsync(string userPrompt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            ChatClient client = GetChatClient();
+            ChatCompletion completion = await client.CompleteChatAsync(
+                [
+                    new SystemChatMessage(Prompts.System),
+                    new UserChatMessage(userPrompt)
+                ],
+                cancellationToken: cancellationToken);
+
+            return string.Concat(completion.Content.Select(part => part.Text));
+        }
+        catch (ClientResultException exception) when (exception.Status is 401 or 403)
+        {
+            logger.LogError(exception, "OpenAI rejected the configured API key.");
+            throw new AiServiceException(
+                "openai_unauthorized",
+                "OpenAI rejected the configured API key. Check OpenAI:ApiKey.",
+                502);
+        }
+        catch (ClientResultException exception) when (exception.Status == 429)
+        {
+            logger.LogWarning(exception, "OpenAI rate limit reached.");
+            throw new AiServiceException(
+                "openai_rate_limited",
+                "OpenAI rate limit reached. Wait a moment and try again.",
+                429);
+        }
+        catch (ClientResultException exception)
+        {
+            logger.LogError(exception, "OpenAI request failed with status {Status}.", exception.Status);
+            throw new AiServiceException(
+                "openai_failed",
+                "The OpenAI request failed. Try again.",
+                502);
+        }
+        catch (HttpRequestException exception)
+        {
+            logger.LogError(exception, "OpenAI request could not be completed.");
+            throw new AiServiceException(
+                "openai_failed",
+                "The OpenAI request failed. Check the network connection and try again.",
+                502);
+        }
+    }
+
+    private ChatClient GetChatClient()
+    {
+        if (chatClient is not null)
+        {
+            return chatClient;
+        }
+
+        EnsureAvailable();
+
+        OpenAIClientOptions options = new();
+        string? endpoint = configuration["OpenAI:BaseUrl"] ?? configuration["OpenAI:Endpoint"];
+        if (!string.IsNullOrWhiteSpace(endpoint))
+        {
+            options.Endpoint = new Uri(endpoint);
+        }
+
+        OpenAIClient client = new(new ApiKeyCredential(ResolveApiKey()!), options);
+        chatClient = client.GetChatClient(configuration["OpenAI:Model"] ?? DefaultModel);
+
+        return chatClient;
+    }
+
+    private string? ResolveApiKey()
+    {
+        string? apiKey = configuration["OpenAI:ApiKey"];
+        return string.IsNullOrWhiteSpace(apiKey) ? configuration["OPENAI_API_KEY"] : apiKey;
+    }
+
+    private static T? Parse<T>(string content)
+    {
+        try
+        {
+            return JsonResponseParser.Parse<T>(content);
+        }
+        catch (JsonException)
+        {
+            throw new AiServiceException(
+                "openai_invalid_response",
+                "OpenAI returned a response that could not be read. Try again.",
+                502);
+        }
+    }
+
+    private sealed class EnhanceResponse
+    {
+        public List<EnhancedBullet>? Bullets { get; set; }
+    }
+
+    private sealed class KeywordResponse
+    {
+        public List<string>? Matched { get; set; }
+
+        public List<string>? Missing { get; set; }
+    }
+}

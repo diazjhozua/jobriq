@@ -6,3 +6,17 @@ resumes/
 .env
 .env.local
 .env.*.local
+
+# .NET
+**/bin/
+**/obj/
+TestResults/
+*.user
+.vs/
+
+# Web client build output
+web/src/Jobriq.Web/wwwroot/
+
+# Playwright
+web/tests/e2e/test-results/
+web/tests/e2e/playwright-report/
