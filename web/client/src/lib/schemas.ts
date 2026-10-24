@@ -53,6 +53,39 @@ export const profileSchema = z.object({
   projects: z.array(projectSchema),
 })
 
+const storedPersonalInfoSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  location: z.string(),
+  linkedin: z.string(),
+  github: z.string(),
+  website: z.string(),
+})
+
+const storedWorkExperienceSchema = workExperienceSchema.extend({
+  company: z.string(),
+  title: z.string(),
+})
+
+const storedEducationSchema = educationSchema.extend({
+  school: z.string(),
+})
+
+const storedProjectSchema = projectSchema.extend({
+  name: z.string(),
+})
+
+const storedProfileSchema = z.object({
+  personal: storedPersonalInfoSchema,
+  summaryType: z.enum(['objective', 'professional']),
+  summary: z.string(),
+  experience: z.array(storedWorkExperienceSchema),
+  education: z.array(storedEducationSchema),
+  skills: z.array(z.string()),
+  projects: z.array(storedProjectSchema),
+})
+
 export const enhancedBulletSchema = z.object({
   original: z.string(),
   enhanced: z.string(),
@@ -81,7 +114,7 @@ export const keywordMatchSchema = z.object({
 })
 
 export const generatedResumeSchema = z.object({
-  personal: personalInfoSchema,
+  personal: storedPersonalInfoSchema,
   summary: z.string(),
   experience: z.array(generatedExperienceSchema),
   education: z.array(educationSchema),
@@ -103,7 +136,7 @@ export const applicationSchema = z.object({
 
 export const stateSchema = z.object({
   version: z.literal(1),
-  profile: profileSchema,
+  profile: storedProfileSchema,
   applications: z.array(applicationSchema),
 })
 
