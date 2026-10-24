@@ -1,0 +1,13 @@
+{
+  "name": "jobriq-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "npm --prefix client run build",
+    "start": "npm run build && dotnet run --project src/Jobriq.Web",
+    "start:test": "npm run build && dotnet run --project src/Jobriq.Web --urls http://localhost:5080 --no-launch-profile -- --environment Testing",
+    "dev": "npm --prefix client run dev",
+    "test": "dotnet test Jobriq.sln && npm --prefix client test",
+    "test:e2e": "npm --prefix tests/e2e test"
+  }
+}
