@@ -20,3 +20,7 @@ web/src/Jobriq.Web/wwwroot/
 # Playwright
 web/tests/e2e/test-results/
 web/tests/e2e/playwright-report/
+
+# Claude Code local files
+CLAUDE.md
+.claude/

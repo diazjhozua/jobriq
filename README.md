@@ -22,7 +22,8 @@ AI-powered resume builder CLI. Fill a plain-text template, let AI enhance your b
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
+- .NET SDK 10
 - An OpenAI-compatible API key (OpenAI, Azure, or any proxy)
 
 ---
@@ -57,6 +58,50 @@ jobriq build
 
 # 5. Find your files in output/
 ```
+
+---
+
+## Web App
+
+The web app adds a profile editor and a job application tracker on top of the same AI pipeline. Profile and applications are stored in the browser under `jobriq.v1`; the server keeps no state.
+
+### Setup
+
+```bash
+cd web
+dotnet user-secrets set "OpenAI:ApiKey" "<key>" --project src/Jobriq.Web
+npm --prefix client install
+npm run start
+```
+
+Open `http://localhost:5080`. `npm run start` builds the React client into the .NET host's `wwwroot` and starts the server.
+
+For client-only development, run `dotnet run --project src/Jobriq.Web` from `web/` and `npm run dev` from `web/client` in separate terminals. Vite proxies `/api` to port 5080.
+
+### Configuration
+
+| Setting | Description |
+|---|---|
+| `OpenAI:ApiKey` | API key; `OpenAI__ApiKey` also works |
+| `OpenAI:Model` | Model name (default: `gpt-4o`) |
+| `OpenAI:BaseUrl` | Optional OpenAI-compatible endpoint |
+| `Ai:Provider` | `OpenAI` (default) or `Fake` for deterministic local runs and tests |
+
+The `Testing` environment sets `Ai:Provider` to `Fake`:
+
+```bash
+ASPNETCORE_ENVIRONMENT=Testing dotnet run --project src/Jobriq.Web --no-launch-profile
+```
+
+### Tests
+
+```bash
+dotnet test web/Jobriq.sln
+npm --prefix web/client test
+npm --prefix web/tests/e2e test
+```
+
+Playwright runs against a server configured with the fake AI service; it never calls OpenAI.
 
 ---
 
