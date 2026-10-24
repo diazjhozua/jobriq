@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
@@ -70,6 +70,58 @@ describe('ProfilePage', () => {
       expect(profile.experience[0]?.company).toBe('Acme')
       expect(profile.experience[0]?.bullets).toEqual(['Built a thing'])
     })
+  })
+
+  it('imports a pasted resume template and saves it', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Import template' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Template text'), {
+      target: {
+        value: [
+          '[PERSONAL]',
+          'Name: Jane Doe',
+          'Email: jane@example.com',
+          'LinkedIn: linkedin.com/in/jane',
+          '',
+          '[EXPERIENCE]',
+          'Company: Acme',
+          'Title: Engineer',
+          '- Built a thing',
+          '',
+          '[SKILLS]',
+          'C#, React',
+        ].join('\n'),
+      },
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Import profile' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe')
+    expect(screen.getByLabelText('LinkedIn')).toHaveValue('https://linkedin.com/in/jane')
+    expect(screen.getByLabelText('Skills')).toHaveValue('C#, React')
+    expect(screen.getByText('Saved')).toBeInTheDocument()
+    expect(storedState().profile.experience[0]?.company).toBe('Acme')
+  })
+
+  it('reports validation errors from an imported template', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Import template' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Template text'), {
+      target: { value: ['[PERSONAL]', 'Name: Jane Doe'].join('\n') },
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Import profile' }))
+
+    expect(
+      await within(dialog).findByText('personal.email: Enter a valid email address'),
+    ).toBeInTheDocument()
   })
 
   it('adds and removes repeatable entries', async () => {

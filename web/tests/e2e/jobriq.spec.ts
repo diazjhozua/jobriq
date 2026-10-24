@@ -2,6 +2,48 @@ import { expect, test } from '@playwright/test'
 
 const fileNamePattern = /^jane-doe-resume-\d{8}-\d{6}\.(md|docx)$/
 
+test('imports a pasted resume template', async ({ page }) => {
+  await page.goto('/profile')
+
+  await page.getByRole('button', { name: 'Import template' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Template text').fill(
+    [
+      '[PERSONAL]',
+      'Name: Imported Person',
+      'Email: imported@example.com',
+      'LinkedIn: linkedin.com/in/imported',
+      '',
+      '[SUMMARY]',
+      'Type: professional',
+      'Content:',
+      '',
+      '[EXPERIENCE]',
+      'Company: Acme',
+      'Title: Engineer',
+      'Start: 2022',
+      'End: Present',
+      '- Built a thing',
+      '',
+      '[SKILLS]',
+      'C#, React',
+    ].join('\n'),
+  )
+  await dialog.getByRole('button', { name: 'Import profile' }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(page.getByLabel('Name')).toHaveValue('Imported Person')
+  await expect(page.getByLabel('LinkedIn')).toHaveValue(
+    'https://linkedin.com/in/imported',
+  )
+  await expect(page.getByLabel('Skills')).toHaveValue('C#, React')
+  await expect(page.getByLabel('Company')).toHaveValue('Acme')
+
+  await page.reload()
+  await expect(page.getByLabel('Name')).toHaveValue('Imported Person')
+  await expect(page.getByLabel('Company')).toHaveValue('Acme')
+})
+
 test('profile, application, generation, and downloads', async ({ page }) => {
   await page.goto('/profile')
 

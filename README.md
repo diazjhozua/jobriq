@@ -63,7 +63,7 @@ jobriq build
 
 ## Web App
 
-The web app adds a profile editor and a job application tracker on top of the same AI pipeline. Profile and applications are stored in the browser under `jobriq.v1`; the server keeps no state.
+The web app adds a profile editor and a job application tracker on top of the same AI pipeline. Profile and applications are stored in the browser under `jobriq.v1`; the server keeps no state. The Profile screen can import an existing `resumes/my-resume.txt` with **Import template**.
 
 ### Setup
 

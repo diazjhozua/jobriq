@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:5080',
+    baseURL: 'http://localhost:5081',
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,9 +18,9 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      'npm --prefix ../.. run build && dotnet run --project ../../src/Jobriq.Web --urls http://localhost:5080 --no-launch-profile -- --environment Testing',
-    url: 'http://localhost:5080',
-    reuseExistingServer: !process.env.CI,
+      'npm --prefix ../.. run build && dotnet run --project ../../src/Jobriq.Web --urls http://localhost:5081 --no-launch-profile -- --environment Testing',
+    url: 'http://localhost:5081',
+    reuseExistingServer: false,
     timeout: 180_000,
   },
 })

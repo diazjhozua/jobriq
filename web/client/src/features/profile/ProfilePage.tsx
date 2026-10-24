@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, Plus, Trash2 } from 'lucide-react'
+import { Check, Plus, Trash2, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
@@ -12,6 +12,7 @@ import { profileSchema } from '../../lib/schemas'
 import type { Profile } from '../../lib/types'
 import { parseSkills } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { TemplateImportDialog } from './TemplateImportDialog'
 
 interface SectionProps {
   title: string
@@ -40,6 +41,7 @@ export function ProfilePage() {
   const { profile, saveProfile } = useJobriq()
   const [skillsText, setSkillsText] = useState(() => profile.skills.join(', '))
   const [saved, setSaved] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const {
     control,
@@ -75,6 +77,13 @@ export function ProfilePage() {
     setSaved(true)
   }
 
+  const handleImported = (imported: Profile) => {
+    saveProfile(imported)
+    reset(imported)
+    setSkillsText(imported.skills.join(', '))
+    setSaved(true)
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -93,6 +102,10 @@ export function ProfilePage() {
               </span>
             ) : null}
           </span>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload aria-hidden="true" size={16} />
+            Import template
+          </Button>
           <Button
             type="submit"
             variant="primary"
@@ -479,6 +492,11 @@ export function ProfilePage() {
           </div>
         )}
       </Section>
+      <TemplateImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={handleImported}
+      />
     </form>
   )
 }
