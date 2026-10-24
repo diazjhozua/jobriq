@@ -11,4 +11,8 @@
     <ProjectReference Include="..\Jobriq.Application\Jobriq.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jobriq.Infrastructure.Tests" />
+  </ItemGroup>
+
 </Project>
