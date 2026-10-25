@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 // PreToolUse guard for Write/Edit. Exit 2 blocks the call and reports to Claude.
 
+import os from 'node:os'
 import path from 'node:path'
 
 const PROJECT_DIR = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
+const CLAUDE_HOME = path.resolve(os.homedir(), '.claude')
+const HARNESS_DIRS = ['plans', 'projects'].map((dir) => path.resolve(CLAUDE_HOME, dir))
+
+function isInside(base, target) {
+  const relative = path.relative(base, target)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
 
 const BLOCKED_SEGMENTS = ['/bin/', '/obj/', '/node_modules/', '/test-results/', '/wwwroot/']
 const BLOCKED_BASENAME = /^\.env(?!\.(example|template|sample))/i
@@ -33,10 +41,13 @@ if (!rawPath) {
 const absolute = path.resolve(PROJECT_DIR, rawPath)
 const relative = path.relative(PROJECT_DIR, absolute).replace(/\\/g, '/')
 
+const harnessPath = HARNESS_DIRS.some((dir) => isInside(dir, absolute))
+
 const blocked =
-  relative.startsWith('../') ||
-  BLOCKED_SEGMENTS.some((segment) => `/${relative}`.includes(segment)) ||
-  BLOCKED_BASENAME.test(path.basename(relative))
+  !harnessPath &&
+  (relative.startsWith('../') ||
+    BLOCKED_SEGMENTS.some((segment) => `/${relative}`.includes(segment)) ||
+    BLOCKED_BASENAME.test(path.basename(relative)))
 
 if (blocked) {
   process.stderr.write(
