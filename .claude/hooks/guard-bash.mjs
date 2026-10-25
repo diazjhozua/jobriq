@@ -10,8 +10,13 @@ const BLOCK_MESSAGE = (reason) =>
 
 const SECRET_PATH = /(^|[\s'"])(\.env(?!\.(example|template|sample))|resumes\/|.*\.(pfx|pem|key)\b|appsettings\.[\w.-]*\.local\.json)/i
 
-// Git global options before the subcommand: -C <path>, -c <k=v>, --git-dir=..., --work-tree=...
-const GIT_GLOBAL = /\bgit\s+(?:(?:-C\s+\S+|-c\s+\S+|--git-dir(?:=\S+|\s+\S+)|--work-tree(?:=\S+|\s+\S+)|--namespace(?:=\S+|\s+\S+))\s+)+/g
+// Match a git subcommand after any global options, e.g. `git --no-pager commit`.
+const gitRuns = (names) => new RegExp(`\\bgit\\b[^\\n;&|]*\\b(?:${names})\\b`)
+
+const GIT_COMMIT = gitRuns('commit')
+const GIT_PUSH = gitRuns('push')
+const GIT_RESET = gitRuns('reset')
+const GIT_DIFF = gitRuns('diff|log|difftool')
 
 function readInput() {
   return new Promise((resolve) => {
@@ -37,6 +42,57 @@ function samePath(a, b) {
   return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
 }
 
+function isSameOrAncestor(candidate, target) {
+  const relative = path.relative(candidate, target)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
+
+function expandHome(target, home) {
+  return target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
+}
+
+// Resolve every recursive-delete target, tracking `cd` so `cd .. && rm -rf repo` cannot escape.
+function recursiveDeleteTargets(command, projectDir, home) {
+  let cwd = projectDir
+  let unsafeCwd = false
+  const targets = []
+
+  for (const segment of command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)) {
+    const tokens = segment.split(/\s+/).filter(Boolean)
+    if (tokens[0] === 'cd' && tokens[1]) {
+      if (/[$`]/.test(tokens[1])) {
+        unsafeCwd = true
+      } else {
+        cwd = path.resolve(cwd, expandHome(tokens[1], home))
+      }
+      continue
+    }
+
+    const rmIndex = tokens.findIndex((token) => /^(?:rm|rm\.exe)$/i.test(token))
+    if (rmIndex === -1) {
+      continue
+    }
+
+    const flags = tokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
+    if (!flags.some((flag) => /^-[a-zA-Z]*r/i.test(flag) || flag === '--recursive')) {
+      continue
+    }
+
+    for (const token of tokens.slice(rmIndex + 1)) {
+      if (token.startsWith('-')) {
+        continue
+      }
+
+      targets.push({
+        resolved: unsafeCwd || /[$`]/.test(token) ? null : path.resolve(cwd, expandHome(token, home)),
+        cwd,
+      })
+    }
+  }
+
+  return targets
+}
+
 const input = await readInput()
 const command = String(input?.tool_input?.command ?? '')
 
@@ -46,31 +102,37 @@ if (!command) {
 
 // Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
 const normalized = command.replace(/["'\\]/g, '')
-const git = normalized.replace(GIT_GLOBAL, 'git ')
+const git = normalized
 
-if (/git\s+commit\b[^\n]*(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(git)) {
+if (GIT_COMMIT.test(git) && /(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(git)) {
   block('skipping commit hooks is not allowed.')
 }
 
 if (
-  /git\s+push\b[^\n]*(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(git) &&
+  GIT_PUSH.test(git) &&
+  /(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(git) &&
   /\b(main|master)\b/.test(git)
 ) {
   block('force-pushing to main/master is destructive.')
 }
 
-if (/git\s+reset\b[^\n]*--hard/.test(git)) {
+if (GIT_RESET.test(git) && /\s--hard\b/.test(git)) {
   block('`git reset --hard` discards uncommitted work.')
 }
 
 if (
-  /\bgit\b[^\n]*\b(diff|log|difftool)\b/.test(git) &&
-  /(\s--outp[a-z]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\S*|\s-x\s)/.test(git)
+  GIT_DIFF.test(git) &&
+  /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\S*|\s-x\s)/.test(git)
 ) {
   block('git diff/log/difftool flags can write files or execute external programs.')
 }
 
-if (/git\s+-c\s+(alias\.|core\.hooksPath)/.test(normalized)) {
+if (
+  /\bgit\b[^\n;&|]*\s-c\s*\S*(?:alias\.|core\.hookspath)/i.test(git) ||
+  /\bgit\b[^\n;&|]*--config-env(?:=|\s)/i.test(git) ||
+  /\bgit\b[^\n;&|]*\bconfig\b[^\n;&|]*\b(?:alias\.|core\.hookspath)\b/i.test(git) ||
+  /\bGIT_CONFIG_(?:COUNT|PARAMETERS|GLOBAL|SYSTEM|KEY_\d+|VALUE_\d+)\b/i.test(normalized)
+) {
   block('git config overrides can hide commits or skip hooks.')
 }
 
@@ -86,33 +148,24 @@ if (/git\s+add\b[^\n]*/.test(git) && SECRET_PATH.test(normalized)) {
   block('staging secrets or local resume data.')
 }
 
-if (/\brm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\b/.test(normalized)) {
-  const projectDir = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
-  const home = os.homedir()
-  const targets = command
-    .replace(/["']/g, '')
-    .split(/\s+/)
-    .slice(1)
-    .filter((token) => token && !token.startsWith('-'))
+const projectDir = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
+const home = os.homedir()
 
-  const dangerous = targets.some((target) => {
-    if (/^[a-zA-Z]:$/.test(target)) {
-      return true
-    }
-
-    const expanded = target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
-    const resolved = path.resolve(expanded)
-
-    return (
-      samePath(resolved, path.parse(resolved).root) ||
-      samePath(resolved, home) ||
-      samePath(resolved, projectDir)
-    )
-  })
-
-  if (dangerous) {
-    block('recursive delete targeting the repo root, home, or a drive root.')
+const dangerousDelete = recursiveDeleteTargets(command, projectDir, home).some(({ resolved, cwd }) => {
+  if (resolved === null) {
+    return true
   }
+
+  return (
+    samePath(resolved, path.parse(resolved).root) ||
+    isSameOrAncestor(resolved, home) ||
+    isSameOrAncestor(resolved, projectDir) ||
+    isSameOrAncestor(resolved, cwd)
+  )
+})
+
+if (dangerousDelete) {
+  block('recursive delete targeting the repo, home, a drive root, or their ancestors.')
 }
 
 process.exit(0)
