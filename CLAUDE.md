@@ -67,7 +67,7 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 
 - `TreatWarningsAsErrors` and nullable enabled for all .NET projects; central package versions in `Directory.Packages.props`.
 - No hardcoded colors in the client; use the Tailwind tokens backed by CSS custom properties in `client/src/index.css`.
-- Conventional commits, no attribution trailers.
+- Conventional commits via the `/commit` skill; `guard-commit.mjs` blocks non-conforming messages. No attribution trailers.
 - `CLAUDE.md` and `.claude/{settings.json,agents,hooks,skills}` are committed. `.claude/settings.local.json`, `.claude/plans/`, and `.claude/cache/` are local only.
 
 ## Agentic workflow

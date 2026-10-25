@@ -4,7 +4,6 @@
     "csharp-lsp@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true
   },
   "permissions": {
@@ -56,6 +55,11 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-commit.mjs\"",
             "timeout": 10
           }
         ]

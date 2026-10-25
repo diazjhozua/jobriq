@@ -37,4 +37,4 @@ Review `git diff` plus untracked files. Report findings as `path:line: severity:
 **Repo hygiene**
 - Secrets, `.env`, `resumes/`, build output, or `wwwroot` staged.
 - `CLAUDE.md` or `.claude/` files that should stay local (`.claude/settings.local.json`, `.claude/plans/`).
-- Commit message not in conventional-commit form.
+- Commit message not produced by `/commit` or rejected by `guard-commit.mjs`.
