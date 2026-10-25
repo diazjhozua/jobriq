@@ -62,6 +62,119 @@ function splitSegments(command) {
   return command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)
 }
 
+const SHELL_WRAPPERS = new Set([
+  '.',
+  'ash',
+  'bash',
+  'busybox',
+  'cmd',
+  'csh',
+  'dash',
+  'eval',
+  'fish',
+  'ksh',
+  'mksh',
+  'powershell',
+  'pwsh',
+  'sh',
+  'source',
+  'tcsh',
+  'zsh',
+])
+
+const PREFIX_WRAPPERS = new Set([
+  'builtin',
+  'command',
+  'env',
+  'exec',
+  'ionice',
+  'nice',
+  'nohup',
+  'parallel',
+  'setsid',
+  'stdbuf',
+  'sudo',
+  'time',
+  'timeout',
+  'xargs',
+])
+
+const OPTION_WITH_ARG = new Set([
+  '-C',
+  '-g',
+  '-n',
+  '-u',
+  '--adjustment',
+  '--chdir',
+  '--group',
+  '--kill-after',
+  '--signal',
+  '--timeout',
+  '--user',
+])
+
+const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
+const UNSAFE_COMMAND_CHAR = /[$`\\*?[]/
+
+// A command word built from expansion, globbing, or escaping cannot be resolved statically.
+function hasUnsafeCommandWord(command) {
+  const segments = command.split(/\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\})\s*/)
+
+  for (const segment of segments) {
+    const tokens = segment.split(/\s+/).filter(Boolean)
+    let index = 0
+    while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
+      index++
+    }
+    if (index >= tokens.length) {
+      continue
+    }
+
+    const first = commandName(tokens[index])
+
+    if (SHELL_WRAPPERS.has(first)) {
+      if (tokens.slice(index + 1).some((token) => UNSAFE_COMMAND_CHAR.test(token))) {
+        return true
+      }
+      continue
+    }
+
+    if (PREFIX_WRAPPERS.has(first)) {
+      index++
+      while (index < tokens.length) {
+        const token = tokens[index]
+        if (ASSIGNMENT.test(token)) {
+          index++
+          continue
+        }
+        if (OPTION_WITH_ARG.has(token)) {
+          index += 2
+          continue
+        }
+        if (token.startsWith('-')) {
+          index++
+          continue
+        }
+        if (first === 'time' || first === 'timeout') {
+          index++
+          continue
+        }
+        break
+      }
+      if (index < tokens.length && UNSAFE_COMMAND_CHAR.test(tokens[index])) {
+        return true
+      }
+      continue
+    }
+
+    if (UNSAFE_COMMAND_CHAR.test(tokens[index])) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const RM_RECURSIVE_LONG = /^--r(e(c(u(r(s(i(v(e)?)?)?)?)?)?)?)?$/
 const RM_SAFE_LONG = new Set([
   '--',
@@ -100,30 +213,38 @@ function hasRecursiveRm(command) {
 
 // find -delete and find -exec can remove files or run arbitrary commands.
 function runsFindDelete(command) {
-  return splitSegments(command).some((segment) => {
+  const normalized = command.replace(/\\/g, '')
+
+  return splitSegments(normalized).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
-    while (
-      index < tokens.length &&
-      ['builtin', 'command', 'env', 'exec', 'nice', 'nohup', 'sudo', 'time', 'timeout'].includes(commandName(tokens[index]))
-    ) {
+    while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
       index++
-      while (index < tokens.length && tokens[index].startsWith('-')) {
-        index++
-      }
     }
-
-    if (commandName(tokens[index] ?? '') !== 'find') {
+    if (index >= tokens.length) {
       return false
     }
 
-    return tokens.slice(index + 1).some((token) => /^-(delete|exec|execdir|ok|okdir)$/.test(token))
+    const first = commandName(tokens[index])
+    if (first !== 'find' && !SHELL_WRAPPERS.has(first) && !PREFIX_WRAPPERS.has(first)) {
+      return false
+    }
+
+    const scope = first === 'find' ? tokens.slice(index) : tokens.slice(index + 1)
+    return (
+      scope.some((token) => commandName(token).replace(/^[({$]+/, '') === 'find') &&
+      scope.some((token) => /^-(delete|exec|execdir|ok|okdir)$/.test(token))
+    )
   })
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
 function recursiveDeleteTargets(command, projectDir, home) {
-  // A command word or target hidden behind expansion, a backslash, or an assignment cannot be resolved statically.
+  // A command word built from expansion, globbing, or escaping cannot be resolved statically.
+  if (hasUnsafeCommandWord(command)) {
+    return [{ resolved: null, cwd: projectDir }]
+  }
+
   const unescaped = command.replace(/\\/g, '')
   if (unescaped !== command && hasRecursiveRm(unescaped)) {
     return [{ resolved: null, cwd: projectDir }]
