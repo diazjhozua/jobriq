@@ -19,13 +19,13 @@
       "Bash(npm run test:e2e)",
       "Bash(npm --prefix client run lint)",
       "Bash(npm --prefix client run typecheck)",
-      "Bash(npm --prefix client test:*)",
+      "Bash(npm --prefix client test)",
       "Bash(npm --prefix tests/e2e test)",
       "Bash(npm --prefix web/tests/e2e test)",
       "Bash(git status:*)",
       "Bash(git diff)",
       "Bash(git diff --stat)",
-      "Bash(git log --oneline:*)",
+      "Bash(git log --oneline)",
       "Bash(gh pr view:*)"
     ],
     "deny": [

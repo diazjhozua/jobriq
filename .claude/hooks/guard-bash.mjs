@@ -34,28 +34,38 @@ if (!command) {
   process.exit(0)
 }
 
-if (/git\s+commit[^\n]*--no-verify/.test(command)) {
+// Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
+const normalized = command.replace(/["'\\]/g, '')
+
+if (/git\s+commit[^\n]*--no-verify/.test(normalized)) {
   block('`git commit --no-verify` skips the project hooks.')
 }
 
-if (/git\s+push[^\n]*(\s--force\b|\s-f\b)/.test(command) && /\b(main|master)\b/.test(command)) {
+if (/git\s+push[^\n]*(\s--force\b|\s-f\b)/.test(normalized) && /\b(main|master)\b/.test(normalized)) {
   block('force-pushing to main/master is destructive.')
 }
 
-if (/git\s+reset\s+--hard/.test(command)) {
+if (/git\s+reset\s+--hard/.test(normalized)) {
   block('`git reset --hard` discards uncommitted work.')
 }
 
-if (/\bgit\b[^\n]*\b(diff|log)\b/.test(command) && /(\s--output(=|\s|$)|\s--ext-diff\b|\s--exec\b|\s-c\s)/.test(command)) {
+if (
+  /\bgit\b[^\n]*\b(diff|log)\b/.test(normalized) &&
+  /(\s--output(=|\s|$)|\s--ext-diff\b|\s--exec\b|\s--textconv\b|\s-c\s)/.test(normalized)
+) {
   block('git diff/log flags can write files or execute external programs.')
 }
 
-if (/git\s+add\b[^\n]*/.test(command) && SECRET_PATH.test(command)) {
+if (/\bnpm\b[^\n]*\s--(script-shell|node-options|userconfig|globalconfig)\b/.test(normalized)) {
+  block('npm config flags can execute arbitrary code.')
+}
+
+if (/git\s+add\b[^\n]*/.test(normalized) && SECRET_PATH.test(normalized)) {
   block('staging secrets or local resume data.')
 }
 
-if (/\brm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\b/.test(command)) {
-  const targets = command.split(/\s+/).slice(1).filter((token) => !token.startsWith('-'))
+if (/\brm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\b/.test(normalized)) {
+  const targets = normalized.split(/\s+/).slice(1).filter((token) => !token.startsWith('-'))
   const dangerous = targets.some((target) => {
     const normalized = target.replace(/["']/g, '').replace(/\\/g, '/').replace(/\/+$/, '')
     return (
