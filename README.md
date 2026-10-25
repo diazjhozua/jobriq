@@ -82,9 +82,9 @@ For client-only development, run `dotnet run --project src/Jobriq.Web` from `web
 
 | Setting | Description |
 |---|---|
-| `OpenAI:ApiKey` | API key; `OpenAI__ApiKey` also works |
-| `OpenAI:Model` | Model name (default: `gpt-4o`) |
-| `OpenAI:BaseUrl` | Optional OpenAI-compatible endpoint |
+| `OpenAI:ApiKey` | API key; `OpenAI__ApiKey` or `OPENAI_API_KEY` also works |
+| `OpenAI:Model` | Model name (default: `gpt-4o`); `OPENAI_MODEL` also works |
+| `OpenAI:BaseUrl` | Optional OpenAI-compatible endpoint; `OPENAI_BASE_URL` also works |
 | `Ai:Provider` | `OpenAI` (default) or `Fake` for deterministic local runs and tests |
 
 The `Testing` environment sets `Ai:Provider` to `Fake`:

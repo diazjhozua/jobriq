@@ -89,7 +89,7 @@ internal sealed class OpenAiResumeAiService(
             logger.LogError(exception, "OpenAI rejected the configured API key.");
             throw new AiServiceException(
                 "openai_unauthorized",
-                "OpenAI rejected the configured API key. Check OpenAI:ApiKey.",
+                "OpenAI rejected the configured API key. Check OpenAI:ApiKey and OpenAI:BaseUrl.",
                 502);
         }
         catch (ClientResultException exception) when (exception.Status == 429)
@@ -128,14 +128,20 @@ internal sealed class OpenAiResumeAiService(
         EnsureAvailable();
 
         OpenAIClientOptions options = new();
-        string? endpoint = configuration["OpenAI:BaseUrl"] ?? configuration["OpenAI:Endpoint"];
+        string? endpoint = configuration["OpenAI:BaseUrl"]
+            ?? configuration["OpenAI:Endpoint"]
+            ?? configuration["OPENAI_BASE_URL"];
         if (!string.IsNullOrWhiteSpace(endpoint))
         {
             options.Endpoint = new Uri(endpoint);
         }
 
+        string model = configuration["OpenAI:Model"]
+            ?? configuration["OPENAI_MODEL"]
+            ?? DefaultModel;
+
         OpenAIClient client = new(new ApiKeyCredential(ResolveApiKey()!), options);
-        chatClient = client.GetChatClient(configuration["OpenAI:Model"] ?? DefaultModel);
+        chatClient = client.GetChatClient(model);
 
         return chatClient;
     }
