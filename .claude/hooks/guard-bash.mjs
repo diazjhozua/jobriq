@@ -58,102 +58,77 @@ function commandName(token) {
   return path.basename(token.replace(/\\/g, '/')).replace(/\.exe$/i, '').toLowerCase()
 }
 
-function commandWordIndex(tokens) {
-  let index = 0
-  while (index < tokens.length && ['builtin', 'command'].includes(commandName(tokens[index]))) {
-    index++
-    while (index < tokens.length && tokens[index].startsWith('-')) {
-      index++
-    }
-  }
-  return index
+function splitSegments(command) {
+  return command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)
 }
 
-// Resolve every recursive-delete target, tracking `cd` so `cd .. && rm -rf repo` cannot escape.
-function recursiveDeleteTargets(command, projectDir, home) {
-  let cwd = projectDir
-  let unsafeCwd = false
-  const targets = []
-
-  if (/\b(?:bash|sh|zsh|dash)\b[^\n;&|]*\s-c\s|\beval\b/.test(command) && /\brm\b/.test(command)) {
-    unsafeCwd = true
-  }
-
-  if (/\bCDPATH\b/.test(command)) {
-    unsafeCwd = true
-  }
-
-  for (const segment of command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)) {
+function hasRecursiveRm(command) {
+  return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
-    if (/[(){}]/.test(segment) || /\$\(/.test(segment)) {
-      unsafeCwd = true
-    }
-
-    const envIndex = tokens.findIndex((token) => commandName(token) === 'env')
-    if (envIndex !== -1) {
-      const chdirIndex = tokens.findIndex(
-        (token, index) => index > envIndex && (token === '-C' || token === '--chdir' || token.startsWith('--chdir=')),
-      )
-      if (chdirIndex !== -1) {
-        const chdir =
-          tokens[chdirIndex].startsWith('--chdir=')
-            ? tokens[chdirIndex].slice('--chdir='.length)
-            : tokens[chdirIndex + 1]
-
-        if (chdir && !chdir.startsWith('-') && !/[$`(){}]/.test(chdir)) {
-          cwd = path.resolve(cwd, expandHome(chdir, home))
-        } else {
-          unsafeCwd = true
-        }
-      }
-    }
-
-    const commandIndex = commandWordIndex(tokens)
-    const cdIndex =
-      commandIndex < tokens.length && ['cd', 'pushd', 'popd'].includes(commandName(tokens[commandIndex]))
-        ? commandIndex
-        : -1
-
-    if (cdIndex !== -1) {
-      const name = commandName(tokens[cdIndex])
-      const target = tokens[cdIndex + 1] === '--' ? tokens[cdIndex + 2] : tokens[cdIndex + 1]
-
-      if (name === 'cd' && target && !target.startsWith('-') && !/[$`(){}]/.test(target)) {
-        cwd = path.resolve(cwd, expandHome(target, home))
-      } else {
-        unsafeCwd = true
-      }
-    }
-
     const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$]+/, '') === 'rm')
+    if (rmIndex === -1) {
+      return false
+    }
+
+    return tokens
+      .slice(rmIndex + 1)
+      .some((token) => token.startsWith('-') && (/^-[a-zA-Z]*r/i.test(token) || token === '--recursive'))
+  })
+}
+
+// Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
+function recursiveDeleteTargets(command, projectDir, home) {
+  if (!hasRecursiveRm(command)) {
+    return []
+  }
+
+  const tokens = splitSegments(command).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
+  const directoryChange = tokens.some((token) => ['cd', 'pushd', 'popd'].includes(commandName(token)))
+  const envChdir = tokens.some((token) => token === '-C' || token === '--chdir' || token.startsWith('--chdir='))
+  const shellWrapper = tokens.some((token) =>
+    ['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish', 'busybox', 'pwsh', 'powershell', 'cmd', 'eval', 'source', 'xargs'].includes(
+      commandName(token),
+    ),
+  )
+  const grouped = /[(){}]/.test(command.replace(/["']/g, '')) || /\$\(/.test(command)
+  const quotedSpace = /["'][^"']*\s[^"']*["']/.test(command)
+  const escapedSpace = /\\\s/.test(command)
+
+  if (directoryChange || envChdir || /\bCDPATH\b/.test(command) || shellWrapper || grouped || quotedSpace || escapedSpace) {
+    return [{ resolved: null, cwd: projectDir }]
+  }
+
+  const targets = []
+  for (const segment of splitSegments(command)) {
+    const segmentTokens = segment.split(/\s+/).filter(Boolean)
+    const rmIndex = segmentTokens.findIndex((token) => commandName(token).replace(/^[({$]+/, '') === 'rm')
     if (rmIndex === -1) {
       continue
     }
 
-    const flags = tokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
+    const flags = segmentTokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
     if (!flags.some((flag) => /^-[a-zA-Z]*r/i.test(flag) || flag === '--recursive')) {
       continue
     }
 
-    for (const token of tokens.slice(rmIndex + 1)) {
+    for (const token of segmentTokens.slice(rmIndex + 1)) {
       if (token.startsWith('-')) {
         continue
       }
 
-      const expanded = path.resolve(cwd, expandHome(token, home))
+      const expanded = path.resolve(projectDir, expandHome(token, home))
       const wildcard = token.search(/[*?\[]/)
+      const tildeDanger = token.startsWith('~') && token !== '~' && !token.startsWith('~/')
+      const parentSegment = token.split(/[\\/]/).includes('..')
       let globDanger = false
       if (wildcard !== -1) {
-        const prefix = path.resolve(cwd, expandHome(token.slice(0, wildcard), home))
-        globDanger =
-          samePath(prefix, projectDir) ||
-          !isSameOrAncestor(projectDir, prefix) ||
-          isSameOrAncestor(prefix, cwd)
+        const prefix = path.resolve(projectDir, expandHome(token.slice(0, wildcard), home))
+        globDanger = samePath(prefix, projectDir) || !isSameOrAncestor(projectDir, prefix) || parentSegment
       }
 
       targets.push({
-        resolved: unsafeCwd || /[$`]/.test(token) || globDanger ? null : expanded,
-        cwd,
+        resolved: /[$`]/.test(token) || tildeDanger || globDanger ? null : expanded,
+        cwd: projectDir,
       })
     }
   }
