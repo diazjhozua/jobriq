@@ -3,12 +3,18 @@
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     },
     "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
     },
     "microsoft-learn": {
       "type": "http",
@@ -17,8 +23,9 @@
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${JOBRIQ_GITHUB_PAT}"
+      "oauth": {
+        "clientId": "Ov23li1EkxquNsVXs6GG",
+        "callbackPort": 7777
       }
     }
   }
