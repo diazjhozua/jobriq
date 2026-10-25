@@ -25,5 +25,8 @@ web/tests/e2e/playwright-report/
 resumes/
 
 # Claude Code local files
-CLAUDE.md
-.claude/
+.claude/settings.local.json
+.claude/plans/
+.claude/cache/
+.claude/todos/
+.claude/.verify-failed
