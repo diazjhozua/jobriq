@@ -46,6 +46,10 @@ if (/git\s+reset\s+--hard/.test(command)) {
   block('`git reset --hard` discards uncommitted work.')
 }
 
+if (/\bgit\b[^\n]*\b(diff|log)\b/.test(command) && /(\s--output(=|\s|$)|\s--ext-diff\b|\s--exec\b|\s-c\s)/.test(command)) {
+  block('git diff/log flags can write files or execute external programs.')
+}
+
 if (/git\s+add\b[^\n]*/.test(command) && SECRET_PATH.test(command)) {
   block('staging secrets or local resume data.')
 }
