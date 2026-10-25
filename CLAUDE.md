@@ -8,7 +8,7 @@ Jobriq is a web app for building a resume profile, tracking job applications, an
 
 ## Commands
 
-Run from `web/` unless noted.
+Run from the repository root unless noted.
 
 ```bash
 npm run start          # build client into wwwroot, run host on http://localhost:5080
@@ -33,11 +33,11 @@ npm --prefix client test -- src/lib/schemas.test.ts   # single Vitest file
 ## Architecture
 
 ```
-web/src/Jobriq.Domain          models only, no dependencies
-web/src/Jobriq.Application     use cases + abstractions, depends on Domain
-web/src/Jobriq.Infrastructure  OpenAI service, DOCX/Markdown exporters, depends on Application
-web/src/Jobriq.Web             ASP.NET Core minimal API host, depends on Infrastructure
-web/client                     React + TypeScript SPA (Vite, Tailwind v4, Radix, RHF, Zod)
+src/Jobriq.Domain          models only, no dependencies
+src/Jobriq.Application     use cases + abstractions, depends on Domain
+src/Jobriq.Infrastructure  OpenAI service, DOCX/Markdown exporters, depends on Application
+src/Jobriq.Web             ASP.NET Core minimal API host, depends on Infrastructure
+client                     React + TypeScript SPA (Vite, Tailwind v4, Radix, RHF, Zod)
 ```
 
 Dependency direction is inward only and enforced by `tests/Jobriq.Web.Tests/Architecture/LayerTests.cs`.
@@ -60,12 +60,15 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 ## Tests
 
 - `dotnet test` covers Domain, Application, Infrastructure, and Web (`WebApplicationFactory<Program>`), plus layer rules.
-- Vitest + React Testing Library tests are colocated with the code under `web/client/src/**/*.test.ts(x)`; there is no `web/tests/client` directory.
+- Vitest + React Testing Library tests are colocated with the code under `client/src/**/*.test.ts(x)`; there is no `tests/client` directory.
 - Playwright runs against an isolated server on port 5081 with the fake AI provider and `reuseExistingServer: false`. It never calls OpenAI and must not reuse a developer server on 5080.
 
 ## Conventions
 
-- `TreatWarningsAsErrors` and nullable enabled for all .NET projects; central package versions in `Directory.Packages.props`.
+- Minimal APIs only; no controllers, MediatR, or persistence abstractions. The server is stateless.
+- `TreatWarningsAsErrors`, nullable, and file-scoped namespaces are mandatory for all .NET projects; central package versions in `Directory.Packages.props`.
+- Use `TimeProvider` for timestamps so tests can substitute it.
+- Do not call OpenAI from tests; use the `Testing` environment or substitute `IResumeAiService`.
 - No hardcoded colors in the client; use the Tailwind tokens backed by CSS custom properties in `client/src/index.css`.
 - Conventional commits via the `/commit` skill; `guard-commit.mjs` blocks non-conforming messages. No attribution trailers.
 - `CLAUDE.md` and `.claude/{settings.json,agents,hooks,skills}` are committed. `.claude/settings.local.json`, `.claude/plans/`, and `.claude/cache/` are local only.
@@ -81,6 +84,5 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 
 | Path | Scope |
 |---|---|
-| `web/CLAUDE.md` | .NET layers, use cases, endpoints, AI provider, backend tests |
-| `web/client/CLAUDE.md` | React state, schemas, styling tokens, client tests |
-| `web/tests/e2e/CLAUDE.md` | Playwright isolation rules |
+| `client/CLAUDE.md` | React state, schemas, styling tokens, client tests |
+| `tests/e2e/CLAUDE.md` | Playwright isolation rules |

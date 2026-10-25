@@ -1,6 +1,6 @@
 # Client instructions
 
-Repository-wide guidance lives in the root `CLAUDE.md`; backend guidance is in `../CLAUDE.md`.
+Repository-wide guidance, including backend conventions, lives in the root `CLAUDE.md`.
 
 ## State
 

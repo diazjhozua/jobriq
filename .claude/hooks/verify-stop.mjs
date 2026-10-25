@@ -7,7 +7,6 @@ import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
 const PROJECT_DIR = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
-const WEB_DIR = path.join(PROJECT_DIR, 'web')
 
 function readInput() {
   return new Promise((resolve) => {
@@ -26,7 +25,7 @@ function readInput() {
 
 function run(file, args, timeout) {
   const result = spawnSync(file, args, {
-    cwd: WEB_DIR,
+    cwd: PROJECT_DIR,
     shell: true,
     encoding: 'utf8',
     timeout,

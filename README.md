@@ -29,7 +29,6 @@ AI-powered resume builder. Keep a profile, track job applications, and generate 
 ## Setup
 
 ```bash
-cd web
 dotnet user-secrets set "OpenAI:ApiKey" "<key>" --project src/Jobriq.Web
 npm --prefix client install
 npm run start
@@ -37,7 +36,7 @@ npm run start
 
 Open `http://localhost:5080`. `npm run start` builds the React client into the .NET host's `wwwroot` and starts the server.
 
-For client-only development, run `dotnet run --project src/Jobriq.Web` from `web/` and `npm run dev` from `web/client` in separate terminals. Vite proxies `/api` to port 5080.
+For client-only development, run `dotnet run --project src/Jobriq.Web` from the repository root and `npm run dev` from `client/` in separate terminals. Vite proxies `/api` to port 5080.
 
 ### Configuration
 
@@ -111,9 +110,9 @@ URL: https://github.com/diazjhozua/jobriq
 ## Tests
 
 ```bash
-dotnet test web/Jobriq.sln
-npm --prefix web/client test
-npm --prefix web/tests/e2e test
+dotnet test Jobriq.sln
+npm --prefix client test
+npm --prefix tests/e2e test
 ```
 
 Playwright runs against a server configured with the fake AI service; it never calls OpenAI.
@@ -123,18 +122,16 @@ Playwright runs against a server configured with the fake AI service; it never c
 ## Architecture
 
 ```
-web/
-  Jobriq.sln
-  src/
-    Jobriq.Domain/          domain models
-    Jobriq.Application/     use cases and abstractions
-    Jobriq.Infrastructure/  OpenAI service, DOCX and Markdown exporters
-    Jobriq.Web/             ASP.NET Core host and API
-  client/                   React + TypeScript SPA
-  tests/
-    Jobriq.*.Tests/         xUnit test projects
-    client/                 Vitest + React Testing Library
-    e2e/                    Playwright
+Jobriq.sln
+src/
+  Jobriq.Domain/          domain models
+  Jobriq.Application/     use cases and abstractions
+  Jobriq.Infrastructure/  OpenAI service, DOCX and Markdown exporters
+  Jobriq.Web/             ASP.NET Core host and API
+client/                   React + TypeScript SPA
+tests/
+  Jobriq.*.Tests/         xUnit test projects
+  e2e/                    Playwright
 ```
 
 Dependencies point inward: Domain has no dependencies, Application depends on Domain, Infrastructure depends on Application, and Web depends on Infrastructure.
@@ -171,7 +168,7 @@ The AI resume enhancement workflow in Jobriq is inspired by **[I've Reviewed 1,0
 
 This repository ships its Claude Code configuration so the setup is reproducible.
 
-- `CLAUDE.md` at the root covers the product, commands, and architecture. `web/CLAUDE.md`, `web/client/CLAUDE.md`, and `web/tests/e2e/CLAUDE.md` add layer-specific guidance and load when you work in those directories.
+- `CLAUDE.md` at the root covers the product, commands, architecture, and backend conventions. `client/CLAUDE.md` and `tests/e2e/CLAUDE.md` add layer-specific guidance and load when you work in those directories.
 - Skills in `.claude/skills/`: `commit` (Conventional Commits), `verify` (test tiers), `review` (pre-commit checklist), `add-api-endpoint`, and `add-client-feature`.
 - Sub-agents in `.claude/agents/`: `architecture-reviewer`, `feature-builder`, `test-runner`, and `ui-reviewer`.
 - Hooks in `.claude/hooks/` block destructive git and secret staging, reject non-conforming commit messages, block writes to build output, and run typecheck, lint, and build when a turn ends with changes.

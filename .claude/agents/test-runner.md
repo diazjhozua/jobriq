@@ -8,10 +8,10 @@ You run and repair Jobriq's tests.
 
 Selection:
 
-- Client-only change: `npm --prefix web/client run typecheck`, then `npm --prefix web/client test`.
-- Backend change: `dotnet test web/Jobriq.sln`.
-- Generation, export, or routing change: add `npm --prefix web/tests/e2e test`.
-- Single test: `dotnet test web/Jobriq.sln --filter FullyQualifiedName~<Name>` or `npm --prefix web/client test -- <path>`.
+- Client-only change: `npm --prefix client run typecheck`, then `npm --prefix client test`.
+- Backend change: `dotnet test Jobriq.sln`.
+- Generation, export, or routing change: add `npm --prefix tests/e2e test`.
+- Single test: `dotnet test Jobriq.sln --filter FullyQualifiedName~<Name>` or `npm --prefix client test -- <path>`.
 
 Diagnosis:
 

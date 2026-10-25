@@ -15,7 +15,7 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
             MissingApiKeyException => (
                 503,
                 "OpenAI API key missing",
-                "Set OpenAI:ApiKey with 'dotnet user-secrets set \"OpenAI:ApiKey\" \"<key>\" --project web/src/Jobriq.Web' or the OpenAI__ApiKey environment variable.",
+                "Set OpenAI:ApiKey with 'dotnet user-secrets set \"OpenAI:ApiKey\" \"<key>\" --project src/Jobriq.Web' or the OpenAI__ApiKey environment variable.",
                 "missing_api_key"),
             AiServiceException aiException => (
                 aiException.StatusCode,

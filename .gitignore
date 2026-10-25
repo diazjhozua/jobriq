@@ -15,14 +15,14 @@ TestResults/
 .vs/
 
 # Web client build output
-web/src/Jobriq.Web/wwwroot/
+src/Jobriq.Web/wwwroot/
 
 # Playwright
-web/tests/e2e/test-results/
-web/tests/e2e/playwright-report/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
 
-# Local resume data
-resumes/
+# Local resume data (root only; source Resumes/ directories are tracked)
+/resumes/
 
 # Claude Code local files
 .claude/settings.local.json

@@ -18,7 +18,7 @@ Create one Conventional Commit per logical change. Never skip hooks and never ad
 
 ## Stage
 
-- Add paths explicitly, one at a time: `git add web/client/src/lib/api.ts`.
+- Add paths explicitly, one at a time: `git add client/src/lib/api.ts`.
 - Never add the whole tree blindly (`git add -A`, `git add .`, or `git commit -a` on a mixed tree).
 - Never stage environment files, local resume data, build output, dependencies, test artifacts, or credentials.
 - If the diff mixes unrelated concerns, stage and commit them separately.
