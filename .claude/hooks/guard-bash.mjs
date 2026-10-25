@@ -17,6 +17,7 @@ const GIT_COMMIT = gitRuns('commit')
 const GIT_PUSH = gitRuns('push')
 const GIT_RESET = gitRuns('reset')
 const GIT_DIFF = gitRuns('diff|log|difftool')
+const GIT_ADD = gitRuns('add')
 
 function readInput() {
   return new Promise((resolve) => {
@@ -43,12 +44,18 @@ function samePath(a, b) {
 }
 
 function isSameOrAncestor(candidate, target) {
-  const relative = path.relative(candidate, target)
+  const from = process.platform === 'win32' ? candidate.toLowerCase() : candidate
+  const to = process.platform === 'win32' ? target.toLowerCase() : target
+  const relative = path.relative(from, to)
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
 }
 
 function expandHome(target, home) {
   return target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
+}
+
+function commandName(token) {
+  return path.basename(token.replace(/\\/g, '/')).replace(/\.exe$/i, '').toLowerCase()
 }
 
 // Resolve every recursive-delete target, tracking `cd` so `cd .. && rm -rf repo` cannot escape.
@@ -59,16 +66,24 @@ function recursiveDeleteTargets(command, projectDir, home) {
 
   for (const segment of command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)) {
     const tokens = segment.split(/\s+/).filter(Boolean)
-    if (tokens[0] === 'cd' && tokens[1]) {
-      if (/[$`]/.test(tokens[1])) {
-        unsafeCwd = true
+    if (/[(){}]/.test(segment) || /\$\(/.test(segment)) {
+      unsafeCwd = true
+    }
+
+    const cdIndex = tokens.findIndex((token) => ['cd', 'pushd', 'popd'].includes(commandName(token)))
+    if (cdIndex !== -1) {
+      const name = commandName(tokens[cdIndex])
+      const target = cdIndex === 0 && tokens[1] === '--' ? tokens[2] : cdIndex === 0 ? tokens[1] : undefined
+
+      if (name === 'cd' && target && !target.startsWith('-') && !/[$`(){}]/.test(target)) {
+        cwd = path.resolve(cwd, expandHome(target, home))
       } else {
-        cwd = path.resolve(cwd, expandHome(tokens[1], home))
+        unsafeCwd = true
       }
       continue
     }
 
-    const rmIndex = tokens.findIndex((token) => /^(?:rm|rm\.exe)$/i.test(token))
+    const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$]+/, '') === 'rm')
     if (rmIndex === -1) {
       continue
     }
@@ -83,8 +98,15 @@ function recursiveDeleteTargets(command, projectDir, home) {
         continue
       }
 
+      const expanded = path.resolve(cwd, expandHome(token, home))
+      const globDanger =
+        /[*?]/.test(token) &&
+        (isSameOrAncestor(path.dirname(expanded), projectDir) ||
+          isSameOrAncestor(path.dirname(expanded), home) ||
+          isSameOrAncestor(path.dirname(expanded), cwd))
+
       targets.push({
-        resolved: unsafeCwd || /[$`]/.test(token) ? null : path.resolve(cwd, expandHome(token, home)),
+        resolved: unsafeCwd || /[$`]/.test(token) || globDanger ? null : expanded,
         cwd,
       })
     }
@@ -144,7 +166,7 @@ if (/\bnpm\b[^\n]*\s--(script-shell|node-options|userconfig|globalconfig)\b/.tes
   block('npm config flags can execute arbitrary code.')
 }
 
-if (/git\s+add\b[^\n]*/.test(git) && SECRET_PATH.test(normalized)) {
+if (GIT_ADD.test(git) && SECRET_PATH.test(normalized)) {
   block('staging secrets or local resume data.')
 }
 
