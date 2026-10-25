@@ -167,6 +167,21 @@ Dependencies point inward: Domain has no dependencies, Application depends on Do
 
 The AI resume enhancement workflow in Jobriq is inspired by **[I've Reviewed 1,000+ Resumes — Here's How to Use AI to Land More Interviews](https://www.youtube.com/watch?v=KprWxa9WtIk)** by [Neeraj Mathrani](https://www.youtube.com/@neerajmathrani). His 8-step framework — turning tasks into accomplishments, quantifying results, ATS keyword matching, and the objective vs. professional summary distinction — directly shaped how Jobriq's AI pipeline works.
 
+## Agentic workflow
+
+This repository ships its Claude Code configuration so the setup is reproducible.
+
+- `CLAUDE.md` at the root covers the product, commands, and architecture. `web/CLAUDE.md`, `web/client/CLAUDE.md`, and `web/tests/e2e/CLAUDE.md` add layer-specific guidance and load when you work in those directories.
+- Skills in `.claude/skills/`: `verify` (test tiers), `review` (pre-commit checklist), `add-api-endpoint`, and `add-client-feature`.
+- Sub-agents in `.claude/agents/`: `architecture-reviewer`, `feature-builder`, `test-runner`, and `ui-reviewer`.
+- Hooks in `.claude/hooks/` block destructive git and secret staging, block writes to build output, and run typecheck, lint, and build when a turn ends with changes.
+- `.mcp.json` registers Playwright, Context7, Microsoft Learn, and GitHub MCP servers. They require approval on first use.
+- `.claude/settings.local.json` and `.claude/plans/` stay local and are gitignored.
+
+Run `/verify` before committing and `/review` on the working diff.
+
+---
+
 ## License
 
 MIT
