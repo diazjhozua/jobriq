@@ -101,7 +101,7 @@ const PREFIX_WRAPPERS = new Set([
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
 const UNSAFE_COMMAND_CHAR = /[$`\\*?[]/
-const SEGMENT_SEPARATOR = /\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\}|\$\(|`)\s*/
+const SEGMENT_SEPARATOR = /\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\}|<|>|\$\(|`)\s*/
 
 function splitCommandSegments(command) {
   return command.split(SEGMENT_SEPARATOR)
@@ -186,7 +186,7 @@ function hasRecursiveRm(command) {
 // find -delete and find -exec can remove files or run arbitrary commands.
 function runsFindDelete(command) {
   const normalized = command.replace(/["'\\]/g, '')
-  const tokens = normalized.split(/\s+/).filter(Boolean)
+  const tokens = splitCommandSegments(normalized).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
   const hasFind = tokens.some((token) => commandName(token).replace(/^[({$`]+/, '') === 'find')
 
   if (!hasFind) {
@@ -197,7 +197,7 @@ function runsFindDelete(command) {
     return true
   }
 
-  return tokens.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)\)*$/.test(token))
+  return tokens.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)$/.test(token))
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
