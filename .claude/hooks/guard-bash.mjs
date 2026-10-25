@@ -62,6 +62,30 @@ function splitSegments(command) {
   return command.replace(/["']/g, '').split(/\s*(?:&&|\|\||;|\n)\s*/)
 }
 
+const RM_RECURSIVE_LONG = /^--r(e(c(u(r(s(i(v(e)?)?)?)?)?)?)?)?$/
+const RM_SAFE_LONG = new Set([
+  '--',
+  '--dir',
+  '--force',
+  '--help',
+  '--interactive',
+  '--no-preserve-root',
+  '--one-file-system',
+  '--preserve-root',
+  '--verbose',
+  '--version',
+])
+
+function recursiveFlag(token) {
+  if (!token.startsWith('-')) {
+    return false
+  }
+  if (/^-[a-zA-Z]*r/i.test(token) || RM_RECURSIVE_LONG.test(token)) {
+    return true
+  }
+  return token.startsWith('--') && !RM_SAFE_LONG.has(token)
+}
+
 function hasRecursiveRm(command) {
   return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
@@ -70,14 +94,44 @@ function hasRecursiveRm(command) {
       return false
     }
 
-    return tokens
-      .slice(rmIndex + 1)
-      .some((token) => token.startsWith('-') && (/^-[a-zA-Z]*r/i.test(token) || token === '--recursive'))
+    return tokens.slice(rmIndex + 1).some(recursiveFlag)
+  })
+}
+
+// find -delete and find -exec can remove files or run arbitrary commands.
+function runsFindDelete(command) {
+  return splitSegments(command).some((segment) => {
+    const tokens = segment.split(/\s+/).filter(Boolean)
+    let index = 0
+    while (
+      index < tokens.length &&
+      ['builtin', 'command', 'env', 'exec', 'nice', 'nohup', 'sudo', 'time', 'timeout'].includes(commandName(tokens[index]))
+    ) {
+      index++
+      while (index < tokens.length && tokens[index].startsWith('-')) {
+        index++
+      }
+    }
+
+    if (commandName(tokens[index] ?? '') !== 'find') {
+      return false
+    }
+
+    return tokens.slice(index + 1).some((token) => /^-(delete|exec|execdir|ok|okdir)$/.test(token))
   })
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
 function recursiveDeleteTargets(command, projectDir, home) {
+  // A command word or target hidden behind expansion, a backslash, or an assignment cannot be resolved statically.
+  const unescaped = command.replace(/\\/g, '')
+  if (unescaped !== command && hasRecursiveRm(unescaped)) {
+    return [{ resolved: null, cwd: projectDir }]
+  }
+  if (/\brm\b/i.test(command) && /[$`\\]/.test(command)) {
+    return [{ resolved: null, cwd: projectDir }]
+  }
+
   if (!hasRecursiveRm(command)) {
     return []
   }
@@ -86,15 +140,44 @@ function recursiveDeleteTargets(command, projectDir, home) {
   const directoryChange = tokens.some((token) => ['cd', 'pushd', 'popd'].includes(commandName(token)))
   const envChdir = tokens.some((token) => token === '-C' || token === '--chdir' || token.startsWith('--chdir='))
   const shellWrapper = tokens.some((token) =>
-    ['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish', 'busybox', 'pwsh', 'powershell', 'cmd', 'eval', 'source', 'xargs'].includes(
-      commandName(token),
-    ),
+    [
+      '.',
+      'ash',
+      'bash',
+      'busybox',
+      'cmd',
+      'csh',
+      'dash',
+      'eval',
+      'find',
+      'fish',
+      'ksh',
+      'mksh',
+      'parallel',
+      'powershell',
+      'pwsh',
+      'sh',
+      'source',
+      'tcsh',
+      'xargs',
+      'zsh',
+    ].includes(commandName(token)),
   )
   const grouped = /[(){}]/.test(command.replace(/["']/g, '')) || /\$\(/.test(command)
   const quotedSpace = /["'][^"']*\s[^"']*["']/.test(command)
   const escapedSpace = /\\\s/.test(command)
+  const piped = /\|/.test(command)
 
-  if (directoryChange || envChdir || /\bCDPATH\b/.test(command) || shellWrapper || grouped || quotedSpace || escapedSpace) {
+  if (
+    directoryChange ||
+    envChdir ||
+    /\bCDPATH\b/.test(command) ||
+    shellWrapper ||
+    grouped ||
+    quotedSpace ||
+    escapedSpace ||
+    piped
+  ) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
@@ -107,15 +190,17 @@ function recursiveDeleteTargets(command, projectDir, home) {
     }
 
     const flags = segmentTokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
-    if (!flags.some((flag) => /^-[a-zA-Z]*r/i.test(flag) || flag === '--recursive')) {
+    if (!flags.some(recursiveFlag)) {
       continue
     }
 
+    let positional = 0
     for (const token of segmentTokens.slice(rmIndex + 1)) {
       if (token.startsWith('-')) {
         continue
       }
 
+      positional++
       const expanded = path.resolve(projectDir, expandHome(token, home))
       const wildcard = token.search(/[*?\[]/)
       const tildeDanger = token.startsWith('~') && token !== '~' && !token.startsWith('~/')
@@ -130,6 +215,10 @@ function recursiveDeleteTargets(command, projectDir, home) {
         resolved: /[$`]/.test(token) || tildeDanger || globDanger ? null : expanded,
         cwd: projectDir,
       })
+    }
+
+    if (positional === 0) {
+      return [{ resolved: null, cwd: projectDir }]
     }
   }
 
@@ -193,6 +282,10 @@ if (GIT_ADD.test(git) && SECRET_PATH.test(normalized)) {
 
 const projectDir = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
 const home = os.homedir()
+
+if (runsFindDelete(command)) {
+  block('find can delete files or execute commands.')
+}
 
 const dangerousDelete = recursiveDeleteTargets(command, projectDir, home).some(({ resolved, cwd }) => {
   if (resolved === null) {
