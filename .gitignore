@@ -1,8 +1,8 @@
+# Node
 node_modules/
 dist/
-output/
-resumes/
-*.jobriq.json
+
+# Environment
 .env
 .env.local
 .env.*.local
@@ -20,6 +20,9 @@ web/src/Jobriq.Web/wwwroot/
 # Playwright
 web/tests/e2e/test-results/
 web/tests/e2e/playwright-report/
+
+# Local resume data
+resumes/
 
 # Claude Code local files
 CLAUDE.md
