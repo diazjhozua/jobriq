@@ -6,7 +6,8 @@ import path from 'node:path'
 
 const PROJECT_DIR = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
 const CLAUDE_HOME = path.resolve(os.homedir(), '.claude')
-const HARNESS_DIRS = ['plans', 'projects'].map((dir) => path.resolve(CLAUDE_HOME, dir))
+const PLANS_DIR = path.resolve(CLAUDE_HOME, 'plans')
+const MEMORY_DIR = path.resolve(CLAUDE_HOME, 'projects', PROJECT_DIR.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')
 
 function isInside(base, target) {
   const relative = path.relative(base, target)
@@ -41,13 +42,19 @@ if (!rawPath) {
 const absolute = path.resolve(PROJECT_DIR, rawPath)
 const relative = path.relative(PROJECT_DIR, absolute).replace(/\\/g, '/')
 
-const harnessPath = HARNESS_DIRS.some((dir) => isInside(dir, absolute))
+const plansRelative = path.relative(PLANS_DIR, absolute)
+const inPlans =
+  plansRelative !== '' &&
+  !plansRelative.startsWith('..') &&
+  !path.isAbsolute(plansRelative) &&
+  !plansRelative.includes(path.sep) &&
+  path.extname(plansRelative) === '.md'
+const harnessPath = inPlans || isInside(MEMORY_DIR, absolute)
 
 const blocked =
-  !harnessPath &&
-  (relative.startsWith('../') ||
-    BLOCKED_SEGMENTS.some((segment) => `/${relative}`.includes(segment)) ||
-    BLOCKED_BASENAME.test(path.basename(relative)))
+  BLOCKED_BASENAME.test(path.basename(absolute)) ||
+  BLOCKED_SEGMENTS.some((segment) => `/${absolute.replace(/\\/g, '/')}`.includes(segment)) ||
+  (!harnessPath && relative.startsWith('../'))
 
 if (blocked) {
   process.stderr.write(
