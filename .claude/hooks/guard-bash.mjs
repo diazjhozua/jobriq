@@ -121,6 +121,10 @@ function hasUnsafeCommandWord(command) {
 
     const first = commandName(tokens[index])
 
+    if ((first === 'rm' || first === 'find') && tokens.slice(index).some((token) => /[$`\\]/.test(token))) {
+      return true
+    }
+
     if (SHELL_WRAPPERS.has(first)) {
       if (tokens.slice(index + 1).some((token) => UNSAFE_COMMAND_CHAR.test(token))) {
         return true
@@ -182,28 +186,18 @@ function hasRecursiveRm(command) {
 // find -delete and find -exec can remove files or run arbitrary commands.
 function runsFindDelete(command) {
   const normalized = command.replace(/["'\\]/g, '')
+  const tokens = normalized.split(/\s+/).filter(Boolean)
+  const hasFind = tokens.some((token) => commandName(token).replace(/^[({$`]+/, '') === 'find')
 
-  return splitCommandSegments(normalized).some((segment) => {
-    const tokens = segment.split(/\s+/).filter(Boolean)
-    let index = 0
-    while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
-      index++
-    }
-    if (index >= tokens.length) {
-      return false
-    }
+  if (!hasFind) {
+    return false
+  }
 
-    const first = commandName(tokens[index])
-    if (first !== 'find' && !SHELL_WRAPPERS.has(first) && !PREFIX_WRAPPERS.has(first)) {
-      return false
-    }
+  if (/[$`]/.test(normalized)) {
+    return true
+  }
 
-    const scope = first === 'find' ? tokens.slice(index) : tokens.slice(index + 1)
-    return (
-      scope.some((token) => commandName(token).replace(/^[({$]+/, '') === 'find') &&
-      scope.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)\)*$/.test(token))
-    )
-  })
+  return tokens.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)\)*$/.test(token))
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
