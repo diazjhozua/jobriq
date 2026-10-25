@@ -1,0 +1,80 @@
+{
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet format:*)",
+      "Bash(npm run:*)",
+      "Bash(npm --prefix client run:*)",
+      "Bash(npm --prefix tests/e2e run:*)",
+      "Bash(npm --prefix tests/e2e test:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(gh pr view:*)"
+    ],
+    "deny": [
+      "Read(./.env*)",
+      "Read(./resumes/**)",
+      "Read(./web/**/bin/**)",
+      "Read(./web/**/obj/**)",
+      "Read(./web/src/Jobriq.Web/wwwroot/**)",
+      "Read(./web/tests/e2e/test-results/**)",
+      "Read(./web/client/node_modules/**)",
+      "Write(./web/src/Jobriq.Web/wwwroot/**)",
+      "Write(./web/**/bin/**)",
+      "Write(./web/**/obj/**)",
+      "Edit(./web/src/Jobriq.Web/wwwroot/**)",
+      "Edit(./web/**/bin/**)",
+      "Edit(./web/**/obj/**)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-write.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-stop.mjs\"",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  }
+}
