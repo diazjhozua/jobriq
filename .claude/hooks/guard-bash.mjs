@@ -99,28 +99,17 @@ const PREFIX_WRAPPERS = new Set([
   'xargs',
 ])
 
-const OPTION_WITH_ARG = new Set([
-  '-C',
-  '-g',
-  '-n',
-  '-u',
-  '--adjustment',
-  '--chdir',
-  '--group',
-  '--kill-after',
-  '--signal',
-  '--timeout',
-  '--user',
-])
-
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
 const UNSAFE_COMMAND_CHAR = /[$`\\*?[]/
+const SEGMENT_SEPARATOR = /\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\}|\$\(|`)\s*/
+
+function splitCommandSegments(command) {
+  return command.split(SEGMENT_SEPARATOR)
+}
 
 // A command word built from expansion, globbing, or escaping cannot be resolved statically.
 function hasUnsafeCommandWord(command) {
-  const segments = command.split(/\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\})\s*/)
-
-  for (const segment of segments) {
+  for (const segment of splitCommandSegments(command)) {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
     while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
@@ -140,28 +129,7 @@ function hasUnsafeCommandWord(command) {
     }
 
     if (PREFIX_WRAPPERS.has(first)) {
-      index++
-      while (index < tokens.length) {
-        const token = tokens[index]
-        if (ASSIGNMENT.test(token)) {
-          index++
-          continue
-        }
-        if (OPTION_WITH_ARG.has(token)) {
-          index += 2
-          continue
-        }
-        if (token.startsWith('-')) {
-          index++
-          continue
-        }
-        if (first === 'time' || first === 'timeout') {
-          index++
-          continue
-        }
-        break
-      }
-      if (index < tokens.length && UNSAFE_COMMAND_CHAR.test(tokens[index])) {
+      if (tokens.slice(index + 1).some((token) => UNSAFE_COMMAND_CHAR.test(token))) {
         return true
       }
       continue
@@ -213,9 +181,9 @@ function hasRecursiveRm(command) {
 
 // find -delete and find -exec can remove files or run arbitrary commands.
 function runsFindDelete(command) {
-  const normalized = command.replace(/\\/g, '')
+  const normalized = command.replace(/["'\\]/g, '')
 
-  return splitSegments(normalized).some((segment) => {
+  return splitCommandSegments(normalized).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
     while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
@@ -233,7 +201,7 @@ function runsFindDelete(command) {
     const scope = first === 'find' ? tokens.slice(index) : tokens.slice(index + 1)
     return (
       scope.some((token) => commandName(token).replace(/^[({$]+/, '') === 'find') &&
-      scope.some((token) => /^-(delete|exec|execdir|ok|okdir)$/.test(token))
+      scope.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)\)*$/.test(token))
     )
   })
 }
