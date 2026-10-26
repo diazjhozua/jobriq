@@ -3,12 +3,15 @@ using System.Text.Json.Serialization;
 using Jobriq.Application;
 using Jobriq.Infrastructure;
 using Jobriq.Web.Endpoints;
+using Jobriq.Web.Extensions;
 using Jobriq.Web.Infrastructure;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(
+    builder.Configuration,
+    builder.Environment.IsEnvironment("Testing"));
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
@@ -18,6 +21,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 WebApplication app = builder.Build();
 
+app.ApplyMigrations();
 app.UseExceptionHandler();
 app.UseDefaultFiles();
 app.UseStaticFiles();

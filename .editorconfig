@@ -32,6 +32,10 @@ csharp_style_expression_bodied_properties = true:suggestion
 csharp_style_expression_bodied_accessors = true:suggestion
 csharp_style_expression_bodied_lambdas = true:suggestion
 
+[src/Jobriq.Infrastructure/Persistence/Postgres/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.IDE0161.severity = none
+
 [*.{csproj,props,targets,sln}]
 indent_size = 2
 indent_style = space
