@@ -102,7 +102,6 @@ export interface JobApplication {
 }
 
 export interface JobriqState {
-  version: 1
   profile: Profile
   applications: JobApplication[]
 }

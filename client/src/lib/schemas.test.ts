@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  apiStateSchema,
   applicationFormSchema,
   generatedResumeSchema,
   profileSchema,
-  stateSchema,
 } from './schemas'
 import { createEmptyProfile, createEmptyState } from './defaults'
 
@@ -63,15 +63,50 @@ describe('applicationFormSchema', () => {
   })
 })
 
-describe('stateSchema', () => {
+describe('apiStateSchema', () => {
   it('accepts an empty state', () => {
-    expect(stateSchema.safeParse(createEmptyState()).success).toBe(true)
+    expect(apiStateSchema.safeParse(createEmptyState()).success).toBe(true)
   })
 
-  it('rejects unknown storage versions', () => {
-    expect(
-      stateSchema.safeParse({ ...createEmptyState(), version: 2 }).success,
-    ).toBe(false)
+  it('normalizes null optional values returned by the API', () => {
+    const profile = createEmptyProfile()
+    const parsed = apiStateSchema.parse({
+      profile: {
+        ...profile,
+        personal: {
+          ...profile.personal,
+          linkedin: null,
+          github: null,
+          website: null,
+        },
+        education: [
+          {
+            id: 'education-1',
+            school: 'State University',
+            degree: 'BSc',
+            field: 'Computer Science',
+            startDate: '2018',
+            endDate: '2022',
+            gpa: null,
+          },
+        ],
+        projects: [
+          {
+            id: 'project-1',
+            name: 'Jobriq',
+            url: null,
+            bullets: [],
+          },
+        ],
+      },
+      applications: [],
+    })
+
+    expect(parsed.profile.personal.linkedin).toBe('')
+    expect(parsed.profile.personal.github).toBe('')
+    expect(parsed.profile.personal.website).toBe('')
+    expect(parsed.profile.education[0]?.gpa).toBe('')
+    expect(parsed.profile.projects[0]?.url).toBe('')
   })
 
   it('accepts an application with a stored generated resume', () => {
@@ -97,7 +132,7 @@ describe('stateSchema', () => {
       },
     })
 
-    expect(stateSchema.safeParse(state).success).toBe(true)
+    expect(apiStateSchema.safeParse(state).success).toBe(true)
   })
 })
 

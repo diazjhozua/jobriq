@@ -1,5 +1,5 @@
 import { createEmptyState } from './defaults'
-import { stateSchema } from './schemas'
+import { apiStateSchema } from './schemas'
 import type { JobriqState } from './types'
 
 export const STORAGE_KEY = 'jobriq.v1'
@@ -11,7 +11,7 @@ export function loadState(): JobriqState {
       return createEmptyState()
     }
 
-    const parsed = stateSchema.safeParse(JSON.parse(raw))
+    const parsed = apiStateSchema.safeParse(JSON.parse(raw))
     return parsed.success ? parsed.data : createEmptyState()
   } catch {
     return createEmptyState()

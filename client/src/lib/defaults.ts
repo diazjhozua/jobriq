@@ -22,7 +22,6 @@ export function createEmptyProfile(): Profile {
 
 export function createEmptyState(): JobriqState {
   return {
-    version: 1,
     profile: createEmptyProfile(),
     applications: [],
   }

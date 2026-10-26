@@ -19,7 +19,9 @@ export function ApplicationsPage() {
   const selected = applications.find((application) => application.id === selectedId) ?? null
 
   const handleStatusChange = (id: string, status: ApplicationStatus) => {
-    updateApplicationStatus(id, status)
+    void updateApplicationStatus(id, status).catch(() => {
+      // The provider rolls the change back and surfaces the error in the banner.
+    })
   }
 
   const handleDelete = () => {
@@ -27,12 +29,16 @@ export function ApplicationsPage() {
       return
     }
 
-    deleteApplication(deleting.id)
-    if (selectedId === deleting.id) {
+    const id = deleting.id
+    setDeleting(null)
+
+    if (selectedId === id) {
       setSelectedId(null)
     }
 
-    setDeleting(null)
+    void deleteApplication(id).catch(() => {
+      // The provider restores the application and surfaces the error in the banner.
+    })
   }
 
   return (

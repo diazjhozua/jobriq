@@ -53,14 +53,19 @@ export const profileSchema = z.object({
   projects: z.array(projectSchema),
 })
 
+const nullableString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? '')
+
 const storedPersonalInfoSchema = z.object({
   name: z.string(),
   email: z.string(),
   phone: z.string(),
   location: z.string(),
-  linkedin: z.string(),
-  github: z.string(),
-  website: z.string(),
+  linkedin: nullableString,
+  github: nullableString,
+  website: nullableString,
 })
 
 const storedWorkExperienceSchema = workExperienceSchema.extend({
@@ -70,10 +75,12 @@ const storedWorkExperienceSchema = workExperienceSchema.extend({
 
 const storedEducationSchema = educationSchema.extend({
   school: z.string(),
+  gpa: nullableString,
 })
 
 const storedProjectSchema = projectSchema.extend({
   name: z.string(),
+  url: nullableString,
 })
 
 const storedProfileSchema = z.object({
@@ -117,7 +124,7 @@ export const generatedResumeSchema = z.object({
   personal: storedPersonalInfoSchema,
   summary: z.string(),
   experience: z.array(generatedExperienceSchema),
-  education: z.array(educationSchema),
+  education: z.array(storedEducationSchema),
   skills: z.array(z.string()),
   projects: z.array(generatedProjectSchema),
   keywords: keywordMatchSchema.nullable(),
@@ -134,10 +141,17 @@ export const applicationSchema = z.object({
   generatedResume: generatedResumeSchema.nullable().optional(),
 })
 
-export const stateSchema = z.object({
-  version: z.literal(1),
+export const apiStateSchema = z.object({
   profile: storedProfileSchema,
   applications: z.array(applicationSchema),
+})
+
+export const profileResponseSchema = z.object({
+  profile: storedProfileSchema,
+})
+
+export const applicationResponseSchema = z.object({
+  application: applicationSchema,
 })
 
 export const applicationFormSchema = z.object({

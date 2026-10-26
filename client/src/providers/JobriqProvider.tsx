@@ -4,10 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
-import { loadState, saveState } from '../lib/storage'
+import * as api from '../lib/api'
+import type { NewApplicationInput } from '../lib/api'
+import { createEmptyState } from '../lib/defaults'
 import type {
   ApplicationStatus,
   GeneratedResume,
@@ -16,102 +19,228 @@ import type {
   Profile,
 } from '../lib/types'
 
-interface NewApplication {
-  company: string
-  role: string
-  jobDescription: string
-  status: ApplicationStatus
-}
+type LoadStatus = 'loading' | 'ready' | 'error'
 
 interface JobriqContextValue {
   profile: Profile
   applications: JobApplication[]
-  storageError: string | null
-  clearStorageError: () => void
-  saveProfile: (profile: Profile) => void
-  addApplication: (application: NewApplication) => JobApplication
-  updateApplicationStatus: (id: string, status: ApplicationStatus) => void
-  deleteApplication: (id: string) => void
-  saveGeneratedResume: (id: string, resume: GeneratedResume) => void
+  status: LoadStatus
+  loadError: string | null
+  syncError: string | null
+  retry: () => void
+  clearSyncError: () => void
+  saveProfile: (profile: Profile) => Promise<void>
+  addApplication: (application: NewApplicationInput) => Promise<JobApplication>
+  updateApplicationStatus: (id: string, status: ApplicationStatus) => Promise<void>
+  deleteApplication: (id: string) => Promise<void>
+  saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
 }
 
 const JobriqContext = createContext<JobriqContextValue | null>(null)
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'The change could not be saved.'
+}
+
+function replaceApplication(
+  state: JobriqState,
+  application: JobApplication,
+): JobriqState {
+  return {
+    ...state,
+    applications: state.applications.map((current) =>
+      current.id === application.id ? application : current,
+    ),
+  }
+}
+
 export function JobriqProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<JobriqState>(() => loadState())
-  const [storageError, setStorageError] = useState<string | null>(null)
+  const [state, setState] = useState<JobriqState>(createEmptyState)
+  const [status, setStatus] = useState<LoadStatus>('loading')
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const stateRef = useRef(state)
 
-  useEffect(() => {
-    if (!saveState(state)) {
-      setStorageError(
-        'Changes could not be saved to this browser. Storage may be full or blocked.',
-      )
-    }
-  }, [state])
-
-  const saveProfile = useCallback((profile: Profile) => {
-    setState((current) => ({ ...current, profile }))
-  }, [])
-
-  const addApplication = useCallback((application: NewApplication) => {
-    const created: JobApplication = {
-      id: crypto.randomUUID(),
-      company: application.company.trim(),
-      role: application.role.trim(),
-      jobDescription: application.jobDescription.trim(),
-      status: application.status,
-      createdAt: new Date().toISOString(),
-      generatedResume: null,
-    }
-
-    setState((current) => ({
-      ...current,
-      applications: [created, ...current.applications],
-    }))
-
-    return created
-  }, [])
-
-  const updateApplicationStatus = useCallback(
-    (id: string, status: ApplicationStatus) => {
-      setState((current) => ({
-        ...current,
-        applications: current.applications.map((application) =>
-          application.id === id ? { ...application, status } : application,
-        ),
-      }))
+  const setJobriqState = useCallback(
+    (update: (current: JobriqState) => JobriqState) => {
+      setState((current) => {
+        const next = update(current)
+        stateRef.current = next
+        return next
+      })
     },
     [],
   )
 
-  const deleteApplication = useCallback((id: string) => {
-    setState((current) => ({
-      ...current,
-      applications: current.applications.filter(
-        (application) => application.id !== id,
-      ),
-    }))
+  useEffect(() => {
+    let active = true
+
+    api
+      .fetchState()
+      .then((next) => {
+        if (!active) {
+          return
+        }
+
+        setJobriqState(() => next)
+        setStatus('ready')
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return
+        }
+
+        setLoadError(errorMessage(error))
+        setStatus('error')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [reloadKey, setJobriqState])
+
+  const retry = useCallback(() => {
+    setStatus('loading')
+    setLoadError(null)
+    setReloadKey((current) => current + 1)
   }, [])
 
-  const saveGeneratedResume = useCallback((id: string, resume: GeneratedResume) => {
-    setState((current) => ({
-      ...current,
-      applications: current.applications.map((application) =>
-        application.id === id
-          ? { ...application, generatedResume: resume }
-          : application,
-      ),
-    }))
-  }, [])
+  const clearSyncError = useCallback(() => setSyncError(null), [])
 
-  const clearStorageError = useCallback(() => setStorageError(null), [])
+  const saveProfile = useCallback(
+    async (profile: Profile) => {
+      try {
+        const saved = await api.saveProfile(profile)
+        setJobriqState((current) => ({ ...current, profile: saved }))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const addApplication = useCallback(
+    async (application: NewApplicationInput) => {
+      try {
+        const created = await api.createApplication({
+          ...application,
+          company: application.company.trim(),
+          role: application.role.trim(),
+          jobDescription: application.jobDescription.trim(),
+        })
+
+        setJobriqState((current) => ({
+          ...current,
+          applications: [created, ...current.applications],
+        }))
+        setSyncError(null)
+
+        return created
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const updateApplicationStatus = useCallback(
+    async (id: string, nextStatus: ApplicationStatus) => {
+      const previous = stateRef.current.applications.find(
+        (application) => application.id === id,
+      )
+
+      if (!previous) {
+        return
+      }
+
+      setJobriqState((current) => ({
+        ...current,
+        applications: current.applications.map((application) =>
+          application.id === id
+            ? { ...application, status: nextStatus }
+            : application,
+        ),
+      }))
+
+      try {
+        const updated = await api.updateApplicationStatus(id, nextStatus)
+        setJobriqState((current) => replaceApplication(current, updated))
+        setSyncError(null)
+      } catch (error) {
+        setJobriqState((current) => replaceApplication(current, previous))
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const deleteApplication = useCallback(
+    async (id: string) => {
+      const index = stateRef.current.applications.findIndex(
+        (application) => application.id === id,
+      )
+      const previous = stateRef.current.applications[index]
+
+      if (!previous) {
+        return
+      }
+
+      setJobriqState((current) => ({
+        ...current,
+        applications: current.applications.filter(
+          (application) => application.id !== id,
+        ),
+      }))
+
+      try {
+        await api.deleteApplication(id)
+        setSyncError(null)
+      } catch (error) {
+        setJobriqState((current) => {
+          if (current.applications.some((application) => application.id === id)) {
+            return current
+          }
+
+          const applications = [...current.applications]
+          applications.splice(Math.min(index, applications.length), 0, previous)
+
+          return { ...current, applications }
+        })
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const saveGeneratedResume = useCallback(
+    async (id: string, resume: GeneratedResume) => {
+      try {
+        const updated = await api.saveGeneratedResume(id, resume)
+        setJobriqState((current) => replaceApplication(current, updated))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
 
   const value = useMemo(
     () => ({
       profile: state.profile,
       applications: state.applications,
-      storageError,
-      clearStorageError,
+      status,
+      loadError,
+      syncError,
+      retry,
+      clearSyncError,
       saveProfile,
       addApplication,
       updateApplicationStatus,
@@ -121,8 +250,11 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [
       state.profile,
       state.applications,
-      storageError,
-      clearStorageError,
+      status,
+      loadError,
+      syncError,
+      retry,
+      clearSyncError,
       saveProfile,
       addApplication,
       updateApplicationStatus,

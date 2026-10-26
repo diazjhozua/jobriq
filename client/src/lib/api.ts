@@ -1,6 +1,25 @@
-import type { GeneratedResume, Profile } from './types'
+import type { ZodType } from 'zod'
+import {
+  apiStateSchema,
+  applicationResponseSchema,
+  profileResponseSchema,
+} from './schemas'
+import type {
+  ApplicationStatus,
+  GeneratedResume,
+  JobApplication,
+  JobriqState,
+  Profile,
+} from './types'
 
 export type ExportFormat = 'docx' | 'markdown'
+
+export interface NewApplicationInput {
+  company: string
+  role: string
+  jobDescription: string
+  status: ApplicationStatus
+}
 
 export class ApiError extends Error {
   readonly status: number
@@ -33,6 +52,112 @@ async function toApiError(response: Response): Promise<ApiError> {
     response.status,
     problem.code,
   )
+}
+
+async function requestJson<T>(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  schema: ZodType<T>,
+): Promise<T> {
+  const response = await fetch(input, init)
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    throw new ApiError(
+      'The server returned an invalid response.',
+      response.status,
+      'invalid_response',
+    )
+  }
+
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) {
+    throw new ApiError(
+      'The server returned an unexpected response.',
+      response.status,
+      'invalid_response',
+    )
+  }
+
+  return parsed.data
+}
+
+function jsonRequest(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }
+}
+
+function applicationUrl(id: string): string {
+  return `/api/applications/${encodeURIComponent(id)}`
+}
+
+export async function fetchState(): Promise<JobriqState> {
+  return requestJson('/api/state', { method: 'GET' }, apiStateSchema)
+}
+
+export async function saveProfile(profile: Profile): Promise<Profile> {
+  const result = await requestJson(
+    '/api/profile',
+    jsonRequest('PUT', { profile }),
+    profileResponseSchema,
+  )
+
+  return result.profile
+}
+
+export async function createApplication(
+  application: NewApplicationInput,
+): Promise<JobApplication> {
+  const result = await requestJson(
+    '/api/applications',
+    jsonRequest('POST', application),
+    applicationResponseSchema,
+  )
+
+  return result.application
+}
+
+export async function updateApplicationStatus(
+  id: string,
+  status: ApplicationStatus,
+): Promise<JobApplication> {
+  const result = await requestJson(
+    `${applicationUrl(id)}/status`,
+    jsonRequest('PATCH', { status }),
+    applicationResponseSchema,
+  )
+
+  return result.application
+}
+
+export async function deleteApplication(id: string): Promise<void> {
+  const response = await fetch(applicationUrl(id), { method: 'DELETE' })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+}
+
+export async function saveGeneratedResume(
+  id: string,
+  resume: GeneratedResume,
+): Promise<JobApplication> {
+  const result = await requestJson(
+    `${applicationUrl(id)}/generated-resume`,
+    jsonRequest('PUT', { resume }),
+    applicationResponseSchema,
+  )
+
+  return result.application
 }
 
 export async function generateResume(

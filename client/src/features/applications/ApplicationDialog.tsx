@@ -1,4 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
@@ -20,11 +22,12 @@ interface ApplicationDialogProps {
 
 export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps) {
   const { addApplication } = useJobriq()
+  const [error, setError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationFormSchema),
     defaultValues: {
@@ -38,15 +41,22 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
   const close = (next: boolean) => {
     if (!next) {
       reset()
+      setError(null)
     }
 
     onOpenChange(next)
   }
 
-  const onSubmit = (values: ApplicationFormValues) => {
-    addApplication(values)
-    reset()
-    onOpenChange(false)
+  const onSubmit = async (values: ApplicationFormValues) => {
+    setError(null)
+
+    try {
+      await addApplication(values)
+      reset()
+      onOpenChange(false)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'The application could not be added.')
+    }
   }
 
   return (
@@ -57,6 +67,15 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
       description="Track a role and generate a resume tailored to its description."
     >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-md border border-border bg-canvas p-3 text-sm text-body"
+          >
+            {error}
+          </div>
+        ) : null}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Company" htmlFor="application-company" error={errors.company?.message}>
             <Input id="application-company" {...register('company')} />
@@ -90,10 +109,13 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
         </Field>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => close(false)}>
+          <Button variant="outline" onClick={() => close(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Loader2 aria-hidden="true" size={16} className="animate-spin" />
+            ) : null}
             Add application
           </Button>
         </div>

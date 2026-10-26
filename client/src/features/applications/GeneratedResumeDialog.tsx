@@ -39,7 +39,7 @@ export function GeneratedResumeDialog({
 
     try {
       const generated = await generateResume(profile, application.jobDescription)
-      saveGeneratedResume(application.id, generated)
+      await saveGeneratedResume(application.id, generated)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Resume generation failed.')
     } finally {

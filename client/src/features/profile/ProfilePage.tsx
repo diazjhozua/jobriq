@@ -48,7 +48,7 @@ export function ProfilePage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<Profile>({
     resolver: zodResolver(profileSchema),
     defaultValues: profile,
@@ -69,16 +69,21 @@ export function ProfilePage() {
     return () => window.clearTimeout(timer)
   }, [saved])
 
-  const onSubmit = (values: Profile) => {
+  const onSubmit = async (values: Profile) => {
     const next: Profile = { ...values, skills: parseSkills(skillsText) }
-    saveProfile(next)
-    reset(next)
-    setSkillsText(next.skills.join(', '))
-    setSaved(true)
+
+    try {
+      await saveProfile(next)
+      reset(next)
+      setSkillsText(next.skills.join(', '))
+      setSaved(true)
+    } catch {
+      // The provider surfaces the failure in the sync banner.
+    }
   }
 
-  const handleImported = (imported: Profile) => {
-    saveProfile(imported)
+  const handleImported = async (imported: Profile) => {
+    await saveProfile(imported)
     reset(imported)
     setSkillsText(imported.skills.join(', '))
     setSaved(true)
@@ -102,14 +107,18 @@ export function ProfilePage() {
               </span>
             ) : null}
           </span>
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setImportOpen(true)}
+            disabled={isSubmitting}
+          >
             <Upload aria-hidden="true" size={16} />
             Import template
           </Button>
           <Button
             type="submit"
             variant="primary"
-            disabled={!isDirty && !skillsDirty}
+            disabled={isSubmitting || (!isDirty && !skillsDirty)}
           >
             Save profile
           </Button>

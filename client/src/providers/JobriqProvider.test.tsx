@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../lib/defaults'
-import { saveState, STORAGE_KEY } from '../lib/storage'
+import { installMockApi } from '../test/mockApi'
 import type { GeneratedResume, JobriqState } from '../lib/types'
 import { JobriqProvider, useJobriq } from './JobriqProvider'
 
@@ -20,7 +20,10 @@ function Harness() {
   const {
     profile,
     applications,
-    storageError,
+    status,
+    loadError,
+    syncError,
+    retry,
     saveProfile,
     addApplication,
     updateApplicationStatus,
@@ -41,36 +44,53 @@ function Harness() {
 
   return (
     <div>
+      <p data-testid="status">{status}</p>
+      <p data-testid="load-error">{loadError ?? ''}</p>
+      <p data-testid="sync-error">{syncError ?? ''}</p>
       <p data-testid="profile-name">{profile.personal.name}</p>
       <p data-testid="applications">{JSON.stringify(applications)}</p>
-      <p data-testid="storage-error">{storageError ?? ''}</p>
+      <button onClick={retry}>Retry</button>
       <button
         onClick={() =>
-          saveProfile({
+          void saveProfile({
             ...profile,
             personal: { ...profile.personal, name: 'Jane Doe' },
-          })
+          }).catch(() => {})
         }
       >
         Save profile
       </button>
       <button
         onClick={() =>
-          addApplication({
+          void addApplication({
             company: '  Globex  ',
             role: '  Developer  ',
             jobDescription: '  Write code.  ',
             status: 'applied',
-          })
+          }).catch(() => {})
         }
       >
         Add application
       </button>
-      <button onClick={() => updateApplicationStatus('app-1', 'offer')}>
+      <button
+        onClick={() =>
+          void updateApplicationStatus('app-1', 'offer').catch(() => {})
+        }
+      >
         Update status
       </button>
-      <button onClick={() => deleteApplication('app-1')}>Delete application</button>
-      <button onClick={() => saveGeneratedResume('app-1', resume)}>Save resume</button>
+      <button
+        onClick={() => void deleteApplication('app-1').catch(() => {})}
+      >
+        Delete application
+      </button>
+      <button
+        onClick={() =>
+          void saveGeneratedResume('app-1', resume).catch(() => {})
+        }
+      >
+        Save resume
+      </button>
     </div>
   )
 }
@@ -83,8 +103,10 @@ function renderHarness() {
   )
 }
 
-function storedState(): JobriqState {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as JobriqState
+async function waitForReady() {
+  await waitFor(() => {
+    expect(screen.getByTestId('status')).toHaveTextContent('ready')
+  })
 }
 
 function stateWithApplication(): JobriqState {
@@ -96,38 +118,42 @@ function stateWithApplication(): JobriqState {
 }
 
 describe('JobriqProvider', () => {
-  it('hydrates the saved profile', () => {
+  it('hydrates the saved profile', async () => {
     const state = createEmptyState()
     state.profile.personal.name = 'Hydrated Name'
-    saveState(state)
+    installMockApi({ state })
 
     renderHarness()
+    await waitForReady()
 
     expect(screen.getByTestId('profile-name')).toHaveTextContent('Hydrated Name')
   })
 
   it('saves the profile on demand', async () => {
     const user = userEvent.setup()
+    const api = installMockApi()
     renderHarness()
+    await waitForReady()
 
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     await waitFor(() => {
-      expect(storedState().profile.personal.name).toBe('Jane Doe')
+      expect(api.state.profile.personal.name).toBe('Jane Doe')
     })
   })
 
   it('adds an application with trimmed fields at the top', async () => {
     const user = userEvent.setup()
-    saveState(stateWithApplication())
+    const api = installMockApi({ state: stateWithApplication() })
     renderHarness()
+    await waitForReady()
 
     await user.click(screen.getByRole('button', { name: 'Add application' }))
 
     await waitFor(() => {
-      expect(storedState().applications).toHaveLength(2)
+      expect(api.state.applications).toHaveLength(2)
     })
-    const added = storedState().applications[0]
+    const added = api.state.applications[0]
     expect(added.company).toBe('Globex')
     expect(added.role).toBe('Developer')
     expect(added.jobDescription).toBe('Write code.')
@@ -137,54 +163,117 @@ describe('JobriqProvider', () => {
 
   it('updates an application status', async () => {
     const user = userEvent.setup()
-    saveState(stateWithApplication())
+    const api = installMockApi({ state: stateWithApplication() })
     renderHarness()
+    await waitForReady()
 
     await user.click(screen.getByRole('button', { name: 'Update status' }))
 
     await waitFor(() => {
-      expect(storedState().applications[0]?.status).toBe('offer')
+      expect(api.state.applications[0]?.status).toBe('offer')
     })
   })
 
   it('deletes an application', async () => {
     const user = userEvent.setup()
-    saveState(stateWithApplication())
+    const api = installMockApi({ state: stateWithApplication() })
     renderHarness()
+    await waitForReady()
 
     await user.click(screen.getByRole('button', { name: 'Delete application' }))
 
     await waitFor(() => {
-      expect(storedState().applications).toHaveLength(0)
+      expect(api.state.applications).toHaveLength(0)
     })
   })
 
   it('stores a generated resume on its application', async () => {
     const user = userEvent.setup()
-    saveState(stateWithApplication())
+    const api = installMockApi({ state: stateWithApplication() })
     renderHarness()
+    await waitForReady()
 
     await user.click(screen.getByRole('button', { name: 'Save resume' }))
 
     await waitFor(() => {
-      expect(storedState().applications[0]?.generatedResume?.summary).toBe('Generated.')
+      expect(api.state.applications[0]?.generatedResume?.summary).toBe('Generated.')
     })
   })
 
-  it('surfaces a storage write failure', async () => {
-    const original = Storage.prototype.setItem
-    Storage.prototype.setItem = () => {
-      throw new Error('quota exceeded')
-    }
+  it('shows a retry panel when hydration fails and retries on demand', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({
+      fail: {
+        state: {
+          status: 503,
+          detail: 'The database is unavailable.',
+          code: 'database_unavailable',
+        },
+      },
+    })
+    renderHarness()
 
-    try {
-      renderHarness()
+    await waitFor(() => {
+      expect(screen.getByTestId('status')).toHaveTextContent('error')
+    })
+    expect(screen.getByTestId('load-error')).toHaveTextContent(
+      'The database is unavailable.',
+    )
 
-      expect(await screen.findByTestId('storage-error')).toHaveTextContent(
-        'Changes could not be saved to this browser.',
+    api.fail.state = undefined
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitForReady()
+  })
+
+  it('rolls back an optimistic status change when the request fails', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({
+      state: stateWithApplication(),
+      fail: {
+        status: {
+          status: 503,
+          detail: 'The status could not be saved.',
+          code: 'database_unavailable',
+        },
+      },
+    })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Update status' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-error')).toHaveTextContent(
+        'The status could not be saved.',
       )
-    } finally {
-      Storage.prototype.setItem = original
-    }
+    })
+    expect(screen.getByTestId('applications')).toHaveTextContent('"status":"saved"')
+    expect(api.state.applications[0]?.status).toBe('saved')
+  })
+
+  it('restores an application when deletion fails', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({
+      state: stateWithApplication(),
+      fail: {
+        delete: {
+          status: 503,
+          detail: 'The application could not be deleted.',
+          code: 'database_unavailable',
+        },
+      },
+    })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Delete application' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-error')).toHaveTextContent(
+        'The application could not be deleted.',
+      )
+    })
+    expect(screen.getByTestId('applications')).toHaveTextContent('Acme')
+    expect(api.state.applications).toHaveLength(1)
   })
 })

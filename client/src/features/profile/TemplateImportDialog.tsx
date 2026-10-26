@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
@@ -10,7 +11,7 @@ import type { Profile } from '../../lib/types'
 interface TemplateImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onImported: (profile: Profile) => void
+  onImported: (profile: Profile) => Promise<void>
 }
 
 export function TemplateImportDialog({
@@ -20,6 +21,7 @@ export function TemplateImportDialog({
 }: TemplateImportDialogProps) {
   const [text, setText] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
 
   const close = (next: boolean) => {
     if (!next) {
@@ -30,11 +32,14 @@ export function TemplateImportDialog({
     onOpenChange(next)
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!text.trim()) {
       setError('Paste your resume template first.')
       return
     }
+
+    setImporting(true)
+    setError(null)
 
     try {
       const parsed = profileSchema.safeParse(parseResumeTemplate(text))
@@ -44,10 +49,12 @@ export function TemplateImportDialog({
         return
       }
 
-      onImported(parsed.data)
+      await onImported(parsed.data)
       close(false)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not read the template.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -77,10 +84,13 @@ export function TemplateImportDialog({
         </Field>
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button variant="outline" onClick={() => close(false)}>
+          <Button variant="outline" onClick={() => close(false)} disabled={importing}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleImport}>
+          <Button variant="primary" onClick={() => void handleImport()} disabled={importing}>
+            {importing ? (
+              <Loader2 aria-hidden="true" size={16} className="animate-spin" />
+            ) : null}
             Import profile
           </Button>
         </div>
