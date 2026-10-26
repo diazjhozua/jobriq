@@ -1,3 +1,5 @@
+using Jobriq.Domain.Resumes;
+
 namespace Jobriq.Domain.Applications;
 
 public sealed class JobApplication
@@ -24,6 +26,33 @@ public sealed class JobApplication
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
+    public GeneratedResume? GeneratedResume { get; private set; }
+
+    public static JobApplication Restore(
+        Guid id,
+        string company,
+        string role,
+        string jobDescription,
+        ApplicationStatus status,
+        DateTimeOffset createdAt,
+        GeneratedResume? generatedResume)
+    {
+        JobApplication application = new(company, role, jobDescription)
+        {
+            Id = id,
+            CreatedAt = createdAt,
+        };
+
+        application.ChangeStatus(status);
+
+        if (generatedResume is not null)
+        {
+            application.AttachGeneratedResume(generatedResume);
+        }
+
+        return application;
+    }
+
     public void ChangeStatus(ApplicationStatus status)
     {
         if (!Enum.IsDefined(status))
@@ -32,5 +61,12 @@ public sealed class JobApplication
         }
 
         Status = status;
+    }
+
+    public void AttachGeneratedResume(GeneratedResume resume)
+    {
+        ArgumentNullException.ThrowIfNull(resume);
+
+        GeneratedResume = resume;
     }
 }
