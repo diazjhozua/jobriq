@@ -18,6 +18,16 @@ internal static partial class JsonResponseParser
         Match fenced = FencedBlock().Match(text);
         string raw = fenced.Success ? fenced.Groups[1].Value : text;
 
+        if (!fenced.Success)
+        {
+            int start = text.IndexOf('{');
+            int end = text.LastIndexOf('}');
+            if (start >= 0 && end > start)
+            {
+                raw = text[start..(end + 1)];
+            }
+        }
+
         StringBuilder escaped = new(raw.Length);
         bool inString = false;
         bool escapedCharacter = false;

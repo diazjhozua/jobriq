@@ -39,6 +39,17 @@ public sealed class JsonResponseParserTests
     }
 
     [Fact]
+    public void Parse_ExtractsJsonFromSurroundingText()
+    {
+        Payload? payload = JsonResponseParser.Parse<Payload>(
+            """Here is the result: {"value":"hello","flag":true} Let me know if you need changes.""");
+
+        payload.ShouldNotBeNull();
+        payload.Value.ShouldBe("hello");
+        payload.Flag.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Parse_EscapesLiteralControlCharactersInsideStrings()
     {
         string content = "{\"value\":\"line one\nline two\ttabbed\",\"flag\":true}";

@@ -29,7 +29,7 @@ internal sealed class OpenAiResumeAiService(
         WorkExperience experience,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.EnhanceExperience(experience), cancellationToken);
+        string content = await CompleteAsync(Prompts.EnhanceExperience(experience), json: true, cancellationToken);
         EnhanceResponse? response = Parse<EnhanceResponse>(content);
 
         return response?.Bullets ?? [];
@@ -39,7 +39,7 @@ internal sealed class OpenAiResumeAiService(
         Project project,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.EnhanceProject(project), cancellationToken);
+        string content = await CompleteAsync(Prompts.EnhanceProject(project), json: true, cancellationToken);
         EnhanceResponse? response = Parse<EnhanceResponse>(content);
 
         return response?.Bullets ?? [];
@@ -50,7 +50,7 @@ internal sealed class OpenAiResumeAiService(
         SummaryType summaryType,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.GenerateSummary(experience, summaryType), cancellationToken);
+        string content = await CompleteAsync(Prompts.GenerateSummary(experience, summaryType), json: false, cancellationToken);
 
         return content.Trim();
     }
@@ -60,7 +60,7 @@ internal sealed class OpenAiResumeAiService(
         ResumeProfile profile,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.ExtractKeywords(jobDescription, profile), cancellationToken);
+        string content = await CompleteAsync(Prompts.ExtractKeywords(jobDescription, profile), json: true, cancellationToken);
         KeywordResponse? response = Parse<KeywordResponse>(content);
 
         return new KeywordMatch
@@ -70,17 +70,27 @@ internal sealed class OpenAiResumeAiService(
         };
     }
 
-    private async Task<string> CompleteAsync(string userPrompt, CancellationToken cancellationToken)
+    private async Task<string> CompleteAsync(
+        string userPrompt,
+        bool json,
+        CancellationToken cancellationToken)
     {
         try
         {
             ChatClient client = GetChatClient();
+            ChatCompletionOptions options = new();
+            if (json)
+            {
+                options.ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat();
+            }
+
             ChatCompletion completion = await client.CompleteChatAsync(
                 [
                     new SystemChatMessage(Prompts.System),
                     new UserChatMessage(userPrompt)
                 ],
-                cancellationToken: cancellationToken);
+                options,
+                cancellationToken);
 
             return string.Concat(completion.Content.Select(part => part.Text));
         }
@@ -152,14 +162,15 @@ internal sealed class OpenAiResumeAiService(
         return string.IsNullOrWhiteSpace(apiKey) ? configuration["OPENAI_API_KEY"] : apiKey;
     }
 
-    private static T? Parse<T>(string content)
+    private T? Parse<T>(string content)
     {
         try
         {
             return JsonResponseParser.Parse<T>(content);
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
+            logger.LogWarning(exception, "OpenAI response could not be parsed as JSON: {Content}", content);
             throw new AiServiceException(
                 "openai_invalid_response",
                 "OpenAI returned a response that could not be read. Try again.",
