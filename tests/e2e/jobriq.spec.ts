@@ -1,6 +1,18 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const fileNamePattern = /^jane-doe-resume-\d{8}-\d{6}\.(md|docx)$/
+
+async function addApplication(page: Page, company: string, role: string) {
+  await page.getByRole('button', { name: 'Add application' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Company').fill(company)
+  await dialog.getByLabel('Role').fill(role)
+  await dialog.getByLabel('Job description').fill('Build reliable systems.')
+  await dialog.getByRole('button', { name: 'Add application' }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText(company)).toBeVisible()
+}
 
 test('imports a pasted resume template', async ({ page }) => {
   await page.goto('/profile')
@@ -70,16 +82,7 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await page.getByRole('link', { name: 'Applications' }).click()
   await expect(page.getByText('No applications yet')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Add application' }).click()
-  const addDialog = page.getByRole('dialog')
-  await addDialog.getByLabel('Company').fill('Globex')
-  await addDialog.getByLabel('Role').fill('Senior Engineer')
-  await addDialog
-    .getByLabel('Job description')
-    .fill('Build reliable systems with C# and React. Kubernetes is a plus.')
-  await addDialog.getByRole('button', { name: 'Add application' }).click()
-
-  await expect(page.getByText('Globex')).toBeVisible()
+  await addApplication(page, 'Globex', 'Senior Engineer')
   await expect(page.getByText('Senior Engineer')).toBeVisible()
 
   await page.getByRole('button', { name: 'Generate resume' }).click()
@@ -105,4 +108,89 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await expect(page.getByText('Resume generated')).toBeVisible()
   await page.getByRole('button', { name: 'View resume' }).click()
   await expect(page.getByRole('dialog').getByText('Enhanced: Built a thing')).toBeVisible()
+})
+
+test('persists an application status change', async ({ page }) => {
+  await page.goto('/applications')
+  await addApplication(page, 'Initech', 'Developer')
+
+  const saved = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PATCH' &&
+      response.url().includes('/status') &&
+      response.ok(),
+  )
+  await page.getByLabel('Application status').selectOption('interviewing')
+  await saved
+
+  await page.reload()
+  await expect(page.getByText('Initech')).toBeVisible()
+  await expect(page.getByLabel('Application status')).toHaveValue('interviewing')
+})
+
+test('persists an application deletion', async ({ page }) => {
+  await page.goto('/applications')
+  await addApplication(page, 'Umbrella', 'Engineer')
+
+  await page.getByRole('button', { name: 'Delete Engineer at Umbrella' }).click()
+  const dialog = page.getByRole('alertdialog')
+  const deleted = page.waitForResponse(
+    (response) => response.request().method() === 'DELETE' && response.ok(),
+  )
+  await dialog.getByRole('button', { name: 'Delete' }).click()
+  await deleted
+
+  await expect(page.getByText('No applications yet')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByText('No applications yet')).toBeVisible()
+  await expect(page.getByText('Umbrella')).toHaveCount(0)
+})
+
+test('ignores legacy localStorage data', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'jobriq.v1',
+      JSON.stringify({
+        version: 1,
+        profile: {
+          personal: {
+            name: 'Legacy Person',
+            email: 'legacy@example.com',
+            phone: '',
+            location: '',
+            linkedin: '',
+            github: '',
+            website: '',
+          },
+          summary: { type: 'professional', content: 'Legacy summary.' },
+          experience: [],
+          education: [],
+          skills: ['Legacy Skill'],
+          projects: [],
+        },
+        applications: [
+          {
+            id: 'legacy-application',
+            company: 'Legacy Corp',
+            role: 'Legacy Role',
+            jobDescription: 'Legacy description.',
+            status: 'offer',
+            createdAt: '2020-01-01T00:00:00.000Z',
+          },
+        ],
+      }),
+    )
+  })
+
+  await page.goto('/profile')
+
+  await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible()
+  await expect(page.getByLabel('Name')).toHaveValue('')
+  await expect(page.getByLabel('Email')).toHaveValue('')
+  await expect(page.getByLabel('Skills')).toHaveValue('')
+
+  await page.getByRole('link', { name: 'Applications' }).click()
+  await expect(page.getByText('No applications yet')).toBeVisible()
+  await expect(page.getByText('Legacy Corp')).toHaveCount(0)
 })
