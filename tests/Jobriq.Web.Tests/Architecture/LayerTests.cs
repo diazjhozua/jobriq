@@ -37,4 +37,26 @@ public sealed class LayerTests
 
         result.IsSuccessful.ShouldBeTrue();
     }
+
+    [Fact]
+    public void Domain_DoesNotDependOnEntityFrameworkOrNpgsql()
+    {
+        TestResult result = Types.InAssembly(typeof(Jobriq.Domain.Applications.JobApplication).Assembly)
+            .ShouldNot()
+            .HaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Npgsql")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Application_DoesNotDependOnEntityFrameworkOrNpgsql()
+    {
+        TestResult result = Types.InAssembly(typeof(Jobriq.Application.DependencyInjection).Assembly)
+            .ShouldNot()
+            .HaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Npgsql")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
+    }
 }
