@@ -1,9 +1,10 @@
 using Jobriq.Application.Abstractions;
+using Jobriq.Application.Abstractions.Persistence;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace Jobriq.Web.Infrastructure;
 
-internal sealed class GlobalExceptionHandler : IExceptionHandler
+internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -27,12 +28,24 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
                 "Export failed",
                 "The resume could not be exported.",
                 "export_failed"),
+            JobriqResourceNotFoundException notFoundException => (
+                404,
+                "Resource not found",
+                $"The {notFoundException.Resource} was not found.",
+                $"{notFoundException.Resource}_not_found"),
+            JobriqPersistenceUnavailableException => (
+                503,
+                "Database unavailable",
+                "The jobriq database is unavailable. Try again later.",
+                "database_unavailable"),
             _ => (
                 500,
                 "Unexpected error",
                 "An unexpected error occurred.",
                 "server_error")
         };
+
+        Log(httpContext, exception, status, code);
 
         IResult result = Results.Problem(
             title: title,
@@ -43,5 +56,27 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         await result.ExecuteAsync(httpContext);
 
         return true;
+    }
+
+    private void Log(HttpContext httpContext, Exception exception, int status, string code)
+    {
+        if (status >= StatusCodes.Status500InternalServerError)
+        {
+            logger.LogError(
+                exception,
+                "Request {Method} {Path} failed with {Code}.",
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                code);
+        }
+        else
+        {
+            logger.LogWarning(
+                exception,
+                "Request {Method} {Path} failed with {Code}.",
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                code);
+        }
     }
 }

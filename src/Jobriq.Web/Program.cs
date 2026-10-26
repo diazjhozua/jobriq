@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jobriq.Application;
+using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Infrastructure;
 using Jobriq.Web.Endpoints;
 using Jobriq.Web.Extensions;
+using Jobriq.Web.Identity;
 using Jobriq.Web.Infrastructure;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -18,15 +20,22 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddScoped<CookieClientContext>();
+builder.Services.AddScoped<IClientContext>(
+    services => services.GetRequiredService<CookieClientContext>());
 
 WebApplication app = builder.Build();
 
 app.ApplyMigrations();
 app.UseExceptionHandler();
+app.UseMiddleware<ClientContextMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapResumeEndpoints();
+app.MapStateEndpoints();
+app.MapProfileEndpoints();
+app.MapApplicationEndpoints();
 
 app.MapFallback(async context =>
 {
