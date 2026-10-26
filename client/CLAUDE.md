@@ -5,8 +5,9 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 ## State
 
 - Routes: `/profile` and `/applications`; unknown paths redirect to `/profile`.
-- `src/providers/JobriqProvider.tsx` loads state once and saves the entire state on every mutation. Add new state there rather than introducing another store or per-component persistence.
-- Storage key is `jobriq.v1`. `src/lib/storage.ts` swallows parse and quota errors and falls back to defaults; `saveState` returns `false` so the provider can show the non-blocking storage warning.
+- `src/providers/JobriqProvider.tsx` hydrates once from `GET /api/state` and exposes async mutations. Add new state there rather than introducing another store or per-component persistence.
+- Hydration failure blocks the workspace with a retry panel; mutation failure rolls back optimistic updates and shows a dismissible sync banner. Do not swallow API errors silently.
+- Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
 - Generated resumes live on the application (`generatedResume`), not in a separate store.
 
 ## Schemas
@@ -14,7 +15,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 `src/lib/schemas.ts` keeps two profiles on purpose:
 
 - Strict `profileSchema` and friends validate the form.
-- Lenient `stored*` schemas hydrate `localStorage`, so partially filled profiles still load.
+- Lenient `stored*` schemas validate API responses, so partially filled profiles still load.
 
 When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.ts`.
 

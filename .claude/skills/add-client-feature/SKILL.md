@@ -22,6 +22,6 @@ Match the Profile and Applications screens; read `client/CLAUDE.md` first.
 
 ## Rules
 
-- Data lives in `localStorage` under `jobriq.v1`; the server keeps no state.
+- Data lives in PostgreSQL behind `/api/state` and the granular mutation endpoints; the client persists nothing locally.
 - Keep the strict/lenient schema split when adding fields.
 - Do not introduce a new styling system, state library, or fetch wrapper.

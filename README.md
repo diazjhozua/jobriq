@@ -14,7 +14,7 @@ AI-powered resume builder. Keep a profile, track job applications, and generate 
 - **AI resume generation** — enhanced bullets, generated summary, ATS keyword matching per application
 - **Template import** — paste an existing plain-text resume template to fill the profile
 - **Export to `.docx` + `.md`** — timestamped downloads
-- **Local-first** — profile and applications live in the browser under `jobriq.v1`; the server keeps no state
+- **Per-browser workspace** — profile and applications persist in PostgreSQL, keyed by an anonymous `jobriq_client` cookie
 
 ---
 
@@ -22,19 +22,33 @@ AI-powered resume builder. Keep a profile, track job applications, and generate 
 
 - .NET SDK 10
 - Node.js 20+
+- Docker (for the PostgreSQL container) or PostgreSQL 18
 - An OpenAI-compatible API key
 
 ---
 
 ## Setup
 
+Create a `.env` file at the repository root with the database password (it is gitignored), then start PostgreSQL and configure the host:
+
 ```bash
+echo "POSTGRES_PASSWORD=<database-password>" > .env
+docker compose up -d postgres
+
+dotnet user-secrets set "ConnectionStrings:Database" \
+  "Host=localhost;Port=5432;Database=jobriq;Username=jobriq;Password=<database-password>" \
+  --project src/Jobriq.Web
 dotnet user-secrets set "OpenAI:ApiKey" "<key>" --project src/Jobriq.Web
+
 npm --prefix client install
 npm run start
 ```
 
-Open `http://localhost:5080`. `npm run start` builds the React client into the .NET host's `wwwroot` and starts the server.
+Open `http://localhost:5080`. `npm run start` builds the React client into the .NET host's `wwwroot` and starts the server. In Development, EF Core migrations apply at startup.
+
+The first request sets an anonymous `jobriq_client` cookie, and all profile and application data is scoped to it. Clearing cookies starts a new empty workspace. There is no authentication; do not expose this deployment publicly.
+
+Legacy `localStorage` data under `jobriq.v1` is intentionally not imported. Clear the key manually in DevTools once; the app ignores it.
 
 For client-only development, run `dotnet run --project src/Jobriq.Web` from the repository root and `npm run dev` from `client/` in separate terminals. Vite proxies `/api` to port 5080.
 
@@ -46,6 +60,8 @@ For client-only development, run `dotnet run --project src/Jobriq.Web` from the 
 | `OpenAI:Model` | Model name (default: `gpt-4o`); `OPENAI_MODEL` also works |
 | `OpenAI:BaseUrl` | Optional OpenAI-compatible endpoint; `OPENAI_BASE_URL` also works |
 | `Ai:Provider` | `OpenAI` (default) or `Fake` for deterministic local runs and tests |
+| `ConnectionStrings:Database` | PostgreSQL connection string; `ConnectionStrings__Database` also works |
+| `Database:ApplyMigrationsOnStartup` | Apply EF Core migrations at startup (default: `true` in Development, otherwise `false`) |
 
 The `Testing` environment sets `Ai:Provider` to `Fake`:
 
@@ -115,7 +131,7 @@ npm --prefix client test
 npm --prefix tests/e2e test
 ```
 
-Playwright runs against a server configured with the fake AI service; it never calls OpenAI.
+Playwright starts a disposable `postgres:18-alpine` container and a unique database, runs the host on port 5081 with the fake AI service, and removes the container afterward. It never calls OpenAI and never touches the development database.
 
 ---
 
@@ -126,7 +142,7 @@ Jobriq.sln
 src/
   Jobriq.Domain/          domain models
   Jobriq.Application/     use cases and abstractions
-  Jobriq.Infrastructure/  OpenAI service, DOCX and Markdown exporters
+  Jobriq.Infrastructure/  OpenAI service, exporters, EF Core/Postgres persistence
   Jobriq.Web/             ASP.NET Core host and API
 client/                   React + TypeScript SPA
 tests/
@@ -140,6 +156,12 @@ Dependencies point inward: Domain has no dependencies, Application depends on Do
 
 | Endpoint | Purpose |
 |---|---|
+| `GET /api/state` | Profile and applications for the `jobriq_client` cookie |
+| `PUT /api/profile` | Replace the profile |
+| `POST /api/applications` | Create an application |
+| `PATCH /api/applications/{id}/status` | Change an application status |
+| `DELETE /api/applications/{id}` | Delete an application and its generated resume |
+| `PUT /api/applications/{id}/generated-resume` | Store a generated resume on an application |
 | `POST /api/resume/generate` | Profile + job description in, generated resume JSON out |
 | `POST /api/resume/export` | Generated resume in, DOCX or Markdown file out |
 

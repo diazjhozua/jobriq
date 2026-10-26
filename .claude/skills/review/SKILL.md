@@ -25,7 +25,7 @@ Review `git diff` plus untracked files. Report findings as `path:line: severity:
 - Hex colors or arbitrary color values instead of tokens from `src/index.css`.
 - Status colors outside `StatusBadge`.
 - A new field added to the strict schema but not the `stored*` schema, or vice versa.
-- Direct `localStorage` access outside `lib/storage.ts`.
+- Direct `fetch` outside `lib/api.ts`, or new `localStorage` persistence.
 - Autosave introduced where the app uses explicit Save.
 - Missing label/input association or removed focus ring.
 

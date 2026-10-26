@@ -12,7 +12,7 @@ Check:
 2. **Accessibility** — every input has an associated label, icon-only buttons have an accessible name, dialogs use Radix primitives and restore focus, the `:focus-visible` ring is intact, and interactive elements are keyboard reachable.
 3. **Responsiveness** — no horizontal scroll at 375px; cards and dialogs stack; long job descriptions wrap.
 4. **Forms** — React Hook Form with the Zod resolver, inline field errors, explicit Save, disabled state while submitting, no autosave.
-5. **State** — data flows through `JobriqProvider`; no direct `localStorage` access outside `lib/storage.ts`.
+5. **State** — data flows through `JobriqProvider` and `lib/api.ts`; no direct `fetch` or `localStorage` in components.
 6. **Content** — empty states and error states exist for every list and async action.
 
 Scope the review to `git diff` for `client/**`. Report as `path:line: severity: problem. fix.`, ordered by severity. Do not suggest redesigns outside the diff.

@@ -18,13 +18,13 @@ Follow the existing slice `ResumeEndpoints` + `GenerateResumeUseCase` + `IResume
 7. **Tests** —
    - `tests/Jobriq.Application.Tests` with a substituted abstraction and `TestTimeProvider`.
    - `tests/Jobriq.Web.Tests` through `WebApplicationFactory<Program>` using the `Testing` environment.
-   - Infrastructure tests only when there is real logic (parsers, exporters).
+   - Infrastructure tests only when there is real logic (parsers, exporters, repository queries); repository tests use `PostgresFixture` and Testcontainers.
 8. **Client** — add the call to `client/src/lib/api.ts` if the SPA consumes it, including `ProblemDetails.code` parsing.
 9. Run the `verify` skill at the standard tier.
 
 ## Rules
 
-- Minimal APIs only. No controllers, MediatR, repositories, or persistence.
-- The server is stateless; state belongs in the client.
+- Minimal APIs only. No controllers or MediatR.
+- Persistence goes through `IJobriqRepository`; Domain and Application never reference EF Core, Npgsql, or SQL types. Data is scoped by `IClientContext`.
 - `TreatWarningsAsErrors` is on: nullable annotations and file-scoped namespaces are mandatory.
 - Package versions go in `Directory.Packages.props`, never in a `.csproj`.

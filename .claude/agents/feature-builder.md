@@ -16,7 +16,7 @@ Rules:
 
 - Follow the `add-api-endpoint` and `add-client-feature` skills.
 - Dependencies point inward; do not add project references that break `LayerTests`.
-- Server stays stateless; client state goes through `JobriqProvider`.
+- Server state is per client through `IJobriqRepository`; client state flows through `JobriqProvider`.
 - Match existing naming, nullability, and formatting. No new libraries without asking.
 - Write tests at the layer you changed. Do not weaken or delete existing tests.
 - Run `dotnet build Jobriq.sln` and the relevant test tier before reporting.

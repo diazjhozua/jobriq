@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Jobriq is a web app for building a resume profile, tracking job applications, and generating a tailored resume per application with OpenAI. The .NET host serves the React SPA and exposes two API endpoints. All user data lives in browser `localStorage` under `jobriq.v1`; the server is stateless.
+Jobriq is a web app for building a resume profile, tracking job applications, and generating a tailored resume per application with OpenAI. The .NET host serves the React SPA and exposes the resume endpoints plus cookie-scoped workspace endpoints. Profile and applications persist per browser in PostgreSQL; each browser is identified by an anonymous `jobriq_client` cookie.
 
 ## Commands
 
@@ -15,7 +15,7 @@ npm run start          # build client into wwwroot, run host on http://localhost
 npm run dev            # Vite dev server with /api proxy to 5080
 npm run build          # build client only
 npm run test           # dotnet test Jobriq.sln + client Vitest
-npm run test:e2e       # Playwright (builds client, runs host on 5081 with fake AI)
+npm run test:e2e       # Playwright (disposable Postgres, builds client, runs host on 5081 with fake AI)
 
 dotnet build Jobriq.sln
 dotnet test Jobriq.sln
@@ -23,19 +23,24 @@ dotnet test tests/Jobriq.Application.Tests --filter FullyQualifiedName~GenerateR
 dotnet run --project src/Jobriq.Web
 ASPNETCORE_ENVIRONMENT=Testing dotnet run --project src/Jobriq.Web --no-launch-profile
 
+docker compose up -d postgres                      # requires POSTGRES_PASSWORD in the environment or .env
+docker compose down
+dotnet ef migrations add <Name> --project src/Jobriq.Infrastructure --startup-project src/Jobriq.Web
+dotnet ef database update --project src/Jobriq.Infrastructure --startup-project src/Jobriq.Web
+
 npm --prefix client run lint                           # oxlint (no ESLint or Prettier)
 npm --prefix client run typecheck
 npm --prefix client test -- src/lib/schemas.test.ts   # single Vitest file
 ```
 
-`npm run start` must rebuild the client; the host serves static files from `src/Jobriq.Web/wwwroot`, which Vite writes to directly.
+`npm run start` must rebuild the client; the host serves static files from `src/Jobriq.Web/wwwroot`, which Vite writes to directly. It also needs `ConnectionStrings:Database` and a running PostgreSQL instance; `docker compose up -d postgres` plus a user secret is the local setup.
 
 ## Architecture
 
 ```
 src/Jobriq.Domain          models only, no dependencies
 src/Jobriq.Application     use cases + abstractions, depends on Domain
-src/Jobriq.Infrastructure  OpenAI service, DOCX/Markdown exporters, depends on Application
+src/Jobriq.Infrastructure  OpenAI service, exporters, EF Core/Postgres persistence, depends on Application
 src/Jobriq.Web             ASP.NET Core minimal API host, depends on Infrastructure
 client                     React + TypeScript SPA (Vite, Tailwind v4, Radix, RHF, Zod)
 ```
@@ -48,11 +53,20 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 
 `Program.cs` maps unknown `/api/*` paths to 404 and everything else to `index.html` for SPA routing.
 
+## Persistence
+
+- `IJobriqRepository` in Application is the persistence boundary; `PostgresJobriqRepository` in Infrastructure implements it with EF Core 10, Npgsql, and snake_case naming.
+- `ResumeProfile` and `GeneratedResume` are stored as JSONB documents so their shapes can evolve without table churn. Applications and their status live in relational columns.
+- `ClientContextMiddleware` issues the `jobriq_client` cookie (`HttpOnly`, `SameSite=Lax`, one-year, `Secure` on HTTPS) and `CookieClientContext` carries the id into use cases. Treat the cookie as a bearer token: there is no authentication, so do not expose this deployment publicly without adding one.
+- Migrations live in `src/Jobriq.Infrastructure/Persistence/Postgres/Migrations` and are versioned. `Database:ApplyMigrationsOnStartup` is `true` in Development and `false` elsewhere; `ConnectionStrings:Database` is required and comes from user secrets or `ConnectionStrings__Database`.
+- `tests/e2e` starts its own disposable Postgres container and database; it never touches the development database.
+- Legacy `localStorage` data (`jobriq.v1`) is intentionally not imported. The key is inert and can be cleared manually.
+
 ## Client
 
 - Routes: `/profile` and `/applications`; unknown paths redirect to `/profile`.
-- `providers/JobriqProvider.tsx` loads state once, saves the whole state on every mutation, and surfaces a non-blocking storage error when `localStorage` writes fail.
-- `lib/schemas.ts` has two profiles: strict `profileSchema` for form validation and lenient `stored*` schemas for hydration, so partially filled profiles still load. Keep this split when adding fields.
+- `providers/JobriqProvider.tsx` hydrates once from `GET /api/state` and calls granular mutation endpoints. Hydration failure blocks the workspace with a retry panel; mutation failures roll back optimistic changes and show a sync banner.
+- `lib/schemas.ts` has two profiles: strict `profileSchema` for form validation and lenient `stored*` schemas for API hydration, so partially filled profiles still load. Keep this split when adding fields.
 - `lib/template.ts` parses the legacy plain-text template format (`[PERSONAL]`, `[SUMMARY]`, `[EXPERIENCE]`, `[EDUCATION]`, `[SKILLS]`, `[PROJECT]`) for the Profile screen's Import template dialog. It is the only remaining consumer of that format.
 - Generated resumes are stored on the application (`generatedResume`) and reopened from there.
 - `lib/api.ts` parses `ProblemDetails.code` and downloads blobs using the `Content-Disposition` filename.
@@ -61,11 +75,11 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 
 - `dotnet test` covers Domain, Application, Infrastructure, and Web (`WebApplicationFactory<Program>`), plus layer rules.
 - Vitest + React Testing Library tests are colocated with the code under `client/src/**/*.test.ts(x)`; there is no `tests/client` directory.
-- Playwright runs against an isolated server on port 5081 with the fake AI provider and `reuseExistingServer: false`. It never calls OpenAI and must not reuse a developer server on 5080.
+- Playwright runs against an isolated server on port 5081 with the fake AI provider, a disposable PostgreSQL container, and `reuseExistingServer: false`. It never calls OpenAI and must not reuse a developer server on 5080 or the development database.
 
 ## Conventions
 
-- Minimal APIs only; no controllers, MediatR, or persistence abstractions. The server is stateless.
+- Minimal APIs only; no controllers or MediatR. Persistence goes through `IJobriqRepository`; never reference EF Core or Npgsql from Domain or Application.
 - `TreatWarningsAsErrors`, nullable, and file-scoped namespaces are mandatory for all .NET projects; central package versions in `Directory.Packages.props`.
 - Use `TimeProvider` for timestamps so tests can substitute it.
 - Do not call OpenAI from tests; use the `Testing` environment or substitute `IResumeAiService`.
