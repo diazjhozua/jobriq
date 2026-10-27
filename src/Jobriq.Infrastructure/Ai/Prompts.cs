@@ -142,6 +142,129 @@ internal static class Prompts
             """);
     }
 
+    public static string ReviewProfile(ResumeProfile profile) =>
+        Normalize($$"""
+            Review this resume profile and suggest concrete improvements. The review is job-agnostic: do not reference a job description, ATS keywords, or a specific role.
+
+            Rules:
+            - Return at most 8 suggestions.
+            - Only suggest changes supported by the profile. Never fabricate employers, dates, metrics, or accomplishments.
+            - "section" must be one of: personal, summary, experience, education, skills, projects.
+            - For experience and projects, "itemId" must be the exact id shown in the profile and "bulletIndex" is zero-based.
+            - "proposedText" may be provided only for summary and for experience/project bullets. Set it to null for personal, education, and skills.
+            - "category" must be one of: completeness, impact, clarity.
+            - "title" is a short imperative phrase. "detail" explains why the change matters.
+            - When a section is missing entirely, suggest what to add instead of rewriting.
+
+            Profile:
+            {{ProfileText(profile)}}
+
+            Respond with a JSON object:
+            {
+              "suggestions": [
+                {
+                  "section": "summary",
+                  "itemId": null,
+                  "bulletIndex": null,
+                  "category": "completeness",
+                  "title": "short title",
+                  "detail": "why this matters",
+                  "proposedText": "replacement text or null"
+                }
+              ]
+            }
+            """);
+
+    private static string ProfileText(ResumeProfile profile)
+    {
+        List<string> lines =
+        [
+            "PERSONAL",
+            $"Name: {Value(profile.Personal.Name)}",
+            $"Email: {Value(profile.Personal.Email)}",
+            $"Phone: {Value(profile.Personal.Phone)}",
+            $"Location: {Value(profile.Personal.Location)}",
+            $"LinkedIn: {Value(profile.Personal.LinkedIn)}",
+            $"GitHub: {Value(profile.Personal.GitHub)}",
+            $"Website: {Value(profile.Personal.Website)}",
+            string.Empty,
+            "SUMMARY",
+            $"Type: {profile.SummaryType.ToString().ToLowerInvariant()}",
+            Value(profile.Summary),
+            string.Empty,
+            "EXPERIENCE"
+        ];
+
+        if (profile.Experience.Count == 0)
+        {
+            lines.Add("(none)");
+        }
+        else
+        {
+            foreach (WorkExperience experience in profile.Experience)
+            {
+                lines.Add($"id: {experience.Id}");
+                lines.Add($"Title: {Value(experience.Title)}");
+                lines.Add($"Company: {Value(experience.Company)}");
+                lines.Add($"Dates: {Value(experience.StartDate)} - {Value(experience.EndDate)}");
+                lines.Add("Bullets:");
+                lines.Add(IndexedBullets(experience.Bullets));
+                lines.Add(string.Empty);
+            }
+        }
+
+        lines.Add("EDUCATION");
+
+        if (profile.Education.Count == 0)
+        {
+            lines.Add("(none)");
+        }
+        else
+        {
+            foreach (Education education in profile.Education)
+            {
+                lines.Add($"School: {Value(education.School)}");
+                lines.Add($"Degree: {Value(education.Degree)}");
+                lines.Add($"Field: {Value(education.Field)}");
+                lines.Add($"Dates: {Value(education.StartDate)} - {Value(education.EndDate)}");
+                lines.Add($"GPA: {Value(education.Gpa)}");
+                lines.Add(string.Empty);
+            }
+        }
+
+        lines.Add("SKILLS");
+        lines.Add(profile.Skills.Count == 0 ? "(none)" : string.Join(", ", profile.Skills));
+        lines.Add(string.Empty);
+        lines.Add("PROJECTS");
+
+        if (profile.Projects.Count == 0)
+        {
+            lines.Add("(none)");
+        }
+        else
+        {
+            foreach (Project project in profile.Projects)
+            {
+                lines.Add($"id: {project.Id}");
+                lines.Add($"Name: {Value(project.Name)}");
+                lines.Add($"URL: {Value(project.Url)}");
+                lines.Add("Bullets:");
+                lines.Add(IndexedBullets(project.Bullets));
+                lines.Add(string.Empty);
+            }
+        }
+
+        return string.Join('\n', lines);
+    }
+
+    private static string IndexedBullets(IReadOnlyList<string> bullets) =>
+        bullets.Count == 0
+            ? "(none)"
+            : string.Join('\n', bullets.Select((bullet, index) => $"{index}. {bullet}"));
+
+    private static string Value(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "(empty)" : value.Trim();
+
     private static string BulletList(IReadOnlyList<string> bullets) =>
         string.Join('\n', bullets.Select((bullet, index) => $"{index + 1}. {bullet}"));
 

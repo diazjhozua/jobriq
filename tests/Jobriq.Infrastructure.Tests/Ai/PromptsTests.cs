@@ -102,4 +102,92 @@ public sealed class PromptsTests
         prompt.ShouldNotContain("Enhanced project bullet");
         prompt.ShouldContain("Total keywords (matched + missing) must be exactly 20");
     }
+
+    [Fact]
+    public void ReviewProfile_IncludesEverySectionAndTargets()
+    {
+        Guid experienceId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+        ResumeProfile profile = new()
+        {
+            Personal = new PersonalInfo
+            {
+                Name = "Jane Doe",
+                Email = "jane@example.com",
+                Phone = "555-0100",
+                Location = "Remote",
+                LinkedIn = "https://linkedin.com/in/jane",
+                GitHub = "https://github.com/jane",
+                Website = "https://jane.example.com"
+            },
+            SummaryType = SummaryType.Objective,
+            Summary = string.Empty,
+            Experience =
+            [
+                new WorkExperience
+                {
+                    Id = experienceId,
+                    Company = "Acme",
+                    Title = "Engineer",
+                    StartDate = "2022",
+                    EndDate = "Present",
+                    Bullets = ["Built a thing", "Fixed a bug"]
+                }
+            ],
+            Education =
+            [
+                new Education
+                {
+                    School = "State University",
+                    Degree = "BSc",
+                    Field = "Computer Science",
+                    StartDate = "2018",
+                    EndDate = "2022",
+                    Gpa = "3.8"
+                }
+            ],
+            Skills = ["C#", "React"],
+            Projects =
+            [
+                new Project
+                {
+                    Id = projectId,
+                    Name = "Jobriq",
+                    Url = "https://github.com/jane/jobriq",
+                    Bullets = ["Shipped a tool"]
+                }
+            ]
+        };
+
+        string prompt = Prompts.ReviewProfile(profile);
+
+        prompt.ShouldContain("Jane Doe");
+        prompt.ShouldContain("jane@example.com");
+        prompt.ShouldContain("Type: objective");
+        prompt.ShouldContain("(empty)");
+        prompt.ShouldContain($"id: {experienceId}");
+        prompt.ShouldContain("Engineer");
+        prompt.ShouldContain("Acme");
+        prompt.ShouldContain("0. Built a thing\n1. Fixed a bug");
+        prompt.ShouldContain("State University");
+        prompt.ShouldContain("C#, React");
+        prompt.ShouldContain($"id: {projectId}");
+        prompt.ShouldContain("Jobriq");
+        prompt.ShouldContain("0. Shipped a tool");
+        prompt.ShouldContain("job-agnostic");
+        prompt.ShouldContain("proposedText");
+        prompt.ShouldContain("\"suggestions\"");
+        prompt.ShouldNotContain("\r");
+    }
+
+    [Fact]
+    public void ReviewProfile_MarksMissingSections()
+    {
+        string prompt = Prompts.ReviewProfile(new ResumeProfile());
+
+        prompt.ShouldContain("EXPERIENCE\n(none)");
+        prompt.ShouldContain("EDUCATION\n(none)");
+        prompt.ShouldContain("SKILLS\n(none)");
+        prompt.ShouldContain("PROJECTS\n(none)");
+    }
 }
