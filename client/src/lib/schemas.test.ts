@@ -3,6 +3,7 @@ import {
   apiStateSchema,
   applicationFormSchema,
   generatedResumeSchema,
+  profileReviewSchema,
   profileSchema,
 } from './schemas'
 import { createEmptyProfile, createEmptyState } from './defaults'
@@ -133,6 +134,74 @@ describe('apiStateSchema', () => {
     })
 
     expect(apiStateSchema.safeParse(state).success).toBe(true)
+  })
+})
+
+describe('profileReviewSchema', () => {
+  const suggestion = {
+    id: 'suggestion-1',
+    section: 'experience',
+    itemId: 'experience-1',
+    bulletIndex: 0,
+    category: 'impact',
+    title: 'Quantify impact',
+    detail: 'Add a number.',
+    originalText: 'Built a thing',
+    proposedText: 'Built a thing used by 100 people.',
+  }
+
+  it('accepts a review payload', () => {
+    const result = profileReviewSchema.safeParse({ suggestions: [suggestion] })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.suggestions[0]?.section).toBe('experience')
+  })
+
+  it('normalizes null optional values', () => {
+    const parsed = profileReviewSchema.parse({
+      suggestions: [
+        {
+          ...suggestion,
+          itemId: null,
+          bulletIndex: null,
+          originalText: null,
+          proposedText: null,
+          detail: null,
+        },
+      ],
+    })
+
+    expect(parsed.suggestions[0]).toMatchObject({
+      itemId: null,
+      bulletIndex: null,
+      originalText: null,
+      proposedText: null,
+      detail: '',
+    })
+  })
+
+  it('rejects an unknown section', () => {
+    const result = profileReviewSchema.safeParse({
+      suggestions: [{ ...suggestion, section: 'hobbies' }],
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('falls back to clarity for an unknown category', () => {
+    const parsed = profileReviewSchema.parse({
+      suggestions: [{ ...suggestion, category: 'style' }],
+    })
+
+    expect(parsed.suggestions[0]?.category).toBe('clarity')
+  })
+
+  it('rejects a negative bullet index', () => {
+    const result = profileReviewSchema.safeParse({
+      suggestions: [{ ...suggestion, bulletIndex: -1 }],
+    })
+
+    expect(result.success).toBe(false)
   })
 })
 

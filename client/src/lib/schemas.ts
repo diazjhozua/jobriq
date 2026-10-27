@@ -150,6 +150,35 @@ export const profileResponseSchema = z.object({
   profile: storedProfileSchema,
 })
 
+export const reviewSectionSchema = z.enum([
+  'personal',
+  'summary',
+  'experience',
+  'education',
+  'skills',
+  'projects',
+])
+
+export const reviewCategorySchema = z
+  .enum(['completeness', 'impact', 'clarity'])
+  .catch('clarity')
+
+export const reviewSuggestionSchema = z.object({
+  id: z.string().min(1),
+  section: reviewSectionSchema,
+  itemId: z.string().nullish().transform((value) => value ?? null),
+  bulletIndex: z.number().int().nonnegative().nullish().transform((value) => value ?? null),
+  category: reviewCategorySchema,
+  title: z.string().min(1),
+  detail: nullableString,
+  originalText: nullableString.transform((value) => (value === '' ? null : value)),
+  proposedText: nullableString.transform((value) => (value === '' ? null : value)),
+})
+
+export const profileReviewSchema = z.object({
+  suggestions: z.array(reviewSuggestionSchema),
+})
+
 export const applicationResponseSchema = z.object({
   application: applicationSchema,
 })

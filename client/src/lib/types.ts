@@ -53,6 +53,32 @@ export interface Profile {
   projects: Project[]
 }
 
+export type ReviewSection =
+  | 'personal'
+  | 'summary'
+  | 'experience'
+  | 'education'
+  | 'skills'
+  | 'projects'
+
+export type ReviewCategory = 'completeness' | 'impact' | 'clarity'
+
+export interface ReviewSuggestion {
+  id: string
+  section: ReviewSection
+  itemId: string | null
+  bulletIndex: number | null
+  category: ReviewCategory
+  title: string
+  detail: string
+  originalText: string | null
+  proposedText: string | null
+}
+
+export interface ProfileReview {
+  suggestions: ReviewSuggestion[]
+}
+
 export interface EnhancedBullet {
   original: string
   enhanced: string
