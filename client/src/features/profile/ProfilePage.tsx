@@ -9,9 +9,10 @@ import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import { profileSchema } from '../../lib/schemas'
-import type { Profile } from '../../lib/types'
+import type { Profile, ReviewSuggestion } from '../../lib/types'
 import { parseSkills } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { ProfileReviewPanel } from './ProfileReviewPanel'
 import { TemplateImportDialog } from './TemplateImportDialog'
 
 interface SectionProps {
@@ -38,7 +39,15 @@ function Section({ title, description, action, children }: SectionProps) {
 }
 
 export function ProfilePage() {
-  const { profile, saveProfile } = useJobriq()
+  const {
+    profile,
+    saveProfile,
+    review,
+    reviewedAt,
+    reviewing,
+    reviewError,
+    reviewProfile,
+  } = useJobriq()
   const [skillsText, setSkillsText] = useState(() => profile.skills.join(', '))
   const [saved, setSaved] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -48,6 +57,8 @@ export function ProfilePage() {
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<Profile>({
     resolver: zodResolver(profileSchema),
@@ -89,8 +100,78 @@ export function ProfilePage() {
     setSaved(true)
   }
 
+  const getProfile = (): Profile => ({
+    ...getValues(),
+    skills: parseSkills(skillsText),
+  })
+
+  const applySuggestion = (suggestion: ReviewSuggestion): boolean => {
+    const proposedText = suggestion.proposedText
+    if (!proposedText) {
+      return false
+    }
+
+    if (suggestion.section === 'summary') {
+      const currentSummary = getValues('summary')
+      if (
+        suggestion.originalText === null
+          ? currentSummary.trim() !== ''
+          : currentSummary !== suggestion.originalText
+      ) {
+        return false
+      }
+
+      setValue('summary', proposedText, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      return true
+    }
+
+    if (
+      (suggestion.section !== 'experience' && suggestion.section !== 'projects') ||
+      !suggestion.itemId ||
+      suggestion.bulletIndex === null
+    ) {
+      return false
+    }
+
+    const items = getValues(suggestion.section)
+    const index = items.findIndex((item) => item.id === suggestion.itemId)
+    const item = items[index]
+    const currentBullet = item?.bullets[suggestion.bulletIndex]
+
+    if (
+      !item ||
+      currentBullet === undefined ||
+      (suggestion.originalText === null
+        ? currentBullet.trim() !== ''
+        : currentBullet !== suggestion.originalText)
+    ) {
+      return false
+    }
+
+    const bullets = [...item.bullets]
+    bullets[suggestion.bulletIndex] = proposedText
+
+    if (suggestion.section === 'experience') {
+      setValue(`experience.${index}.bullets`, bullets, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    } else {
+      setValue(`projects.${index}.bullets`, bullets, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    }
+
+    return true
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Profile</h1>
@@ -501,11 +582,21 @@ export function ProfilePage() {
           </div>
         )}
       </Section>
-      <TemplateImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImported={handleImported}
+        <TemplateImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={handleImported}
+        />
+      </form>
+      <ProfileReviewPanel
+        review={review}
+        reviewedAt={reviewedAt}
+        reviewing={reviewing}
+        saving={isSubmitting}
+        error={reviewError}
+        onReview={() => void reviewProfile(getProfile())}
+        onApply={applySuggestion}
       />
-    </form>
+    </div>
   )
 }

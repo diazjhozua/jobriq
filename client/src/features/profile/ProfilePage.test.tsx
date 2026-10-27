@@ -139,6 +139,166 @@ describe('ProfilePage', () => {
     ).toBeInTheDocument()
   })
 
+  it('reviews unsaved form values without saving the profile', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+    await user.type(screen.getByLabelText('Bullets'), 'Unsaved bullet')
+
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/3 suggestions/)
+
+    const reviewCall = api.calls.find(
+      (call) => call.path === '/api/profile/review',
+    )
+    expect(reviewCall?.body).toMatchObject({
+      profile: {
+        personal: { name: 'Jane Doe' },
+        experience: [{ company: 'Acme', bullets: ['Unsaved bullet'] }],
+      },
+    })
+    expect(
+      api.calls.some(
+        (call) => call.method === 'PUT' && call.path === '/api/profile',
+      ),
+    ).toBe(false)
+  })
+
+  it('applies a summary proposal into the form and marks it dirty', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Summary'), 'Old summary')
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/2 suggestions/)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Apply suggestion: Add a professional summary',
+      }),
+    )
+
+    expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
+      'Deterministic reviewed summary.',
+    )
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeEnabled()
+  })
+
+  it('refuses a summary proposal after the blank summary is filled in', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/2 suggestions/)
+
+    await user.type(screen.getByRole('textbox', { name: 'Summary' }), 'Typed after review')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Apply suggestion: Add a professional summary',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'This suggestion no longer matches the form. Run the review again.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
+      'Typed after review',
+    )
+  })
+
+  it('applies a bullet proposal into the matching experience entry', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+    await user.type(screen.getByLabelText('Bullets'), 'Built a thing')
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/3 suggestions/)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Apply suggestion: Quantify your impact',
+      }),
+    )
+
+    expect(screen.getByLabelText('Bullets')).toHaveValue('Reviewed: Built a thing')
+  })
+
+  it('refuses a bullet proposal after the bullet is edited', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+    await user.type(screen.getByLabelText('Bullets'), 'Built a thing')
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/3 suggestions/)
+
+    await user.clear(screen.getByLabelText('Bullets'))
+    await user.type(screen.getByLabelText('Bullets'), 'Edited bullet')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Apply suggestion: Quantify your impact',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'This suggestion no longer matches the form. Run the review again.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Bullets')).toHaveValue('Edited bullet')
+  })
+
+  it('keeps suggestions after saving the profile', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.type(screen.getByLabelText('Summary'), 'Old summary')
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/2 suggestions/)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Apply suggestion: Add a professional summary',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    expect(screen.getByText('Add a professional summary')).toBeInTheDocument()
+  })
+
+  it('offers no Apply button for advisory skills suggestions', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/2 suggestions/)
+
+    const skills = screen.getByRole('region', { name: 'Skills' })
+    expect(within(skills).queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('adds and removes repeatable entries', async () => {
     const user = userEvent.setup()
     installMockApi()
