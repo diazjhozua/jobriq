@@ -20,7 +20,7 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
                 "missing_api_key"),
             AiServiceException aiException => (
                 aiException.StatusCode,
-                "Resume generation failed",
+                "AI request failed",
                 aiException.Message,
                 aiException.Code),
             ExportFailedException => (
