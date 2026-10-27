@@ -72,7 +72,7 @@ test('profile, application, generation, and downloads', async ({ page }) => {
 
   await page.getByLabel('Skills').fill('C#, React')
   await page.getByRole('button', { name: 'Save profile' }).click()
-  await expect(page.getByRole('status')).toContainText('Saved')
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
   await page.reload()
   await expect(page.getByLabel('Name')).toHaveValue('Jane Doe')
@@ -147,6 +147,48 @@ test('persists an application deletion', async ({ page }) => {
   await expect(page.getByText('Umbrella')).toHaveCount(0)
 })
 
+test('reviews the profile, applies a suggestion, and keeps the review in session', async ({
+  page,
+}) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+  await page.getByRole('button', { name: 'Add experience' }).click()
+  await page.getByLabel('Company').fill('Acme')
+  await page.getByLabel('Title').fill('Engineer')
+  await page.getByLabel('Bullets').fill('Built a thing')
+
+  await page.getByRole('button', { name: 'Review profile' }).click()
+
+  await expect(page.getByText('Deterministic reviewed summary.')).toBeVisible()
+  await expect(page.getByText('Reviewed: Built a thing')).toBeVisible()
+  await expect(page.getByText('Group related skills')).toBeVisible()
+
+  await page
+    .getByRole('button', {
+      name: 'Apply suggestion: Add a professional summary',
+    })
+    .click()
+
+  const summary = page.getByRole('textbox', { name: 'Summary' })
+  await expect(summary).toHaveValue('Deterministic reviewed summary.')
+  await expect(page.getByRole('button', { name: 'Save profile' })).toBeEnabled()
+
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Applications' }).click()
+  await page.getByRole('link', { name: 'Profile' }).click()
+  await expect(page.getByText('Add a professional summary')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByRole('textbox', { name: 'Summary' })).toHaveValue(
+    'Deterministic reviewed summary.',
+  )
+  await expect(page.getByText('Add a professional summary')).toHaveCount(0)
+})
+
 test('ignores legacy localStorage data', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
@@ -185,7 +227,9 @@ test('ignores legacy localStorage data', async ({ page }) => {
 
   await page.goto('/profile')
 
-  await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Profile', exact: true }),
+  ).toBeVisible()
   await expect(page.getByLabel('Name')).toHaveValue('')
   await expect(page.getByLabel('Email')).toHaveValue('')
   await expect(page.getByLabel('Skills')).toHaveValue('')
