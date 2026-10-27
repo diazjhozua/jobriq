@@ -29,6 +29,11 @@ function Harness() {
     updateApplicationStatus,
     deleteApplication,
     saveGeneratedResume,
+    review,
+    reviewedAt,
+    reviewing,
+    reviewError,
+    reviewProfile,
   } = useJobriq()
 
   const resume: GeneratedResume = {
@@ -47,6 +52,10 @@ function Harness() {
       <p data-testid="status">{status}</p>
       <p data-testid="load-error">{loadError ?? ''}</p>
       <p data-testid="sync-error">{syncError ?? ''}</p>
+      <p data-testid="review">{JSON.stringify(review)}</p>
+      <p data-testid="reviewed-at">{reviewedAt ?? ''}</p>
+      <p data-testid="reviewing">{String(reviewing)}</p>
+      <p data-testid="review-error">{reviewError ?? ''}</p>
       <p data-testid="profile-name">{profile.personal.name}</p>
       <p data-testid="applications">{JSON.stringify(applications)}</p>
       <button onClick={retry}>Retry</button>
@@ -91,6 +100,7 @@ function Harness() {
       >
         Save resume
       </button>
+      <button onClick={() => void reviewProfile(profile)}>Run review</button>
     </div>
   )
 }
@@ -197,6 +207,96 @@ describe('JobriqProvider', () => {
 
     await waitFor(() => {
       expect(api.state.applications[0]?.generatedResume?.summary).toBe('Generated.')
+    })
+  })
+
+  it('stores a review and its timestamp without touching the sync error', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Run review' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('review')).toHaveTextContent(
+        'Deterministic reviewed summary.',
+      )
+    })
+    expect(screen.getByTestId('reviewed-at')).not.toBeEmptyDOMElement()
+    expect(screen.getByTestId('sync-error')).toBeEmptyDOMElement()
+  })
+
+  it('keeps review failures inside the panel state', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      fail: {
+        review: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'openai_rate_limited',
+        },
+      },
+    })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Run review' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('review-error')).toHaveTextContent(
+        'OpenAI is unavailable.',
+      )
+    })
+    expect(screen.getByTestId('sync-error')).toBeEmptyDOMElement()
+  })
+
+  it('keeps the previous review when a rerun fails', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Run review' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('review')).toHaveTextContent(
+        'Deterministic reviewed summary.',
+      )
+    })
+
+    api.fail.review = {
+      status: 503,
+      detail: 'OpenAI is unavailable.',
+      code: 'openai_rate_limited',
+    }
+    await user.click(screen.getByRole('button', { name: 'Run review' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('review-error')).toHaveTextContent(
+        'OpenAI is unavailable.',
+      )
+    })
+    expect(screen.getByTestId('review')).toHaveTextContent(
+      'Deterministic reviewed summary.',
+    )
+  })
+
+  it('toggles the reviewing flag while a review is in flight', async () => {
+    const user = userEvent.setup()
+    let release!: () => void
+    const reviewGate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    installMockApi({ reviewGate })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Run review' }))
+    expect(screen.getByTestId('reviewing')).toHaveTextContent('true')
+
+    release()
+    await waitFor(() => {
+      expect(screen.getByTestId('reviewing')).toHaveTextContent('false')
     })
   })
 

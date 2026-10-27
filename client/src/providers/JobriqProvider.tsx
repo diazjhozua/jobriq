@@ -17,6 +17,7 @@ import type {
   JobApplication,
   JobriqState,
   Profile,
+  ProfileReview,
 } from '../lib/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
@@ -34,12 +35,20 @@ interface JobriqContextValue {
   updateApplicationStatus: (id: string, status: ApplicationStatus) => Promise<void>
   deleteApplication: (id: string) => Promise<void>
   saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
+  review: ProfileReview | null
+  reviewedAt: string | null
+  reviewing: boolean
+  reviewError: string | null
+  reviewProfile: (profile: Profile) => Promise<boolean>
 }
 
 const JobriqContext = createContext<JobriqContextValue | null>(null)
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'The change could not be saved.'
+function errorMessage(
+  error: unknown,
+  fallback = 'The change could not be saved.',
+): string {
+  return error instanceof Error ? error.message : fallback
 }
 
 function replaceApplication(
@@ -59,6 +68,10 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<LoadStatus>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
+  const [review, setReview] = useState<ProfileReview | null>(null)
+  const [reviewedAt, setReviewedAt] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const stateRef = useRef(state)
 
@@ -232,6 +245,23 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [setJobriqState],
   )
 
+  const reviewProfile = useCallback(async (profile: Profile) => {
+    setReviewing(true)
+    setReviewError(null)
+
+    try {
+      const next = await api.reviewProfile(profile)
+      setReview(next)
+      setReviewedAt(new Date().toISOString())
+      return true
+    } catch (error) {
+      setReviewError(errorMessage(error, 'The review could not be completed.'))
+      return false
+    } finally {
+      setReviewing(false)
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       profile: state.profile,
@@ -246,6 +276,11 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      review,
+      reviewedAt,
+      reviewing,
+      reviewError,
+      reviewProfile,
     }),
     [
       state.profile,
@@ -260,6 +295,11 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      review,
+      reviewedAt,
+      reviewing,
+      reviewError,
+      reviewProfile,
     ],
   )
 

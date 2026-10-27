@@ -5,11 +5,15 @@ import type {
   GeneratedResume,
   JobApplication,
   JobriqState,
+  Profile,
+  ProfileReview,
+  ReviewSuggestion,
 } from '../lib/types'
 
 type Operation =
   | 'state'
   | 'profile'
+  | 'review'
   | 'create'
   | 'status'
   | 'delete'
@@ -27,6 +31,8 @@ export type MockFailures = Partial<Record<Operation, MockFailure>>
 interface MockApiOptions {
   state?: JobriqState
   generatedResume?: GeneratedResume
+  review?: ProfileReview
+  reviewGate?: Promise<unknown>
   fail?: MockFailures
 }
 
@@ -39,6 +45,8 @@ interface Call {
 export function installMockApi({
   state = createEmptyState(),
   generatedResume,
+  review,
+  reviewGate,
   fail = {},
 }: MockApiOptions = {}) {
   const current = structuredClone(state)
@@ -73,6 +81,16 @@ export function installMockApi({
     if (path === '/api/profile' && method === 'PUT') {
       current.profile = body?.profile as JobriqState['profile']
       return json({ profile: current.profile })
+    }
+
+    if (path === '/api/profile/review' && method === 'POST') {
+      if (reviewGate) {
+        await reviewGate
+      }
+
+      return json(
+        review ?? defaultReview(body?.profile as Profile | undefined),
+      )
     }
 
     if (path === '/api/applications' && method === 'POST') {
@@ -177,6 +195,10 @@ function operationFor(path: string, method: string): Operation | null {
     return 'profile'
   }
 
+  if (path === '/api/profile/review') {
+    return 'review'
+  }
+
   if (path === '/api/applications' && method === 'POST') {
     return 'create'
   }
@@ -198,6 +220,52 @@ function operationFor(path: string, method: string): Operation | null {
   }
 
   return null
+}
+
+function defaultReview(profile: Profile | undefined): ProfileReview {
+  const suggestions: ReviewSuggestion[] = []
+  const summary = profile?.summary.trim() ?? ''
+
+  suggestions.push({
+    id: 'review-summary',
+    section: 'summary',
+    itemId: null,
+    bulletIndex: null,
+    category: 'completeness',
+    title: 'Add a professional summary',
+    detail: 'Summaries help reviewers understand your focus quickly.',
+    originalText: summary || null,
+    proposedText: 'Deterministic reviewed summary.',
+  })
+
+  const experience = profile?.experience.find((entry) => entry.bullets.length > 0)
+  if (experience) {
+    suggestions.push({
+      id: 'review-experience',
+      section: 'experience',
+      itemId: experience.id,
+      bulletIndex: 0,
+      category: 'impact',
+      title: 'Quantify your impact',
+      detail: 'Add a measurable result to this bullet.',
+      originalText: experience.bullets[0] ?? null,
+      proposedText: `Reviewed: ${experience.bullets[0]}`,
+    })
+  }
+
+  suggestions.push({
+    id: 'review-skills',
+    section: 'skills',
+    itemId: null,
+    bulletIndex: null,
+    category: 'clarity',
+    title: 'Group related skills',
+    detail: 'Group skills by category so reviewers can scan them.',
+    originalText: null,
+    proposedText: null,
+  })
+
+  return { suggestions }
 }
 
 function json(body: unknown, status = 200): Response {
