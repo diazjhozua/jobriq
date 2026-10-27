@@ -1,3 +1,4 @@
+using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
 namespace Jobriq.Application.Abstractions;
@@ -5,6 +6,10 @@ namespace Jobriq.Application.Abstractions;
 public interface IResumeAiService
 {
     void EnsureAvailable();
+
+    Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
+        ResumeProfile profile,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
         WorkExperience experience,

@@ -1,4 +1,5 @@
 using Jobriq.Application.Abstractions;
+using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
 namespace Jobriq.Infrastructure.Ai;
@@ -7,6 +8,54 @@ internal sealed class FakeResumeAiService : IResumeAiService
 {
     public void EnsureAvailable()
     {
+    }
+
+    public Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
+        ResumeProfile profile,
+        CancellationToken cancellationToken)
+    {
+        List<ReviewSuggestion> suggestions =
+        [
+            new ReviewSuggestion
+            {
+                Id = Guid.NewGuid(),
+                Section = ReviewSection.Summary,
+                Category = ReviewCategory.Completeness,
+                Title = "Add a professional summary",
+                Detail = "Summarize your experience in two or three lines.",
+                OriginalText = string.IsNullOrWhiteSpace(profile.Summary) ? null : profile.Summary.Trim(),
+                ProposedText = "Deterministic reviewed summary."
+            }
+        ];
+
+        WorkExperience? experience = profile.Experience.FirstOrDefault(item => item.Bullets.Count > 0);
+        if (experience is not null)
+        {
+            suggestions.Add(new ReviewSuggestion
+            {
+                Id = Guid.NewGuid(),
+                Section = ReviewSection.Experience,
+                ItemId = experience.Id,
+                BulletIndex = 0,
+                Category = ReviewCategory.Impact,
+                Title = "Quantify your impact",
+                Detail = "Add a measurable result to this bullet.",
+                OriginalText = experience.Bullets[0],
+                ProposedText = "Reviewed: Built a thing"
+            });
+        }
+
+        suggestions.Add(new ReviewSuggestion
+        {
+            Id = Guid.NewGuid(),
+            Section = ReviewSection.Skills,
+            Category = ReviewCategory.Clarity,
+            Title = "Group related skills",
+            Detail = "Order skills by relevance and group related tools.",
+            ProposedText = null
+        });
+
+        return Task.FromResult<IReadOnlyList<ReviewSuggestion>>(suggestions);
     }
 
     public Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(

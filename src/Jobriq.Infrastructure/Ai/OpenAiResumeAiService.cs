@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Text.Json;
 using Jobriq.Application.Abstractions;
+using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,16 @@ internal sealed class OpenAiResumeAiService(
         {
             throw new MissingApiKeyException();
         }
+    }
+
+    public async Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
+        ResumeProfile profile,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(Prompts.ReviewProfile(profile), json: true, cancellationToken);
+        ReviewResponse? response = Parse<ReviewResponse>(content);
+
+        return ReviewSuggestionMapper.Map(response?.Suggestions);
     }
 
     public async Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
@@ -188,5 +199,10 @@ internal sealed class OpenAiResumeAiService(
         public List<string>? Matched { get; set; }
 
         public List<string>? Missing { get; set; }
+    }
+
+    private sealed class ReviewResponse
+    {
+        public List<ReviewSuggestionDto>? Suggestions { get; set; }
     }
 }
