@@ -3,6 +3,7 @@ import {
   apiStateSchema,
   applicationResponseSchema,
   profileResponseSchema,
+  profileReviewSchema,
 } from './schemas'
 import type {
   ApplicationStatus,
@@ -10,6 +11,7 @@ import type {
   JobApplication,
   JobriqState,
   Profile,
+  ProfileReview,
 } from './types'
 
 export type ExportFormat = 'docx' | 'markdown'
@@ -112,6 +114,14 @@ export async function saveProfile(profile: Profile): Promise<Profile> {
   )
 
   return result.profile
+}
+
+export async function reviewProfile(profile: Profile): Promise<ProfileReview> {
+  return requestJson(
+    '/api/profile/review',
+    jsonRequest('POST', { profile }),
+    profileReviewSchema,
+  )
 }
 
 export async function createApplication(

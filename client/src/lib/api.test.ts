@@ -4,6 +4,7 @@ import {
   createApplication,
   deleteApplication,
   fetchState,
+  reviewProfile,
   saveGeneratedResume,
   saveProfile,
   updateApplicationStatus,
@@ -46,6 +47,73 @@ describe('api', () => {
       method: 'PUT',
       path: '/api/profile',
       body: { profile: { personal: { name: 'Jane Doe' } } },
+    })
+  })
+
+  it('requests a profile review with the submitted profile', async () => {
+    const api = installMockApi()
+    const profile = createEmptyProfile()
+    profile.personal.name = 'Jane Doe'
+    profile.personal.email = 'jane@example.com'
+    profile.experience = [
+      {
+        id: 'experience-1',
+        company: 'Acme',
+        title: 'Engineer',
+        startDate: '2022',
+        endDate: 'Present',
+        bullets: ['Built a thing'],
+      },
+    ]
+
+    const review = await reviewProfile(profile)
+
+    expect(review.suggestions).toHaveLength(3)
+    expect(review.suggestions[1]).toMatchObject({
+      section: 'experience',
+      itemId: 'experience-1',
+      originalText: 'Built a thing',
+      proposedText: 'Reviewed: Built a thing',
+    })
+    expect(api.calls[0]).toMatchObject({
+      method: 'POST',
+      path: '/api/profile/review',
+      body: { profile: { experience: [{ bullets: ['Built a thing'] }] } },
+    })
+  })
+
+  it('maps review failures to an ApiError', async () => {
+    installMockApi({
+      fail: {
+        review: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'openai_rate_limited',
+        },
+      },
+    })
+
+    await expect(reviewProfile(createEmptyProfile())).rejects.toMatchObject({
+      status: 503,
+      code: 'openai_rate_limited',
+      message: 'OpenAI is unavailable.',
+    })
+  })
+
+  it('rejects a malformed review response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ suggestions: [{ section: 'hobbies' }] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+
+    await expect(reviewProfile(createEmptyProfile())).rejects.toMatchObject({
+      status: 200,
+      code: 'invalid_response',
     })
   })
 
