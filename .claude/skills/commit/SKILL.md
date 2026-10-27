@@ -23,6 +23,30 @@ Create one Conventional Commit per logical change. Never skip hooks and never ad
 - Never stage environment files, local resume data, build output, dependencies, test artifacts, or credentials.
 - If the diff mixes unrelated concerns, stage and commit them separately.
 
+## Granularity
+
+A feature is not one commit. Do not bundle backend, client, tests, and e2e into a single "vertical slice" commit.
+
+- Split by layer and concern: domain, AI prompt/mapper, use case/providers, API endpoint, client types/schemas, client API call, client state, component, page wiring, e2e.
+- Keep every commit buildable and focused. Tests belong with the layer they cover.
+- If one commit would need a paragraph to list its areas, split it.
+- Do not use "it is one feature" as a reason for a broad commit.
+
+Example split for a profile review feature:
+
+```text
+feat(domain): add profile review model
+feat(ai): add profile review prompt and mapper
+feat(profile): add profile review use case
+feat(api): expose profile review endpoint
+feat(client): add profile review types and schemas
+feat(client): call profile review endpoint
+feat(client): hold profile review state in provider
+feat(client): add profile review panel
+feat(client): wire review panel into profile page
+test(e2e): cover profile review flow
+```
+
 ## Message grammar
 
 ```
