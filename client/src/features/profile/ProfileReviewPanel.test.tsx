@@ -135,7 +135,7 @@ describe('ProfileReviewPanel', () => {
     await user.click(apply)
 
     expect(props.onApply).toHaveBeenCalledWith(review.suggestions[0])
-    expect(apply).toHaveAttribute('aria-disabled', 'true')
+    expect(apply).toBeDisabled()
     expect(apply).toHaveAccessibleName('Applied suggestion: Add a summary')
     expect(apply).toHaveTextContent('Applied')
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -172,7 +172,7 @@ describe('ProfileReviewPanel', () => {
     const apply = screen.getByRole('button', {
       name: 'Apply suggestion: Add a summary',
     })
-    expect(apply).toHaveAttribute('aria-disabled', 'true')
+    expect(apply).toBeDisabled()
 
     await user.click(apply)
     expect(props.onApply).not.toHaveBeenCalled()

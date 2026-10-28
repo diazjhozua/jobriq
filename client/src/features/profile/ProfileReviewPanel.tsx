@@ -202,12 +202,8 @@ export function ProfileReviewPanel({
                                   variant="outline"
                                   size="sm"
                                   className="mt-3"
-                                  onClick={() => {
-                                    if (!reviewing && !saving && !isApplied) {
-                                      apply(suggestion)
-                                    }
-                                  }}
-                                  aria-disabled={reviewing || saving || isApplied}
+                                  onClick={() => apply(suggestion)}
+                                  disabled={reviewing || saving || isApplied}
                                   aria-label={
                                     isApplied
                                       ? `Applied suggestion: ${suggestion.title}`
