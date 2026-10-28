@@ -25,6 +25,7 @@ type LoadStatus = 'loading' | 'ready' | 'error'
 interface JobriqContextValue {
   profile: Profile
   applications: JobApplication[]
+  standaloneResume: GeneratedResume | null
   status: LoadStatus
   loadError: string | null
   syncError: string | null
@@ -35,6 +36,7 @@ interface JobriqContextValue {
   updateApplicationStatus: (id: string, status: ApplicationStatus) => Promise<void>
   deleteApplication: (id: string) => Promise<void>
   saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
+  generateStandaloneResume: (profile: Profile, jobDescription?: string) => Promise<void>
   review: ProfileReview | null
   reviewedAt: string | null
   reviewing: boolean
@@ -245,6 +247,23 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [setJobriqState],
   )
 
+  const generateStandaloneResume = useCallback(
+    async (profile: Profile, jobDescription?: string) => {
+      try {
+        const generated = await api.generateStandaloneResume(profile, jobDescription)
+        setJobriqState((current) => ({
+          ...current,
+          standaloneResume: generated,
+        }))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
   const reviewProfile = useCallback(async (profile: Profile) => {
     setReviewing(true)
     setReviewError(null)
@@ -266,6 +285,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     () => ({
       profile: state.profile,
       applications: state.applications,
+      standaloneResume: state.standaloneResume,
       status,
       loadError,
       syncError,
@@ -276,6 +296,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      generateStandaloneResume,
       review,
       reviewedAt,
       reviewing,
@@ -285,6 +306,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [
       state.profile,
       state.applications,
+      state.standaloneResume,
       status,
       loadError,
       syncError,
@@ -295,6 +317,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      generateStandaloneResume,
       review,
       reviewedAt,
       reviewing,

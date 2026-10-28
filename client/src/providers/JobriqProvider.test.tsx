@@ -20,6 +20,7 @@ function Harness() {
   const {
     profile,
     applications,
+    standaloneResume,
     status,
     loadError,
     syncError,
@@ -29,6 +30,7 @@ function Harness() {
     updateApplicationStatus,
     deleteApplication,
     saveGeneratedResume,
+    generateStandaloneResume,
     review,
     reviewedAt,
     reviewing,
@@ -58,6 +60,7 @@ function Harness() {
       <p data-testid="review-error">{reviewError ?? ''}</p>
       <p data-testid="profile-name">{profile.personal.name}</p>
       <p data-testid="applications">{JSON.stringify(applications)}</p>
+      <p data-testid="standalone-resume">{JSON.stringify(standaloneResume)}</p>
       <button onClick={retry}>Retry</button>
       <button
         onClick={() =>
@@ -99,6 +102,15 @@ function Harness() {
         }
       >
         Save resume
+      </button>
+      <button
+        onClick={() =>
+          void generateStandaloneResume(profile, '  Build things.  ').catch(
+            () => {},
+          )
+        }
+      >
+        Generate standalone
       </button>
       <button onClick={() => void reviewProfile(profile)}>Run review</button>
     </div>
@@ -208,6 +220,49 @@ describe('JobriqProvider', () => {
     await waitFor(() => {
       expect(api.state.applications[0]?.generatedResume?.summary).toBe('Generated.')
     })
+  })
+
+  it('stores a generated standalone resume', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({ state: stateWithApplication() })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Generate standalone' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('standalone-resume')).toHaveTextContent(
+        'Generated summary.',
+      )
+    })
+    expect(api.state.standaloneResume?.summary).toBe('Generated summary.')
+    expect(api.calls.find((call) => call.path === '/api/profile/resume')?.body)
+      .toMatchObject({ jobDescription: 'Build things.' })
+  })
+
+  it('rethrows a standalone failure and leaves the state unchanged', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      state: stateWithApplication(),
+      fail: {
+        standalone: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'missing_api_key',
+        },
+      },
+    })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Generate standalone' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-error')).toHaveTextContent(
+        'OpenAI is unavailable.',
+      )
+    })
+    expect(screen.getByTestId('standalone-resume')).toHaveTextContent('null')
   })
 
   it('stores a review and its timestamp without touching the sync error', async () => {
