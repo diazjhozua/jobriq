@@ -164,6 +164,86 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.GeneratedAt.ShouldBe(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
     }
 
+    [Fact]
+    public async Task SaveStandaloneResume_RoundTripsDocument()
+    {
+        Guid clientId = Guid.NewGuid();
+        GeneratedResume resume = CreateGeneratedResume();
+
+        await using (JobriqDbContext context = fixture.CreateContext())
+        {
+            PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+            GeneratedResume? saved = await repository.SaveStandaloneResumeAsync(
+                clientId,
+                resume,
+                CancellationToken.None);
+
+            saved.ShouldNotBeNull();
+        }
+
+        await using JobriqDbContext readContext = fixture.CreateContext();
+        PostgresJobriqRepository readRepository = new(readContext, TimeProvider.System);
+        JobriqState state = await readRepository.GetStateAsync(clientId, CancellationToken.None);
+        GeneratedResume? standalone = state.StandaloneResume;
+
+        standalone.ShouldNotBeNull();
+        standalone.Summary.ShouldBe("Tailored summary.");
+        standalone.Experience.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
+        standalone.Keywords.ShouldNotBeNull();
+        standalone.Keywords!.Missing.ShouldBe(["Kubernetes"]);
+        standalone.GeneratedAt.ShouldBe(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public async Task SaveProfile_PreservesStandaloneResume()
+    {
+        Guid clientId = Guid.NewGuid();
+
+        await using (JobriqDbContext context = fixture.CreateContext())
+        {
+            PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+            await repository.SaveStandaloneResumeAsync(
+                clientId,
+                CreateGeneratedResume(),
+                CancellationToken.None);
+            await repository.SaveProfileAsync(clientId, CreateProfile(), CancellationToken.None);
+        }
+
+        await using JobriqDbContext readContext = fixture.CreateContext();
+        PostgresJobriqRepository readRepository = new(readContext, TimeProvider.System);
+        JobriqState state = await readRepository.GetStateAsync(clientId, CancellationToken.None);
+
+        state.Profile.Summary.ShouldBe("Summary.");
+        state.StandaloneResume.ShouldNotBeNull();
+        state.StandaloneResume!.Summary.ShouldBe("Tailored summary.");
+    }
+
+    [Fact]
+    public async Task SaveStandaloneResume_WithoutSavedProfile_KeepsProfileEmpty()
+    {
+        Guid clientId = Guid.NewGuid();
+
+        await using (JobriqDbContext context = fixture.CreateContext())
+        {
+            PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+            await repository.SaveStandaloneResumeAsync(
+                clientId,
+                CreateGeneratedResume(),
+                CancellationToken.None);
+        }
+
+        await using JobriqDbContext readContext = fixture.CreateContext();
+        PostgresJobriqRepository readRepository = new(readContext, TimeProvider.System);
+        JobriqState state = await readRepository.GetStateAsync(clientId, CancellationToken.None);
+
+        state.Profile.Summary.ShouldBeEmpty();
+        state.Profile.Experience.ShouldBeEmpty();
+        state.StandaloneResume.ShouldNotBeNull();
+    }
+
     private static ResumeProfile CreateProfile() => new()
     {
         Personal = new PersonalInfo

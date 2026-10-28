@@ -87,9 +87,12 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
                         .HasColumnName("client_id");
 
                     b.Property<string>("ProfileJson")
-                        .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("profile");
+
+                    b.Property<string>("StandaloneResumeJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("standalone_resume");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

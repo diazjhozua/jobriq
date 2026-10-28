@@ -27,11 +27,18 @@ internal sealed class PostgresJobriqRepository(
                 .OrderByDescending(row => row.CreatedAt)
                 .ToListAsync(cancellationToken);
 
-            ResumeProfile profile = profileRow is null
+            ResumeProfile profile = profileRow?.ProfileJson is null
                 ? new ResumeProfile()
                 : Deserialize<ResumeProfile>(profileRow.ProfileJson);
 
-            return new JobriqState(profile, [.. applicationRows.Select(ToDomain)]);
+            GeneratedResume? standaloneResume = profileRow?.StandaloneResumeJson is null
+                ? null
+                : Deserialize<GeneratedResume>(profileRow.StandaloneResumeJson);
+
+            return new JobriqState(
+                profile,
+                [.. applicationRows.Select(ToDomain)],
+                standaloneResume);
         });
 
     public Task SaveProfileAsync(
@@ -161,6 +168,38 @@ internal sealed class PostgresJobriqRepository(
             await dbContext.SaveChangesAsync(cancellationToken);
 
             return ToDomain(row);
+        });
+
+    public Task<GeneratedResume?> SaveStandaloneResumeAsync(
+        Guid clientId,
+        GeneratedResume resume,
+        CancellationToken cancellationToken) =>
+        GuardAsync<GeneratedResume?>(async () =>
+        {
+            ProfileRow? row = await dbContext.Profiles
+                .SingleOrDefaultAsync(candidate => candidate.ClientId == clientId, cancellationToken);
+
+            string json = Serialize(resume);
+            DateTimeOffset now = timeProvider.GetUtcNow();
+
+            if (row is null)
+            {
+                dbContext.Profiles.Add(new ProfileRow
+                {
+                    ClientId = clientId,
+                    StandaloneResumeJson = json,
+                    UpdatedAt = now
+                });
+            }
+            else
+            {
+                row.StandaloneResumeJson = json;
+                row.UpdatedAt = now;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return resume;
         });
 
     private Task<ApplicationRow?> FindApplicationAsync(

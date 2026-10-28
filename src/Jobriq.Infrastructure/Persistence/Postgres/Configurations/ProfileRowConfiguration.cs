@@ -15,7 +15,11 @@ internal sealed class ProfileRowConfiguration : IEntityTypeConfiguration<Profile
         builder
             .Property(row => row.ProfileJson)
             .HasColumnName("profile")
-            .HasColumnType("jsonb")
-            .IsRequired();
+            .HasColumnType("jsonb");
+
+        builder
+            .Property(row => row.StandaloneResumeJson)
+            .HasColumnName("standalone_resume")
+            .HasColumnType("jsonb");
     }
 }

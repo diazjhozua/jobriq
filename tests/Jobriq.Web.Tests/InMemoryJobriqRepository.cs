@@ -8,6 +8,7 @@ namespace Jobriq.Web.Tests;
 internal sealed class InMemoryJobriqRepository : IJobriqRepository
 {
     private readonly Dictionary<Guid, ResumeProfile> profiles = [];
+    private readonly Dictionary<Guid, GeneratedResume> standaloneResumes = [];
     private readonly Dictionary<Guid, (Guid ClientId, JobApplication Application)> applications = [];
     private readonly object gate = new();
 
@@ -31,7 +32,13 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
                     .OrderByDescending(application => application.CreatedAt)
             ];
 
-            return Task.FromResult<JobriqState>(new JobriqState(profile, clientApplications));
+            GeneratedResume? standaloneResume =
+                standaloneResumes.TryGetValue(clientId, out GeneratedResume? storedResume)
+                    ? storedResume
+                    : null;
+
+            return Task.FromResult<JobriqState>(
+                new JobriqState(profile, clientApplications, standaloneResume));
         }
     }
 
@@ -130,6 +137,21 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
 
             return Task.FromResult(application);
         }
+    }
+
+    public Task<GeneratedResume?> SaveStandaloneResumeAsync(
+        Guid clientId,
+        GeneratedResume resume,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            standaloneResumes[clientId] = resume;
+        }
+
+        return Task.FromResult<GeneratedResume?>(resume);
     }
 
     private JobApplication? Find(Guid clientId, Guid applicationId) =>

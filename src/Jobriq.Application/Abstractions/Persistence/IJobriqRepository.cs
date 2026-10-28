@@ -36,4 +36,9 @@ public interface IJobriqRepository
         Guid applicationId,
         GeneratedResume resume,
         CancellationToken cancellationToken);
+
+    Task<GeneratedResume?> SaveStandaloneResumeAsync(
+        Guid clientId,
+        GeneratedResume resume,
+        CancellationToken cancellationToken);
 }
