@@ -1,56 +1,89 @@
-# Jobriq
+<p align="center">
+  <a href="" rel="noopener">
+ <img width=200px height=200px src="https://avatars.githubusercontent.com/diazjhozua" alt="Project logo"></a>
+</p>
 
-AI-powered resume builder. Keep a profile, track job applications, and generate a tailored resume for each application. Export as `.docx` or Markdown.
+<h3 align="center">jobriq</h3>
+
+<div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![GitHub Issues](https://img.shields.io/github/issues/diazjhozua/jobriq.svg)](https://github.com/diazjhozua/jobriq/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/diazjhozua/jobriq.svg)](https://github.com/diazjhozua/jobriq/pulls)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
----
-
-## Features
-
-- **Profile editor** — personal details, summary, experience, education, skills, and projects
-- **Application tracker** — add applications, update status, keep the job description
-- **AI resume generation** — enhanced bullets, generated summary, ATS keyword matching per application
-- **Template import** — paste an existing plain-text resume template to fill the profile
-- **Export to `.docx` + `.md`** — timestamped downloads
-- **Per-browser workspace** — profile and applications persist in PostgreSQL, keyed by an anonymous `jobriq_client` cookie
+</div>
 
 ---
 
-## Prerequisites
+<p align="center"> Build a resume profile once, tailor a resume to every application, and track the pipeline.
+    <br> 
+</p>
 
-- .NET SDK 10
-- Node.js 20+
-- Docker (for the PostgreSQL container) or PostgreSQL 18
-- An OpenAI-compatible API key
+## 📝 Table of Contents
 
----
+- [About](#about)
+- [Getting Started](#getting_started)
+- [Running the tests](#tests)
+- [Usage](#usage)
+- [Deployment](#deployment)
+- [Built Using](#built_using)
+- [Authors](#authors)
+- [Acknowledgements](#acknowledgement)
 
-## Setup
+## 🧐 About <a name = "about"></a>
 
-Create a `.env` file at the repository root with the database password (it is gitignored), then start PostgreSQL and configure the host:
+Jobriq is a web app for people who apply to many roles and want a resume that matches each one. You keep a single profile with your personal details, summary, experience, education, skills, and projects. For every application you add, Jobriq enhances your bullets, writes a summary when you leave it blank, and highlights the ATS keywords the job description asks for. You can also generate a standalone resume from the profile page when you are not applying through Jobriq, and export either result as Markdown or DOCX.
+
+The app is a React single-page client served by an ASP.NET Core host, with PostgreSQL persistence behind a repository boundary. Each browser gets an anonymous workspace scoped by a `jobriq_client` cookie, so there is no sign-up or login. The backend follows a Clean Architecture split (Domain, Application, Infrastructure, Web), and the AI provider can be swapped for a deterministic fake during tests.
+
+## 🏁 Getting Started <a name = "getting_started"></a>
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system.
+
+### Prerequisites
+
+```
+.NET SDK 10
+Node.js 20.19+ (Vite 8)
+Docker, or an existing PostgreSQL 18 instance
+An OpenAI-compatible API key (optional with the Fake provider)
+```
+
+### Installing
+
+Create a `.env` file with the database password, then start PostgreSQL:
 
 ```bash
-echo "POSTGRES_PASSWORD=<database-password>" > .env
+cp env.example .env
+# edit .env and set POSTGRES_PASSWORD
 docker compose up -d postgres
+```
 
+Point the host at the database and add your OpenAI key through user secrets:
+
+```bash
 dotnet user-secrets set "ConnectionStrings:Database" \
   "Host=localhost;Port=5432;Database=jobriq;Username=jobriq;Password=<database-password>" \
   --project src/Jobriq.Web
 dotnet user-secrets set "OpenAI:ApiKey" "<key>" --project src/Jobriq.Web
+```
 
+Install the client dependencies and start the app:
+
+```bash
 npm --prefix client install
 npm run start
 ```
 
-Open `http://localhost:5080`. `npm run start` builds the React client into the .NET host's `wwwroot` and starts the server. In Development, EF Core migrations apply at startup.
+Open `http://localhost:5080`. `npm run start` builds the React client into the host's `wwwroot` and starts the server. In Development, EF Core migrations apply at startup. The first request sets the `jobriq_client` cookie, and clearing cookies starts a new empty workspace.
 
-The first request sets an anonymous `jobriq_client` cookie, and all profile and application data is scoped to it. Clearing cookies starts a new empty workspace. There is no authentication; do not expose this deployment publicly.
+For client-only development, run the host and Vite in separate terminals. Vite proxies `/api` to port 5080:
 
-Legacy `localStorage` data under `jobriq.v1` is intentionally not imported. Clear the key manually in DevTools once; the app ignores it.
-
-For client-only development, run `dotnet run --project src/Jobriq.Web` from the repository root and `npm run dev` from `client/` in separate terminals. Vite proxies `/api` to port 5080.
+```bash
+dotnet run --project src/Jobriq.Web
+npm run dev
+```
 
 ### Configuration
 
@@ -59,31 +92,55 @@ For client-only development, run `dotnet run --project src/Jobriq.Web` from the 
 | `OpenAI:ApiKey` | API key; `OpenAI__ApiKey` or `OPENAI_API_KEY` also works |
 | `OpenAI:Model` | Model name (default: `gpt-4o`); `OPENAI_MODEL` also works |
 | `OpenAI:BaseUrl` | Optional OpenAI-compatible endpoint; `OPENAI_BASE_URL` also works |
-| `Ai:Provider` | `OpenAI` (default) or `Fake` for deterministic local runs and tests |
+| `Ai:Provider` | `OpenAI` (default) or `Fake` for deterministic runs and tests |
 | `ConnectionStrings:Database` | PostgreSQL connection string; `ConnectionStrings__Database` also works |
 | `Database:ApplyMigrationsOnStartup` | Apply EF Core migrations at startup (default: `true` in Development, otherwise `false`) |
 
-The `Testing` environment sets `Ai:Provider` to `Fake`:
+The `Testing` environment uses the fake AI provider:
 
 ```bash
 ASPNETCORE_ENVIRONMENT=Testing dotnet run --project src/Jobriq.Web --no-launch-profile
 ```
 
----
+## 🔧 Running the tests <a name = "tests"></a>
 
-## Usage
+The repository has three test layers: xUnit for the .NET projects, Vitest with React Testing Library for the client, and Playwright for end-to-end flows.
 
-1. Open **Profile** and fill in your details, or use **Import template** and paste the contents of a plain-text resume.
-2. Save the profile.
-3. Open **Applications** and add an application with its job description.
-4. Select **Generate resume** to enhance bullets, generate a summary when blank, and match ATS keywords.
-5. Download the result as DOCX or Markdown.
+```bash
+npm test                    # dotnet test + Vitest
+dotnet test Jobriq.sln      # Domain, Application, Infrastructure, Web, layer rules
+npm --prefix client test    # Vitest, tests colocated with the source
+```
 
----
+### End-to-end tests
 
-## Template Format
+```bash
+npm run test:e2e
+```
 
-**Import template** accepts the same plain-text section format the original CLI used. Lines starting with `#` are ignored.
+Playwright starts a disposable `postgres:18-alpine` container and a unique database, runs the host on port 5081 with the fake AI service, and removes the container afterward. It never calls OpenAI, never touches the development database, and never reuses a developer server on port 5080.
+
+### Coding style checks
+
+```bash
+npm --prefix client run typecheck   # tsc -b
+npm --prefix client run lint        # oxlint
+```
+
+## 🎈 Usage <a name="usage"></a>
+
+1. Open **Profile** and fill in your details, or choose **Import template** and paste the contents of a plain-text resume.
+2. Save the profile. Saving is explicit; there is no autosave.
+3. Optional: run **Review profile** for job-agnostic feedback and apply the suggestions you agree with.
+4. Open **Applications** and add a role with its job description.
+5. Select **Generate resume** to enhance bullets, generate a summary when blank, and match ATS keywords. Download the result as DOCX or Markdown.
+6. To build a resume without an application, choose **Resume** in the profile header. The job description is optional; leave it blank to reuse your saved summary without keyword matching. The generated resume stays on the profile.
+
+Generated resumes are stored in PostgreSQL, so they reopen after a reload. Legacy `localStorage` data under `jobriq.v1` is intentionally ignored; clear the key manually in DevTools once.
+
+### Template format
+
+**Import template** accepts the plain-text section format the original CLI used. Lines starting with `#` are ignored.
 
 ```
 [PERSONAL]
@@ -121,83 +178,57 @@ URL: https://github.com/diazjhozua/jobriq
 
 `[JOB DESCRIPTION]` and `[AI SUGGESTIONS]` sections are ignored on import.
 
----
+## 🚀 Deployment <a name = "deployment"></a>
 
-## Tests
+Build the client and publish the host:
 
 ```bash
-dotnet test Jobriq.sln
-npm --prefix client test
-npm --prefix tests/e2e test
+npm run build
+dotnet publish src/Jobriq.Web -c Release -o publish
 ```
 
-Playwright starts a disposable `postgres:18-alpine` container and a unique database, runs the host on port 5081 with the fake AI service, and removes the container afterward. It never calls OpenAI and never touches the development database.
+Configure the published app through environment variables or user secrets:
 
----
-
-## Architecture
-
-```
-Jobriq.sln
-src/
-  Jobriq.Domain/          domain models
-  Jobriq.Application/     use cases and abstractions
-  Jobriq.Infrastructure/  OpenAI service, exporters, EF Core/Postgres persistence
-  Jobriq.Web/             ASP.NET Core host and API
-client/                   React + TypeScript SPA
-tests/
-  Jobriq.*.Tests/         xUnit test projects
-  e2e/                    Playwright
+```bash
+ConnectionStrings__Database="Host=<host>;Database=jobriq;Username=<user>;Password=<password>"
+OpenAI__ApiKey="<key>"
+OpenAI__Model="gpt-4o"
+Database__ApplyMigrationsOnStartup="true"   # or run migrations during deployment
 ```
 
-Dependencies point inward: Domain has no dependencies, Application depends on Domain, Infrastructure depends on Application, and Web depends on Infrastructure.
+Run migrations before the first start, or set `Database:ApplyMigrationsOnStartup` to `true`:
 
-### API
+```bash
+dotnet ef database update --project src/Jobriq.Infrastructure --startup-project src/Jobriq.Web
+```
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/state` | Profile and applications for the `jobriq_client` cookie |
-| `PUT /api/profile` | Replace the profile |
-| `POST /api/applications` | Create an application |
-| `PATCH /api/applications/{id}/status` | Change an application status |
-| `DELETE /api/applications/{id}` | Delete an application and its generated resume |
-| `PUT /api/applications/{id}/generated-resume` | Store a generated resume on an application |
-| `POST /api/resume/generate` | Profile + job description in, generated resume JSON out |
-| `POST /api/resume/export` | Generated resume in, DOCX or Markdown file out |
+Serve the app over HTTPS so the `jobriq_client` cookie is marked `Secure`, and put it behind a reverse proxy.
 
----
+> **Warning:** There is no authentication. The `jobriq_client` cookie is effectively a bearer token for a workspace, so anyone who has it can read and change that workspace. Do not expose this deployment publicly without adding authentication.
 
-## Built With
+## ⛏️ Built Using <a name = "built_using"></a>
 
-- [.NET](https://dotnet.microsoft.com/) — ASP.NET Core, minimal APIs
-- [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vite.dev/)
-- [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/)
-- [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
-- [OpenAI .NET SDK](https://github.com/openai/openai-dotnet)
-- [DocumentFormat.OpenXml](https://github.com/dotnet/Open-XML-SDK)
+- [.NET 10](https://dotnet.microsoft.com/) - ASP.NET Core minimal APIs
+- [PostgreSQL](https://www.postgresql.org/) - Database
+- [EF Core](https://learn.microsoft.com/ef/core/) + [Npgsql](https://www.npgsql.org/) - Persistence
+- [OpenAI .NET SDK](https://github.com/openai/openai-dotnet) - Resume enhancement and review
+- [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vite.dev/) - Client
+- [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/) - Styling and primitives
+- [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) - Forms and validation
+- [xUnit](https://xunit.net/), [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/) - Tests
+- [DocumentFormat.OpenXml](https://github.com/dotnet/Open-XML-SDK) - DOCX export
 
----
+## ✍️ Authors <a name = "authors"></a>
 
-## Author
+- [@diazjhozua](https://github.com/diazjhozua) - Idea & Initial work
 
-**Jhozua Diaz** — [@diazjhozua](https://github.com/diazjhozua)
+See also the list of [contributors](https://github.com/diazjhozua/jobriq/contributors) who participated in this project.
 
-## Acknowledgements
+## 🎉 Acknowledgements <a name = "acknowledgement"></a>
 
-The AI resume enhancement workflow in Jobriq is inspired by **[I've Reviewed 1,000+ Resumes — Here's How to Use AI to Land More Interviews](https://www.youtube.com/watch?v=KprWxa9WtIk)** by [Neeraj Mathrani](https://www.youtube.com/@neerajmathrani). His 8-step framework — turning tasks into accomplishments, quantifying results, ATS keyword matching, and the objective vs. professional summary distinction — directly shaped how Jobriq's AI pipeline works.
-
-## Agentic workflow
-
-This repository ships its Claude Code configuration so the setup is reproducible.
-
-- `CLAUDE.md` at the root covers the product, commands, architecture, and backend conventions. `client/CLAUDE.md` and `tests/e2e/CLAUDE.md` add layer-specific guidance and load when you work in those directories.
-- Skills in `.claude/skills/`: `commit` (Conventional Commits), `verify` (test tiers), `review` (pre-commit checklist), `add-api-endpoint`, and `add-client-feature`.
-- Sub-agents in `.claude/agents/`: `architecture-reviewer`, `feature-builder`, `test-runner`, and `ui-reviewer`.
-- Hooks in `.claude/hooks/` block destructive git and secret staging, reject non-conforming commit messages, block writes to build output, and run typecheck, lint, and build when a turn ends with changes.
-- `.mcp.json` registers Playwright, Context7, Microsoft Learn, and GitHub MCP servers. They require approval on first use.
-- `.claude/settings.local.json` and `.claude/plans/` stay local and are gitignored.
-
-Run `/verify` before committing and `/review` on the working diff.
+- The AI resume workflow is inspired by [I've Reviewed 1,000+ Resumes — Here's How to Use AI to Land More Interviews](https://www.youtube.com/watch?v=KprWxa9WtIk) by [Neeraj Mathrani](https://www.youtube.com/@neerajmathrani). His framework shaped how Jobriq turns tasks into accomplishments, quantifies results, and matches ATS keywords.
+- The README structure follows [The Documentation Compendium](https://github.com/kylelobo/The-Documentation-Compendium) by [@kylelobo](https://github.com/kylelobo).
+- Thanks to the maintainers of OpenAI .NET, Radix UI, Tailwind CSS, and the other open-source projects this app depends on.
 
 ---
 
