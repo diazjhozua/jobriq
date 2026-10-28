@@ -299,6 +299,85 @@ describe('ProfilePage', () => {
     expect(within(skills).queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('generates a standalone resume from unsaved form values', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+
+    const dialog = await screen.findByRole('dialog')
+    await user.type(
+      within(dialog).getByLabelText('Job description (optional)'),
+      'Build things.',
+    )
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate resume' }),
+    )
+
+    expect(await within(dialog).findByText('Generated summary.')).toBeInTheDocument()
+
+    const generateCall = api.calls.find(
+      (call) => call.path === '/api/profile/resume',
+    )
+    expect(generateCall?.body).toMatchObject({
+      profile: { personal: { name: 'Jane Doe' } },
+      jobDescription: 'Build things.',
+    })
+    expect(
+      api.calls.some(
+        (call) => call.method === 'PUT' && call.path === '/api/profile',
+      ),
+    ).toBe(false)
+    expect(api.state.applications).toHaveLength(0)
+  })
+
+  it('reopens the job description form when regenerating', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate resume' }),
+    )
+    await within(dialog).findByText('Generated summary.')
+
+    await user.click(within(dialog).getByRole('button', { name: 'Regenerate' }))
+
+    expect(
+      within(dialog).getByLabelText('Job description (optional)'),
+    ).toBeInTheDocument()
+    expect(within(dialog).queryByText('Generated summary.')).not.toBeInTheDocument()
+  })
+
+  it('shows a standalone generation error inside the dialog', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      fail: {
+        standalone: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'openai_rate_limited',
+        },
+      },
+    })
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate resume' }),
+    )
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'OpenAI is unavailable.',
+    )
+  })
+
   it('adds and removes repeatable entries', async () => {
     const user = userEvent.setup()
     installMockApi()

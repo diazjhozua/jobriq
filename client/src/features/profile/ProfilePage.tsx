@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, Plus, Trash2, Upload } from 'lucide-react'
+import { Check, FileText, Plus, Trash2, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
@@ -13,6 +13,7 @@ import type { Profile, ReviewSuggestion } from '../../lib/types'
 import { parseSkills } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
+import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
 
 interface SectionProps {
@@ -51,6 +52,7 @@ export function ProfilePage() {
   const [skillsText, setSkillsText] = useState(() => profile.skills.join(', '))
   const [saved, setSaved] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [resumeOpen, setResumeOpen] = useState(false)
 
   const {
     control,
@@ -176,7 +178,8 @@ export function ProfilePage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Profile</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Everything here feeds the resumes generated for your applications.
+            Everything here feeds your resumes, whether you tailor one to an application or
+            generate one on its own.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -195,6 +198,14 @@ export function ProfilePage() {
           >
             <Upload aria-hidden="true" size={16} />
             Import template
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setResumeOpen(true)}
+            disabled={isSubmitting}
+          >
+            <FileText aria-hidden="true" size={16} />
+            Resume
           </Button>
           <Button
             type="submit"
@@ -588,6 +599,11 @@ export function ProfilePage() {
           onImported={handleImported}
         />
       </form>
+      <StandaloneResumeDialog
+        open={resumeOpen}
+        onOpenChange={setResumeOpen}
+        getProfile={getProfile}
+      />
       <ProfileReviewPanel
         review={review}
         reviewedAt={reviewedAt}
