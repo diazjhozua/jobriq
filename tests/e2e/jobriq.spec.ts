@@ -11,7 +11,7 @@ async function addApplication(page: Page, company: string, role: string) {
   await dialog.getByRole('button', { name: 'Add application' }).click()
 
   await expect(dialog).toBeHidden()
-  await expect(page.getByText(company)).toBeVisible()
+  await expect(page.getByText(company, { exact: true })).toBeVisible()
 }
 
 test('imports a pasted resume template', async ({ page }) => {
@@ -83,9 +83,21 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await expect(page.getByText('No applications yet')).toBeVisible()
 
   await addApplication(page, 'Globex', 'Senior Engineer')
-  await expect(page.getByText('Senior Engineer')).toBeVisible()
+  await expect(page.getByText('Senior Engineer', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Generate resume' }).click()
+  await expect(page.getByText('Build reliable systems.')).toBeHidden()
+  await page
+    .getByRole('button', { name: 'View description for Senior Engineer at Globex' })
+    .click()
+  await expect(page.getByText('Build reliable systems.')).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Hide description for Senior Engineer at Globex' })
+    .click()
+  await expect(page.getByText('Build reliable systems.')).toBeHidden()
+
+  await page
+    .getByRole('button', { name: 'Generate resume for Senior Engineer at Globex' })
+    .click()
   const resumeDialog = page.getByRole('dialog')
   await resumeDialog.getByRole('button', { name: 'Generate resume' }).click()
 
@@ -102,11 +114,17 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   expect((await docxDownload).suggestedFilename()).toMatch(fileNamePattern)
 
   await page.getByRole('button', { name: 'Close' }).click()
-  await expect(page.getByText('Resume generated')).toBeVisible()
+  await expect(page.getByRole('button', {
+    name: 'View resume for Senior Engineer at Globex',
+  })).toBeVisible()
 
   await page.reload()
-  await expect(page.getByText('Resume generated')).toBeVisible()
-  await page.getByRole('button', { name: 'View resume' }).click()
+  await expect(page.getByRole('button', {
+    name: 'View resume for Senior Engineer at Globex',
+  })).toBeVisible()
+  await page.getByRole('button', {
+    name: 'View resume for Senior Engineer at Globex',
+  }).click()
   await expect(page.getByRole('dialog').getByText('Enhanced: Built a thing')).toBeVisible()
 })
 
@@ -120,12 +138,12 @@ test('persists an application status change', async ({ page }) => {
       response.url().includes('/status') &&
       response.ok(),
   )
-  await page.getByLabel('Application status').selectOption('interviewing')
+  await page.getByLabel('Status for Developer at Initech').selectOption('interviewing')
   await saved
 
   await page.reload()
-  await expect(page.getByText('Initech')).toBeVisible()
-  await expect(page.getByLabel('Application status')).toHaveValue('interviewing')
+  await expect(page.getByText('Initech', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Status for Developer at Initech')).toHaveValue('interviewing')
 })
 
 test('persists an application deletion', async ({ page }) => {
@@ -145,6 +163,42 @@ test('persists an application deletion', async ({ page }) => {
   await page.reload()
   await expect(page.getByText('No applications yet')).toBeVisible()
   await expect(page.getByText('Umbrella')).toHaveCount(0)
+})
+
+test('keeps the application table usable at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 812 })
+  await page.goto('/applications')
+  await addApplication(page, 'Globex', 'Senior Engineer')
+
+  await expect(page.locator('thead th', { hasText: 'Added' })).toBeHidden()
+  await expect(page.getByLabel('Status for Senior Engineer at Globex')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'View description for Senior Engineer at Globex' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Generate resume for Senior Engineer at Globex' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Delete Senior Engineer at Globex' }),
+  ).toBeVisible()
+
+  await expect(page.getByText(/^Added /)).toBeVisible()
+
+  await page
+    .getByRole('button', { name: 'View description for Senior Engineer at Globex' })
+    .click()
+  await expect(page.getByText('Build reliable systems.')).toBeVisible()
+
+  const overflow = await page.evaluate(() => {
+    const table = document.querySelector('table')
+    const card = table?.parentElement
+    return {
+      card: card ? card.scrollWidth - card.clientWidth : -1,
+      document:
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }
+  })
+  expect(overflow).toEqual({ card: 0, document: 0 })
 })
 
 test('reviews the profile, applies a suggestion, and keeps the review in session', async ({
