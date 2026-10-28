@@ -144,6 +144,7 @@ export const applicationSchema = z.object({
 export const apiStateSchema = z.object({
   profile: storedProfileSchema,
   applications: z.array(applicationSchema),
+  standaloneResume: generatedResumeSchema.nullable().default(null),
 })
 
 export const profileResponseSchema = z.object({

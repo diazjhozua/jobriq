@@ -24,5 +24,6 @@ export function createEmptyState(): JobriqState {
   return {
     profile: createEmptyProfile(),
     applications: [],
+    standaloneResume: null,
   }
 }

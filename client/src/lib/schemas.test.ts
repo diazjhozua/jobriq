@@ -110,6 +110,30 @@ describe('apiStateSchema', () => {
     expect(parsed.profile.projects[0]?.url).toBe('')
   })
 
+  it('defaults a missing standalone resume to null', () => {
+    const { standaloneResume: _omitted, ...state } = createEmptyState()
+
+    const parsed = apiStateSchema.parse(state)
+
+    expect(parsed.standaloneResume).toBeNull()
+  })
+
+  it('accepts a stored standalone resume', () => {
+    const state = createEmptyState()
+    state.standaloneResume = {
+      personal: state.profile.personal,
+      summary: 'Standalone summary.',
+      experience: [],
+      education: [],
+      skills: [],
+      projects: [],
+      keywords: null,
+      generatedAt: '2026-10-24T12:00:00.000Z',
+    }
+
+    expect(apiStateSchema.safeParse(state).success).toBe(true)
+  })
+
   it('accepts an application with a stored generated resume', () => {
     const state = createEmptyState()
     state.profile.personal.name = 'Jane Doe'

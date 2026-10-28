@@ -130,6 +130,7 @@ export interface JobApplication {
 export interface JobriqState {
   profile: Profile
   applications: JobApplication[]
+  standaloneResume: GeneratedResume | null
 }
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
