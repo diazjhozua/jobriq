@@ -182,7 +182,7 @@ export function ProfilePage() {
             generate one on its own.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
           <span role="status" className="text-sm text-muted">
             {saved ? (
               <span className="inline-flex items-center gap-1.5">
