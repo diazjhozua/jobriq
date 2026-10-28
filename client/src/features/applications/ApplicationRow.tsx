@@ -38,6 +38,7 @@ export function ApplicationRow({
       >
         <th
           scope="row"
+          aria-label={`${application.company}, ${application.role}`}
           className="break-words px-2 py-3 text-left align-middle font-normal sm:px-4"
         >
           <div className="flex min-w-0 items-start gap-1">
