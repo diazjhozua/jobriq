@@ -118,7 +118,7 @@ export function ProfilePage() {
       if (
         suggestion.originalText === null
           ? currentSummary.trim() !== ''
-          : currentSummary !== suggestion.originalText
+          : currentSummary.trim() !== suggestion.originalText
       ) {
         return false
       }
@@ -148,7 +148,7 @@ export function ProfilePage() {
       currentBullet === undefined ||
       (suggestion.originalText === null
         ? currentBullet.trim() !== ''
-        : currentBullet !== suggestion.originalText)
+        : currentBullet.trim() !== suggestion.originalText)
     ) {
       return false
     }
