@@ -68,7 +68,7 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 - `providers/JobriqProvider.tsx` hydrates once from `GET /api/state` and calls granular mutation endpoints. Hydration failure blocks the workspace with a retry panel; mutation failures roll back optimistic changes and show a sync banner.
 - `lib/schemas.ts` has two profiles: strict `profileSchema` for form validation and lenient `stored*` schemas for API hydration, so partially filled profiles still load. Keep this split when adding fields.
 - `lib/template.ts` parses the legacy plain-text template format (`[PERSONAL]`, `[SUMMARY]`, `[EXPERIENCE]`, `[EDUCATION]`, `[SKILLS]`, `[PROJECT]`) for the Profile screen's Import template dialog. It is the only remaining consumer of that format.
-- Generated resumes are stored on the application (`generatedResume`) and reopened from there.
+- Generated resumes are stored on the application (`generatedResume`) or, for the profile page's standalone flow, on the profile row (`standaloneResume`); both reopen from there.
 - `lib/api.ts` parses `ProblemDetails.code` and downloads blobs using the `Content-Disposition` filename.
 
 ## Tests
