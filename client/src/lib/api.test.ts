@@ -4,6 +4,7 @@ import {
   createApplication,
   deleteApplication,
   fetchState,
+  generateStandaloneResume,
   reviewProfile,
   saveGeneratedResume,
   saveProfile,
@@ -163,6 +164,49 @@ describe('api', () => {
     expect(api.state.applications[0]?.generatedResume?.summary).toBe(
       'Tailored summary.',
     )
+  })
+
+  it('generates a standalone resume with a trimmed job description', async () => {
+    const api = installMockApi({ generatedResume: generated })
+    const profile = createEmptyProfile()
+
+    const resume = await generateStandaloneResume(profile, '  Build things.  ')
+
+    expect(resume.summary).toBe('Tailored summary.')
+    expect(api.state.standaloneResume?.summary).toBe('Tailored summary.')
+    expect(api.calls[0]).toMatchObject({
+      method: 'POST',
+      path: '/api/profile/resume',
+      body: { jobDescription: 'Build things.' },
+    })
+  })
+
+  it('sends a null job description when the standalone field is blank', async () => {
+    const api = installMockApi({ generatedResume: generated })
+
+    await generateStandaloneResume(createEmptyProfile(), '   ')
+
+    expect(api.calls[0]?.body).toMatchObject({ jobDescription: null })
+  })
+
+  it('maps standalone generation failures to an ApiError', async () => {
+    installMockApi({
+      fail: {
+        standalone: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'missing_api_key',
+        },
+      },
+    })
+
+    await expect(
+      generateStandaloneResume(createEmptyProfile()),
+    ).rejects.toMatchObject({
+      status: 503,
+      code: 'missing_api_key',
+      message: 'OpenAI is unavailable.',
+    })
   })
 
   it('maps ProblemDetails to an ApiError', async () => {

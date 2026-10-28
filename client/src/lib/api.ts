@@ -2,6 +2,7 @@ import type { ZodType } from 'zod'
 import {
   apiStateSchema,
   applicationResponseSchema,
+  generatedResumeSchema,
   profileResponseSchema,
   profileReviewSchema,
 } from './schemas'
@@ -172,19 +173,24 @@ export async function saveGeneratedResume(
 
 export async function generateResume(
   profile: Profile,
-  jobDescription: string,
+  jobDescription?: string,
 ): Promise<GeneratedResume> {
-  const response = await fetch('/api/resume/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profile, jobDescription }),
-  })
+  return requestJson(
+    '/api/resume/generate',
+    jsonRequest('POST', { profile, jobDescription: jobDescription?.trim() || null }),
+    generatedResumeSchema,
+  )
+}
 
-  if (!response.ok) {
-    throw await toApiError(response)
-  }
-
-  return (await response.json()) as GeneratedResume
+export async function generateStandaloneResume(
+  profile: Profile,
+  jobDescription?: string,
+): Promise<GeneratedResume> {
+  return requestJson(
+    '/api/profile/resume',
+    jsonRequest('POST', { profile, jobDescription: jobDescription?.trim() || null }),
+    generatedResumeSchema,
+  )
 }
 
 export async function downloadResume(

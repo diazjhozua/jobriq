@@ -19,6 +19,7 @@ type Operation =
   | 'delete'
   | 'generated'
   | 'generate'
+  | 'standalone'
 
 export interface MockFailure {
   status?: number
@@ -75,7 +76,11 @@ export function installMockApi({
     }
 
     if (path === '/api/state' && method === 'GET') {
-      return json({ profile: current.profile, applications: current.applications })
+      return json({
+        profile: current.profile,
+        applications: current.applications,
+        standaloneResume: current.standaloneResume,
+      })
     }
 
     if (path === '/api/profile' && method === 'PUT') {
@@ -178,6 +183,22 @@ export function installMockApi({
       )
     }
 
+    if (path === '/api/profile/resume' && method === 'POST') {
+      const resume = generatedResume ?? {
+        personal: current.profile.personal,
+        summary: 'Generated summary.',
+        experience: [],
+        education: [],
+        skills: [],
+        projects: [],
+        keywords: null,
+        generatedAt: new Date().toISOString(),
+      }
+
+      current.standaloneResume = resume
+      return json(resume)
+    }
+
     return problem({ status: 404, detail: 'Not found.', code: 'not_found' })
   })
 
@@ -217,6 +238,10 @@ function operationFor(path: string, method: string): Operation | null {
 
   if (path === '/api/resume/generate') {
     return 'generate'
+  }
+
+  if (path === '/api/profile/resume') {
+    return 'standalone'
   }
 
   return null
