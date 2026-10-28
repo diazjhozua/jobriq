@@ -252,6 +252,34 @@ test('keeps the application table usable at 320px', async ({ page }) => {
   expect(overflow).toEqual({ card: 0, document: 0 })
 })
 
+test('keeps the profile header and resume dialog usable at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 812 })
+  await page.goto('/profile')
+
+  await expect(
+    page.getByRole('button', { name: 'Resume', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Save profile' }),
+  ).toBeVisible()
+
+  const headerOverflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(headerOverflow).toBe(0)
+
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  const dialogOverflow = await page.evaluate(() => {
+    const content = document.querySelector('[role="dialog"]')
+    return content ? content.scrollWidth - content.clientWidth : -1
+  })
+  expect(dialogOverflow).toBe(0)
+})
+
 test('reviews the profile, applies a suggestion, and keeps the review in session', async ({
   page,
 }) => {
