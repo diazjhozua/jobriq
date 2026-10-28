@@ -71,7 +71,7 @@ export function ApplicationRow({
             </div>
           </div>
         </th>
-        <td className="w-24 px-2 py-3">
+        <td className="w-28 px-2 py-3">
           <StatusBadge
             status={application.status}
             onChange={(status) => onStatusChange(application.id, status)}

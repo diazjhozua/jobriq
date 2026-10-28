@@ -86,7 +86,7 @@ export function ApplicationsPage() {
                 <th scope="col" className="break-words px-2 py-3 text-left sm:px-4">
                   Application
                 </th>
-                <th scope="col" className="w-24 px-2 py-3 text-left">
+                <th scope="col" className="w-28 px-2 py-3 text-left">
                   Status
                 </th>
                 <th scope="col" className="hidden px-4 py-3 text-left md:table-cell md:w-32">

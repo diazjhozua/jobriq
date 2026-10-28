@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import { APPLICATION_STATUSES, STATUS_LABELS, type ApplicationStatus } from '../../lib/types'
 import { cn } from '../../lib/utils'
 
@@ -37,21 +38,30 @@ export function StatusBadge({
   }
 
   return (
-    <select
-      aria-label={label}
-      value={status}
-      onChange={(event) => onChange(event.target.value as ApplicationStatus)}
+    <span
       className={cn(
-        'cursor-pointer appearance-none rounded-full border-0 px-2.5 py-1 text-xs font-semibold',
+        'relative inline-flex max-w-full rounded-full',
         statusStyles[status],
         className,
       )}
     >
-      {APPLICATION_STATUSES.map((option) => (
-        <option key={option} value={option}>
-          {STATUS_LABELS[option]}
-        </option>
-      ))}
-    </select>
+      <select
+        aria-label={label}
+        value={status}
+        onChange={(event) => onChange(event.target.value as ApplicationStatus)}
+        className="cursor-pointer appearance-none rounded-full border-0 bg-transparent py-1 pl-2.5 pr-6 text-xs font-semibold"
+      >
+        {APPLICATION_STATUSES.map((option) => (
+          <option key={option} value={option}>
+            {STATUS_LABELS[option]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        aria-hidden="true"
+        size={12}
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2"
+      />
+    </span>
   )
 }
