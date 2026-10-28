@@ -55,6 +55,9 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     expect(await screen.findByText('Enter a valid email address')).toBeInTheDocument()
+    const email = screen.getByLabelText('Email')
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(email).toHaveAccessibleDescription('Enter a valid email address')
     expect(api.state.profile.personal.email).toBe('')
   })
 
