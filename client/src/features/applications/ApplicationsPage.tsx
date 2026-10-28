@@ -1,22 +1,26 @@
-import { Briefcase, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Briefcase, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { ConfirmDialog } from '../../components/ui/alert-dialog'
 import { Button } from '../../components/ui/button'
 import { Card } from '../../components/ui/card'
 import type { ApplicationStatus, JobApplication } from '../../lib/types'
-import { cn, formatDate } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { ApplicationDialog } from './ApplicationDialog'
+import { ApplicationRow } from './ApplicationRow'
 import { GeneratedResumeDialog } from './GeneratedResumeDialog'
-import { StatusBadge } from './StatusBadge'
 
 export function ApplicationsPage() {
   const { applications, updateApplicationStatus, deleteApplication } = useJobriq()
   const [addOpen, setAddOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<JobApplication | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const selected = applications.find((application) => application.id === selectedId) ?? null
+
+  const toggleDescription = (id: string) => {
+    setExpandedId((current) => (current === id ? null : id))
+  }
 
   const handleStatusChange = (id: string, status: ApplicationStatus) => {
     void updateApplicationStatus(id, status).catch(() => {
@@ -34,6 +38,10 @@ export function ApplicationsPage() {
 
     if (selectedId === id) {
       setSelectedId(null)
+    }
+
+    if (expandedId === id) {
+      setExpandedId(null)
     }
 
     void deleteApplication(id).catch(() => {
@@ -70,58 +78,43 @@ export function ApplicationsPage() {
           </Button>
         </Card>
       ) : (
-        <ul className="space-y-4">
-          {applications.map((application) => (
-            <li key={application.id}>
-              <Card
-                className={cn(
-                  'p-5',
-                  selectedId === application.id && 'border-l-4 border-l-accent',
-                )}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">{application.company}</h2>
-                    <p className="text-sm text-muted">{application.role}</p>
-                  </div>
-                  <StatusBadge
-                    status={application.status}
-                    onChange={(status) => handleStatusChange(application.id, status)}
-                  />
-                </div>
-
-                <p className="mt-3 text-xs text-muted">
-                  Added {formatDate(application.createdAt)}
-                  {application.generatedResume ? ' · Resume generated' : ''}
-                </p>
-
-                <p className="mt-3 line-clamp-2 text-sm text-body">
-                  {application.jobDescription}
-                </p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedId(application.id)}
-                  >
-                    <Sparkles aria-hidden="true" size={16} />
-                    {application.generatedResume ? 'View resume' : 'Generate resume'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleting(application)}
-                    aria-label={`Delete ${application.role} at ${application.company}`}
-                  >
-                    <Trash2 aria-hidden="true" size={16} />
-                    Delete
-                  </Button>
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <Card className="overflow-hidden">
+          <table className="w-full table-fixed border-collapse text-sm text-body">
+            <caption className="sr-only">Job applications</caption>
+            <thead className="bg-canvas text-xs font-semibold text-muted">
+              <tr className="border-b border-border">
+                <th scope="col" className="break-words px-2 py-3 text-left sm:px-4">
+                  Application
+                </th>
+                <th scope="col" className="w-24 px-2 py-3 text-left">
+                  Status
+                </th>
+                <th scope="col" className="hidden px-4 py-3 text-left md:table-cell md:w-32">
+                  Added
+                </th>
+                <th
+                  scope="col"
+                  className="w-24 py-3 pl-1 pr-2 text-right sm:w-56 lg:w-72"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map((application) => (
+                <ApplicationRow
+                  key={application.id}
+                  application={application}
+                  expanded={expandedId === application.id}
+                  onToggleDescription={toggleDescription}
+                  onStatusChange={handleStatusChange}
+                  onOpenResume={setSelectedId}
+                  onDelete={setDeleting}
+                />
+              ))}
+            </tbody>
+          </table>
+        </Card>
       )}
 
       <ApplicationDialog open={addOpen} onOpenChange={setAddOpen} />

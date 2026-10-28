@@ -135,13 +135,104 @@ describe('ApplicationsPage', () => {
     expect(within(dialog).getByText('Job description is required')).toBeInTheDocument()
   })
 
-  it('renders a seeded application with its status', async () => {
+  it('renders a seeded application in a semantic table', async () => {
     installMockApi({ state: stateWithApplication() })
     await renderPage()
 
-    expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.getByText('Engineer')).toBeInTheDocument()
-    expect(screen.getByLabelText('Application status')).toHaveValue('saved')
+    expect(
+      screen.getByRole('table', { name: 'Job applications' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('columnheader').map((header) => header.textContent),
+    ).toEqual(['Application', 'Status', 'Added', 'Actions'])
+    expect(screen.getByRole('rowheader', { name: /Acme/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Status for Engineer at Acme')).toHaveValue('saved')
+  })
+
+  it('expands and collapses the job description', async () => {
+    const user = userEvent.setup()
+    installMockApi({ state: stateWithApplication() })
+    await renderPage()
+
+    const toggle = screen.getByRole('button', {
+      name: 'View description for Engineer at Acme',
+    })
+    const detail = screen.getByText('Build reliable systems.').closest('tr')
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(detail).toHaveAttribute('hidden')
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(detail).not.toHaveAttribute('hidden')
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(detail).toHaveAttribute('hidden')
+  })
+
+  it('keeps the description expanded after a status change', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({ state: stateWithApplication() })
+    await renderPage()
+
+    const toggle = screen.getByRole('button', {
+      name: 'View description for Engineer at Acme',
+    })
+    await user.click(toggle)
+    await user.selectOptions(screen.getByLabelText('Status for Engineer at Acme'), 'interviewing')
+
+    await waitFor(() => {
+      expect(api.state.applications[0]?.status).toBe('interviewing')
+    })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Build reliable systems.').closest('tr')).not.toHaveAttribute(
+      'hidden',
+    )
+  })
+
+  it('expands only one description at a time', async () => {
+    const user = userEvent.setup()
+    const state = stateWithApplication()
+    state.applications.push({
+      ...application,
+      id: 'app-2',
+      company: 'Globex',
+      role: 'Developer',
+      jobDescription: 'Write code.',
+    })
+    installMockApi({ state })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'View description for Engineer at Acme' }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'View description for Developer at Globex' }),
+    )
+
+    expect(screen.getByText('Build reliable systems.').closest('tr')).toHaveAttribute(
+      'hidden',
+    )
+    expect(screen.getByText('Write code.').closest('tr')).not.toHaveAttribute('hidden')
+  })
+
+  it('removes the description when its application is deleted', async () => {
+    const user = userEvent.setup()
+    installMockApi({ state: stateWithApplication() })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'View description for Engineer at Acme' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Delete Engineer at Acme' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
+
+    expect(await screen.findByText('No applications yet')).toBeInTheDocument()
+    expect(screen.queryByText('Build reliable systems.')).not.toBeInTheDocument()
   })
 
   it('updates an application status inline', async () => {
@@ -149,7 +240,7 @@ describe('ApplicationsPage', () => {
     const api = installMockApi({ state: stateWithApplication() })
     await renderPage()
 
-    await user.selectOptions(screen.getByLabelText('Application status'), 'interviewing')
+    await user.selectOptions(screen.getByLabelText('Status for Engineer at Acme'), 'interviewing')
 
     await waitFor(() => {
       expect(api.state.applications[0]?.status).toBe('interviewing')
@@ -179,7 +270,9 @@ describe('ApplicationsPage', () => {
     })
     await renderPage()
 
-    await user.click(screen.getByRole('button', { name: 'Generate resume' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Generate resume for Engineer at Acme' }),
+    )
     const dialog = await screen.findByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Generate resume' }))
 
@@ -190,6 +283,11 @@ describe('ApplicationsPage', () => {
         'Tailored summary.',
       )
     })
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+    expect(
+      screen.getByRole('button', { name: 'View resume for Engineer at Acme' }),
+    ).toBeInTheDocument()
   })
 
   it('shows the API error message when generation fails', async () => {
@@ -206,7 +304,9 @@ describe('ApplicationsPage', () => {
     })
     await renderPage()
 
-    await user.click(screen.getByRole('button', { name: 'Generate resume' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Generate resume for Engineer at Acme' }),
+    )
     const dialog = await screen.findByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Generate resume' }))
 
