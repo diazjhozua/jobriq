@@ -128,6 +128,57 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await expect(page.getByRole('dialog').getByText('Enhanced: Built a thing')).toBeVisible()
 })
 
+test('generates and keeps a standalone resume without an application', async ({
+  page,
+}) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+  await page.getByLabel('Location').fill('Remote')
+  await page.getByRole('button', { name: 'Add experience' }).click()
+  await page.getByLabel('Company').fill('Acme')
+  await page.getByLabel('Title').fill('Engineer')
+  await page.getByLabel('Start date').first().fill('2022')
+  await page.getByLabel('End date').first().fill('Present')
+  await page.getByLabel('Bullets').fill('Built a thing')
+  await page.getByLabel('Skills').fill('C#, React')
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Generate resume' }).click()
+
+  await expect(dialog.getByText('Deterministic professional summary.')).toBeVisible()
+  await expect(dialog.getByText('Enhanced: Built a thing')).toBeVisible()
+  await expect(dialog.getByText('Kubernetes')).toHaveCount(0)
+
+  const markdownDownload = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'Markdown' }).click()
+  expect((await markdownDownload).suggestedFilename()).toMatch(fileNamePattern)
+
+  const docxDownload = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'DOCX' }).click()
+  expect((await docxDownload).suggestedFilename()).toMatch(fileNamePattern)
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(dialog).toBeHidden()
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  await expect(
+    page.getByRole('dialog').getByText('Deterministic professional summary.'),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('dialog').getByText('Enhanced: Built a thing'),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('link', { name: 'Applications' }).click()
+  await expect(page.getByText('No applications yet')).toBeVisible()
+})
+
 test('persists an application status change', async ({ page }) => {
   await page.goto('/applications')
   await addApplication(page, 'Initech', 'Developer')
