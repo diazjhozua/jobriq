@@ -69,7 +69,7 @@ export function ResumeDialogContent({
               ) : (
                 <Download aria-hidden="true" size={16} />
               )}
-              Markdown
+              Download Markdown
             </Button>
             <Button
               variant="outline"
@@ -81,7 +81,7 @@ export function ResumeDialogContent({
               ) : (
                 <Download aria-hidden="true" size={16} />
               )}
-              DOCX
+              Download DOCX
             </Button>
           </>
         ) : null}
