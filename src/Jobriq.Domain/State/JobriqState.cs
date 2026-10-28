@@ -5,4 +5,5 @@ namespace Jobriq.Domain.State;
 
 public sealed record JobriqState(
     ResumeProfile Profile,
-    IReadOnlyList<JobApplication> Applications);
+    IReadOnlyList<JobApplication> Applications,
+    GeneratedResume? StandaloneResume = null);
