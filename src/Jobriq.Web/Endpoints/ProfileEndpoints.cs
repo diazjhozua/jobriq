@@ -1,3 +1,4 @@
+using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.ReviewProfile;
 using Jobriq.Application.Profiles.SaveProfile;
 using Jobriq.Domain.Reviews;
@@ -11,8 +12,27 @@ internal static class ProfileEndpoints
     {
         endpoints.MapPut("/api/profile", SaveProfileAsync);
         endpoints.MapPost("/api/profile/review", ReviewProfileAsync);
+        endpoints.MapPost("/api/profile/resume", GenerateStandaloneResumeAsync);
 
         return endpoints;
+    }
+
+    private static async Task<IResult> GenerateStandaloneResumeAsync(
+        GenerateStandaloneResumeRequest request,
+        GenerateStandaloneResumeUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        if (request.Profile is null)
+        {
+            return EndpointProblems.InvalidRequest("A profile is required.");
+        }
+
+        GeneratedResume resume = await useCase.ExecuteAsync(
+            request.Profile,
+            request.JobDescription,
+            cancellationToken);
+
+        return Results.Ok(resume);
     }
 
     private static async Task<IResult> ReviewProfileAsync(
@@ -68,4 +88,11 @@ internal static class ProfileEndpoints
     }
 
     internal sealed record ReviewProfileResponse(IReadOnlyList<ReviewSuggestion> Suggestions);
+
+    internal sealed class GenerateStandaloneResumeRequest
+    {
+        public ResumeProfile? Profile { get; set; }
+
+        public string? JobDescription { get; set; }
+    }
 }
