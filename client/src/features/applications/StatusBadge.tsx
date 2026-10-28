@@ -13,9 +13,15 @@ interface StatusBadgeProps {
   status: ApplicationStatus
   onChange?: (status: ApplicationStatus) => void
   className?: string
+  label?: string
 }
 
-export function StatusBadge({ status, onChange, className }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  onChange,
+  className,
+  label = 'Application status',
+}: StatusBadgeProps) {
   if (!onChange) {
     return (
       <span
@@ -32,7 +38,7 @@ export function StatusBadge({ status, onChange, className }: StatusBadgeProps) {
 
   return (
     <select
-      aria-label="Application status"
+      aria-label={label}
       value={status}
       onChange={(event) => onChange(event.target.value as ApplicationStatus)}
       className={cn(
