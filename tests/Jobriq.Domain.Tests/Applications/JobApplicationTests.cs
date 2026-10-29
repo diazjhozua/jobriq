@@ -78,11 +78,31 @@ public sealed class JobApplicationTests
     }
 
     [Fact]
+    public void AttachCoverLetter_StoresLetter()
+    {
+        JobApplication application = new("Acme", "Engineer", "");
+        CoverLetter letter = new() { Company = "Acme", Role = "Engineer" };
+
+        application.AttachCoverLetter(letter);
+
+        application.CoverLetter.ShouldBeSameAs(letter);
+    }
+
+    [Fact]
+    public void AttachCoverLetter_RejectsNull()
+    {
+        JobApplication application = new("Acme", "Engineer", "");
+
+        Should.Throw<ArgumentNullException>(() => application.AttachCoverLetter(null!));
+    }
+
+    [Fact]
     public void Restore_PreservesPersistedValues()
     {
         Guid id = Guid.NewGuid();
         DateTimeOffset createdAt = new(2026, 10, 1, 12, 30, 0, TimeSpan.Zero);
         GeneratedResume resume = new() { Summary = "Tailored summary." };
+        CoverLetter letter = new() { Company = "Acme", Role = "Engineer" };
 
         JobApplication application = JobApplication.Restore(
             id,
@@ -91,7 +111,8 @@ public sealed class JobApplicationTests
             "Build things.",
             ApplicationStatus.Interviewing,
             createdAt,
-            resume);
+            resume,
+            letter);
 
         application.Id.ShouldBe(id);
         application.Company.ShouldBe("Acme");
@@ -100,6 +121,7 @@ public sealed class JobApplicationTests
         application.Status.ShouldBe(ApplicationStatus.Interviewing);
         application.CreatedAt.ShouldBe(createdAt);
         application.GeneratedResume.ShouldBeSameAs(resume);
+        application.CoverLetter.ShouldBeSameAs(letter);
     }
 
     [Fact]

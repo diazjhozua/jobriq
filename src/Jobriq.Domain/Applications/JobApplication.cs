@@ -28,6 +28,8 @@ public sealed class JobApplication
 
     public GeneratedResume? GeneratedResume { get; private set; }
 
+    public CoverLetter? CoverLetter { get; private set; }
+
     public static JobApplication Restore(
         Guid id,
         string company,
@@ -35,7 +37,8 @@ public sealed class JobApplication
         string jobDescription,
         ApplicationStatus status,
         DateTimeOffset createdAt,
-        GeneratedResume? generatedResume)
+        GeneratedResume? generatedResume,
+        CoverLetter? coverLetter = null)
     {
         JobApplication application = new(company, role, jobDescription)
         {
@@ -48,6 +51,11 @@ public sealed class JobApplication
         if (generatedResume is not null)
         {
             application.AttachGeneratedResume(generatedResume);
+        }
+
+        if (coverLetter is not null)
+        {
+            application.AttachCoverLetter(coverLetter);
         }
 
         return application;
@@ -68,5 +76,12 @@ public sealed class JobApplication
         ArgumentNullException.ThrowIfNull(resume);
 
         GeneratedResume = resume;
+    }
+
+    public void AttachCoverLetter(CoverLetter coverLetter)
+    {
+        ArgumentNullException.ThrowIfNull(coverLetter);
+
+        CoverLetter = coverLetter;
     }
 }

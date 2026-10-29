@@ -19,4 +19,15 @@ public sealed class PersonalInfo
     public string? GitHub { get; set; }
 
     public string? Website { get; set; }
+
+    public PersonalInfo Clone() => new()
+    {
+        Name = Name,
+        Email = Email,
+        Phone = Phone,
+        Location = Location,
+        LinkedIn = LinkedIn,
+        GitHub = GitHub,
+        Website = Website
+    };
 }
