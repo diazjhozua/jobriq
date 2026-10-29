@@ -179,6 +179,51 @@ test('generates and keeps a standalone resume without an application', async ({
   await expect(page.getByText('No applications yet')).toBeVisible()
 })
 
+test('generates, downloads, and keeps a cover letter', async ({ page }) => {
+  await page.goto('/profile')
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Applications' }).click()
+  await addApplication(page, 'Globex', 'Senior Engineer')
+
+  await page
+    .getByRole('button', { name: 'Write cover letter for Senior Engineer at Globex' })
+    .click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Write cover letter' }).click()
+
+  await expect(dialog.getByText('Dear Globex Hiring Team,')).toBeVisible()
+  await expect(
+    dialog.getByText(/The Senior Engineer role at Globex stood out/),
+  ).toBeVisible()
+  await expect(dialog.getByText('Sincerely,')).toBeVisible()
+
+  const download = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'Download DOCX' }).click()
+  expect((await download).suggestedFilename()).toMatch(
+    /^jane-doe-cover-letter-\d{8}-\d{6}\.docx$/,
+  )
+
+  await dialog.getByRole('button', { name: 'Regenerate' }).click()
+  await expect(
+    dialog.getByText(/The Senior Engineer role at Globex stood out/),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(dialog).toBeHidden()
+
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'View cover letter for Senior Engineer at Globex' })
+    .click()
+  await expect(
+    page.getByRole('dialog').getByText('Dear Globex Hiring Team,'),
+  ).toBeVisible()
+})
+
 test('persists an application status change', async ({ page }) => {
   await page.goto('/applications')
   await addApplication(page, 'Initech', 'Developer')
@@ -228,6 +273,9 @@ test('keeps the application table usable at 320px', async ({ page }) => {
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Generate resume for Senior Engineer at Globex' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Write cover letter for Senior Engineer at Globex' }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Delete Senior Engineer at Globex' }),
