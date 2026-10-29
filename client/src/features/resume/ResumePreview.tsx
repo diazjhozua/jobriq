@@ -1,5 +1,6 @@
 import { AlertCircle, Check, Minus } from 'lucide-react'
 import type { EnhancedBullet, GeneratedResume } from '../../lib/types'
+import { DocumentHeader } from '../documents/DocumentHeader'
 
 function Bullet({ bullet }: { bullet: EnhancedBullet }) {
   return (
@@ -49,34 +50,9 @@ function SectionHeading({ children }: { children: string }) {
 }
 
 export function ResumePreview({ resume }: { resume: GeneratedResume }) {
-  const contact = [resume.personal.email, resume.personal.phone, resume.personal.location]
-    .filter(Boolean)
-    .join('  |  ')
-  const links = [
-    resume.personal.linkedin,
-    resume.personal.github,
-    resume.personal.website,
-  ]
-    .filter(Boolean)
-    .join('  |  ')
-
   return (
     <div className="space-y-6">
-      <div className="border-b border-navy/20 pb-5">
-        <h3 className="font-display text-[1.75rem] font-medium leading-tight">
-          {resume.personal.name}
-        </h3>
-        {contact ? (
-          <p className="mt-1.5 break-words text-[0.78rem] tracking-[0.01em] text-muted">
-            {contact}
-          </p>
-        ) : null}
-        {links ? (
-          <p className="mt-1 break-all text-[0.78rem] tracking-[0.01em] text-muted">
-            {links}
-          </p>
-        ) : null}
-      </div>
+      <DocumentHeader personal={resume.personal} />
 
       {resume.summary ? (
         <section>
