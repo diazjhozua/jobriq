@@ -2,6 +2,7 @@ using Jobriq.Application.Applications.CreateApplication;
 using Jobriq.Application.Applications.DeleteApplication;
 using Jobriq.Application.Applications.SaveGeneratedResume;
 using Jobriq.Application.Applications.UpdateApplicationStatus;
+using Jobriq.Application.CoverLetters.GenerateCoverLetter;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.Resumes;
 
@@ -17,6 +18,7 @@ internal static class ApplicationEndpoints
         group.MapPatch("/{id:guid}/status", UpdateStatusAsync);
         group.MapDelete("/{id:guid}", DeleteAsync);
         group.MapPut("/{id:guid}/generated-resume", SaveGeneratedResumeAsync);
+        group.MapPost("/{id:guid}/cover-letter", GenerateCoverLetterAsync);
 
         return endpoints;
     }
@@ -91,6 +93,16 @@ internal static class ApplicationEndpoints
         }
 
         JobApplication application = await useCase.ExecuteAsync(id, request.Resume, cancellationToken);
+
+        return Results.Ok(new ApplicationResponse(application));
+    }
+
+    private static async Task<IResult> GenerateCoverLetterAsync(
+        Guid id,
+        GenerateCoverLetterUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        JobApplication application = await useCase.ExecuteAsync(id, cancellationToken);
 
         return Results.Ok(new ApplicationResponse(application));
     }

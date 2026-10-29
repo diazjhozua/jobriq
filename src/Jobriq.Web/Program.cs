@@ -36,6 +36,7 @@ app.MapResumeEndpoints();
 app.MapStateEndpoints();
 app.MapProfileEndpoints();
 app.MapApplicationEndpoints();
+app.MapCoverLetterEndpoints();
 
 app.MapFallback(async context =>
 {

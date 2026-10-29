@@ -23,11 +23,16 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
                 "AI request failed",
                 aiException.Message,
                 aiException.Code),
-            ExportFailedException => (
+            ExportFailedException exportException => (
                 500,
                 "Export failed",
-                "The resume could not be exported.",
+                exportException.Message,
                 "export_failed"),
+            JobriqValidationException validationException => (
+                400,
+                "Invalid request",
+                validationException.Message,
+                "invalid_request"),
             JobriqResourceNotFoundException notFoundException => (
                 404,
                 "Resource not found",
