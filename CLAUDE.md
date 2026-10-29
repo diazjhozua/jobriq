@@ -47,9 +47,9 @@ client                     React + TypeScript SPA (Vite, Tailwind v4, Radix, RHF
 
 Dependency direction is inward only and enforced by `tests/Jobriq.Web.Tests/Architecture/LayerTests.cs`.
 
-Request flow: `ResumeEndpoints` -> `GenerateResumeUseCase` (enhance experience/project bullets, generate summary only when blank, extract keywords only when a job description exists) -> `IResumeAiService` / `IResumeExporter` implementations. `ExportResumeUseCase` selects an exporter and builds the `{slug}-resume-YYYYMMDD-HHMMSS` filename using `TimeProvider`.
+Request flow: `ResumeEndpoints` -> `GenerateResumeUseCase` (enhance experience/project bullets, generate summary only when blank, extract keywords only when a job description exists) -> `IResumeAiService` / `IResumeExporter` implementations. `ExportResumeUseCase` selects an exporter and builds the `{slug}-resume-YYYYMMDD-HHMMSS` filename using `TimeProvider`. `ProfileEndpoints` maps profile save, `/api/profile/review` (`ReviewProfileUseCase`; suggestions are returned, never persisted), and `/api/profile/resume` (`GenerateStandaloneResumeUseCase`). `ApplicationEndpoints` and `StateEndpoints` cover application CRUD/status and workspace hydration.
 
-The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appsettings.Testing.json`) or the default `OpenAI`. OpenAI config reads `OpenAI:ApiKey`, `OpenAI:Model`, `OpenAI:BaseUrl` with fallbacks to `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`. The `ChatClient` is cached after first use, so configuration changes require a server restart. Enhance and keyword calls request JSON object mode; `JsonResponseParser` strips code fences and extracts a JSON object from surrounding prose. Parse failures log the raw response and map to `openai_invalid_response`. Failures map to `ProblemDetails` with a stable `code` extension (`missing_api_key`, `openai_unauthorized`, `openai_rate_limited`, `openai_invalid_response`, `export_failed`, ...) via `GlobalExceptionHandler`.
+The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appsettings.Testing.json`) or the default `OpenAI`. OpenAI config reads `OpenAI:ApiKey`, `OpenAI:Model`, `OpenAI:BaseUrl` with fallbacks to `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`. The `ChatClient` is cached after first use, so configuration changes require a server restart. Enhance, review, and keyword calls request JSON object mode; `JsonResponseParser` strips code fences and extracts a JSON object from surrounding prose. Parse failures log the raw response and map to `openai_invalid_response`. Failures map to `ProblemDetails` with a stable `code` extension (`missing_api_key`, `openai_unauthorized`, `openai_rate_limited`, `openai_invalid_response`, `export_failed`, ...) via `GlobalExceptionHandler`.
 
 `Program.cs` maps unknown `/api/*` paths to 404 and everything else to `index.html` for SPA routing.
 
@@ -83,7 +83,7 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 - `TreatWarningsAsErrors`, nullable, and file-scoped namespaces are mandatory for all .NET projects; central package versions in `Directory.Packages.props`.
 - Use `TimeProvider` for timestamps so tests can substitute it.
 - Do not call OpenAI from tests; use the `Testing` environment or substitute `IResumeAiService`.
-- No hardcoded colors in the client; use the Tailwind tokens backed by CSS custom properties in `client/src/index.css`.
+- No hardcoded colors in client components; use the Tailwind tokens backed by CSS custom properties in `client/src/index.css`. Static SVG/PNG brand assets are the exception.
 - Conventional commits via the `/commit` skill; `guard-commit.mjs` blocks non-conforming messages. No attribution trailers.
 - `CLAUDE.md` and `.claude/{settings.json,agents,hooks,skills}` are committed. `.claude/settings.local.json`, `.claude/plans/`, and `.claude/cache/` are local only.
 

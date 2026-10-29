@@ -9,6 +9,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 - Hydration failure blocks the workspace with a retry panel; mutation failure rolls back optimistic updates and shows a dismissible sync banner. Do not swallow API errors silently.
 - Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
 - Generated resumes live on the application (`generatedResume`) or on the workspace state as the profile page's standalone resume (`standaloneResume`), not in a separate store.
+- Profile review results are ephemeral provider state (`review`, `reviewedAt`, `reviewing`, `reviewError`) from `POST /api/profile/review`; applying a suggestion patches the form, nothing is persisted, so results reset on reload.
 
 ## Schemas
 
@@ -22,6 +23,7 @@ When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.
 ## UI
 
 - Tailwind tokens only, defined in `src/index.css`. No hex literals in components.
+- Brand mark is `components/layout/Logo.tsx` (inline SVG using `fill-primary`, `fill-canvas`, `fill-accent`). Static copies `public/favicon.svg`, `public/apple-touch-icon.png`, and `../assets/logo.svg` hardcode the palette hex because they render outside CSS; update all three with the tokens.
 - Status colors appear only in `features/applications/StatusBadge.tsx`.
 - Forms use React Hook Form with the Zod resolver, explicit Save, and inline field errors. Do not add autosave.
 - Keep the focus ring (`--brand-blue`, 2px, 2px offset) and label/input associations intact; dialogs are Radix primitives.
