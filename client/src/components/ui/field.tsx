@@ -24,12 +24,12 @@ export function Field({ label, htmlFor, error, hint, className, children }: Fiel
         {children}
       </FieldControlContext.Provider>
       {hintId ? (
-        <p id={hintId} className="text-xs text-muted">
+        <p id={hintId} className="text-[0.75rem] leading-5 text-muted">
           {hint}
         </p>
       ) : null}
       {errorId ? (
-        <p id={errorId} role="alert" className="text-sm font-medium text-navy">
+        <p id={errorId} role="alert" className="text-[0.75rem] font-medium text-accent">
           {error}
         </p>
       ) : null}

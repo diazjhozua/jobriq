@@ -10,7 +10,7 @@ export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectE
       aria-describedby={props['aria-describedby'] ?? field?.describedBy}
       aria-invalid={props['aria-invalid'] ?? (field?.invalid ? true : undefined)}
       className={cn(
-        'h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-body',
+        'h-10 w-full rounded-sm border border-border bg-surface px-3 text-[0.9rem] text-body transition-colors hover:border-muted/50',
         className,
       )}
       {...props}

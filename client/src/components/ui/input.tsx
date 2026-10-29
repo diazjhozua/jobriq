@@ -10,7 +10,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
       aria-describedby={props['aria-describedby'] ?? field?.describedBy}
       aria-invalid={props['aria-invalid'] ?? (field?.invalid ? true : undefined)}
       className={cn(
-        'h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-body placeholder:text-muted disabled:opacity-50',
+        'h-10 w-full rounded-sm border border-border bg-surface px-3 text-[0.9rem] text-body transition-colors placeholder:text-muted/70 hover:border-muted/50 disabled:opacity-50',
         className,
       )}
       {...props}

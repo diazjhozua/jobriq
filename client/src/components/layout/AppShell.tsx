@@ -1,32 +1,36 @@
 import { Loader2, X } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from '../ui/button'
-import { Card } from '../ui/card'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { cn } from '../../lib/utils'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative inline-flex h-16 items-center px-3 text-sm font-medium transition-colors',
+    'relative inline-flex h-[4.25rem] items-center px-2 text-[0.82rem] font-medium tracking-[0.01em] transition-colors sm:px-3',
     isActive
-      ? 'text-navy after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-accent'
+      ? 'text-navy after:absolute after:inset-x-2 after:bottom-0 after:h-[2px] after:bg-accent sm:after:inset-x-3'
       : 'text-muted hover:text-navy',
   )
+
+const shellWidth = 'mx-auto w-full max-w-[76rem] px-5 sm:px-8'
 
 export function AppShell() {
   const { status, loadError, retry, syncError, clearSyncError } = useJobriq()
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-30 border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/profile" className="flex items-center gap-2">
-            <span className="h-6 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-            <span className="text-xl font-semibold tracking-tight text-navy">Jobriq</span>
+      <header className="sticky top-0 z-30 border-b border-border bg-canvas/95 backdrop-blur-sm">
+        <div className="h-[3px] bg-primary" aria-hidden="true" />
+        <div className={cn(shellWidth, 'flex h-[4.25rem] items-center justify-between gap-6')}>
+          <Link to="/profile" className="flex items-baseline gap-2">
+            <span className="font-display text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-navy">
+              Jobriq
+            </span>
+            <span className="h-1.5 w-1.5 bg-accent" aria-hidden="true" />
           </Link>
 
           <nav aria-label="Main">
-            <ul className="flex items-center">
+            <ul className="flex items-center gap-1 sm:gap-2">
               <li>
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
@@ -44,14 +48,14 @@ export function AppShell() {
 
       {syncError ? (
         <div role="alert" className="border-b border-border bg-surface">
-          <div className="mx-auto flex w-full max-w-6xl items-start gap-3 px-4 py-3 sm:px-6">
-            <span className="mt-1 h-4 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-            <p className="flex-1 text-sm text-body">{syncError}</p>
+          <div className={cn(shellWidth, 'flex items-start gap-3 py-3')}>
+            <span className="mt-1.5 h-4 w-[2px] shrink-0 bg-accent" aria-hidden="true" />
+            <p className="flex-1 text-[0.85rem] leading-6 text-body">{syncError}</p>
             <button
               type="button"
               onClick={clearSyncError}
               aria-label="Dismiss sync warning"
-              className="rounded-md p-1 text-muted hover:bg-canvas hover:text-navy"
+              className="rounded-sm p-1 text-muted transition-colors hover:bg-canvas hover:text-navy"
             >
               <X aria-hidden="true" size={16} />
             </button>
@@ -60,30 +64,32 @@ export function AppShell() {
       ) : null}
 
       {status === 'loading' ? (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
-          <Card
+        <main className={cn(shellWidth, 'flex-1 py-10 sm:py-14')}>
+          <div
             role="status"
-            className="flex min-h-40 flex-col items-center justify-center gap-3 px-6 py-14 text-center"
+            className="flex items-center gap-3 border-y border-border py-16"
           >
-            <Loader2 aria-hidden="true" size={24} className="animate-spin text-brand-blue" />
-            <p className="text-sm font-medium text-navy">Loading your workspace</p>
-          </Card>
+            <Loader2 aria-hidden="true" size={20} className="animate-spin text-primary" />
+            <p className="font-display text-lg text-navy">Loading your workspace</p>
+          </div>
         </main>
       ) : status === 'error' ? (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
-          <Card role="alert" className="px-6 py-14 text-center">
-            <h1 className="text-lg font-semibold">Could not load your workspace</h1>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        <main className={cn(shellWidth, 'flex-1 py-10 sm:py-14')}>
+          <div role="alert" className="border-y border-border py-14">
+            <h1 className="text-[1.6rem] font-medium">Could not load your workspace</h1>
+            <p className="mt-2 max-w-[52ch] text-[0.9rem] leading-6 text-muted">
               {loadError ?? 'The server could not be reached.'}
             </p>
             <Button variant="primary" className="mt-6" onClick={retry}>
               Try again
             </Button>
-          </Card>
+          </div>
         </main>
       ) : (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
-          <Outlet />
+        <main className={cn(shellWidth, 'flex-1 py-10 sm:py-14')}>
+          <div className="page-enter">
+            <Outlet />
+          </div>
         </main>
       )}
     </div>

@@ -25,20 +25,20 @@ export function ConfirmDialog({
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialogPrimitive.Portal>
-        <AlertDialogPrimitive.Overlay className="fixed inset-0 z-40 bg-navy/40" />
+        <AlertDialogPrimitive.Overlay className="fixed inset-0 z-40 bg-navy/45" />
         <AlertDialogPrimitive.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-surface p-6 shadow-xl',
+            'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-sm border border-border bg-surface p-6 shadow-sheet sm:p-7',
           )}
         >
-          <AlertDialogPrimitive.Title className="text-lg font-semibold text-navy">
+          <AlertDialogPrimitive.Title className="font-display text-[1.3rem] font-medium leading-tight text-navy">
             {title}
           </AlertDialogPrimitive.Title>
-          <AlertDialogPrimitive.Description className="mt-2 text-sm text-body">
+          <AlertDialogPrimitive.Description className="mt-2 text-[0.85rem] leading-6 text-body">
             {description}
           </AlertDialogPrimitive.Description>
           {children}
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
             <AlertDialogPrimitive.Cancel asChild>
               <Button variant="outline">Cancel</Button>
             </AlertDialogPrimitive.Cancel>
