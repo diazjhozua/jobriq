@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="Jobriq">
-  <rect width="200" height="200" rx="44" fill="#032147"/>
-  <g transform="translate(40 40) scale(5)" fill="none" stroke="#209dd7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-    <rect width="20" height="14" x="2" y="6" rx="2"/>
-  </g>
-  <circle cx="156" cy="52" r="10" fill="#ecad0a"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 64 64" role="img" aria-labelledby="jobriq-logo-title">
+  <title id="jobriq-logo-title">Jobriq</title>
+  <rect x="4" y="4" width="56" height="56" rx="2" fill="#1e4034" />
+  <path d="M40.17 35.98Q40.17 39.09 38.77 41.81Q37.37 44.53 35.03 46.60Q32.69 48.67 29.84 49.83Q26.99 51.00 24.11 51.00Q22.66 51.00 21.69 50.58Q20.72 50.16 20.23 49.39Q19.75 48.62 19.75 47.60Q19.75 46.23 20.60 45.35Q21.46 44.47 22.54 44.47Q22.86 44.47 23.36 44.90Q23.87 45.33 24.52 45.90Q25.17 46.47 25.96 46.91Q26.75 47.34 27.62 47.34Q28.62 47.34 29.14 46.80Q29.66 46.25 29.66 44.79V15.09L25.59 13.93V13.00H44.25V13.93L40.17 15.09Z" fill="#f1f2ee" />
+  <rect x="46" y="43" width="8" height="8" fill="#7c2f37" />
 </svg>
