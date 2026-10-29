@@ -61,7 +61,7 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
 
         return new GeneratedResume
         {
-            Personal = Clone(profile.Personal),
+            Personal = profile.Personal.Clone(),
             Summary = summary,
             Experience = [.. experiences.Select(ToGenerated)],
             Education = [.. profile.Education.Select(Clone)],
@@ -99,17 +99,6 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
         StartDate = education.StartDate,
         EndDate = education.EndDate,
         Gpa = education.Gpa
-    };
-
-    private static PersonalInfo Clone(PersonalInfo personal) => new()
-    {
-        Name = personal.Name,
-        Email = personal.Email,
-        Phone = personal.Phone,
-        Location = personal.Location,
-        LinkedIn = personal.LinkedIn,
-        GitHub = personal.GitHub,
-        Website = personal.Website
     };
 
     private static GeneratedExperience ToGenerated(WorkExperience experience) => new()
