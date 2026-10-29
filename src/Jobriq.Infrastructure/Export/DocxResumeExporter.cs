@@ -4,20 +4,12 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Resumes.ExportResume;
 using Jobriq.Domain.Resumes;
+using static Jobriq.Infrastructure.Export.DocxTheme;
 
 namespace Jobriq.Infrastructure.Export;
 
 public sealed class DocxResumeExporter : IResumeExporter
 {
-    private const string Font = "Calibri";
-    private const string TextColor = "1A1A1A";
-    private const string MutedColor = "666666";
-    private const string RuleColor = "CCCCCC";
-    private const string BodySize = "22";
-    private const string SmallSize = "20";
-    private const string HeadingSize = "26";
-    private const string NameSize = "36";
-
     public ExportFormat Format => ExportFormat.Docx;
 
     public string ContentType => "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -37,31 +29,17 @@ public sealed class DocxResumeExporter : IResumeExporter
             AddStyles(mainPart);
             AddNumbering(mainPart);
 
-            AddHeader(body, resume);
+            AddHeader(body, resume.Personal);
             AddSummary(body, resume);
             AddExperience(body, resume);
             AddEducation(body, resume);
             AddSkills(body, resume);
             AddProjects(body, resume);
 
-            body.Append(new SectionProperties(
-                new PageSize { Width = 12240U, Height = 15840U },
-                new PageMargin { Top = 1440, Right = 1440, Bottom = 1440, Left = 1440 }));
+            AddPageSettings(body);
         }
 
         return stream.ToArray();
-    }
-
-    private static void AddStyles(MainDocumentPart mainPart)
-    {
-        StyleDefinitionsPart stylesPart = mainPart.AddNewPart<StyleDefinitionsPart>();
-        stylesPart.Styles = new Styles(
-            new DocDefaults(
-                new RunPropertiesDefault(
-                    new RunPropertiesBaseStyle(
-                        new RunFonts { Ascii = Font, HighAnsi = Font, ComplexScript = Font },
-                        new FontSize { Val = BodySize },
-                        new Color { Val = TextColor }))));
     }
 
     private static void AddNumbering(MainDocumentPart mainPart)
@@ -81,41 +59,6 @@ public sealed class DocxResumeExporter : IResumeExporter
                 { LevelIndex = 0 })
             { AbstractNumberId = 1 },
             new NumberingInstance(new AbstractNumId { Val = 1 }) { NumberID = 1 });
-    }
-
-    private static void AddHeader(Body body, GeneratedResume resume)
-    {
-        body.Append(new Paragraph(
-            new ParagraphProperties(
-                new Justification { Val = JustificationValues.Center },
-                new SpacingBetweenLines { After = "80" }),
-            CreateRun(resume.Personal.Name, NameSize, TextColor, bold: true)));
-
-        string contact = string.Join(
-            "  |  ",
-            new[] { resume.Personal.Email, resume.Personal.Phone, resume.Personal.Location }
-                .Where(value => !string.IsNullOrEmpty(value)));
-        if (contact.Length > 0)
-        {
-            body.Append(new Paragraph(
-                new ParagraphProperties(
-                    new Justification { Val = JustificationValues.Center },
-                    new SpacingBetweenLines { After = "60" }),
-                CreateRun(contact, SmallSize, MutedColor)));
-        }
-
-        string links = string.Join(
-            "  |  ",
-            new[] { resume.Personal.LinkedIn, resume.Personal.GitHub, resume.Personal.Website }
-                .Where(value => !string.IsNullOrEmpty(value)));
-        if (links.Length > 0)
-        {
-            body.Append(new Paragraph(
-                new ParagraphProperties(
-                    new Justification { Val = JustificationValues.Center },
-                    new SpacingBetweenLines { After = "160" }),
-                CreateRun(links, SmallSize, MutedColor)));
-        }
     }
 
     private static void AddSummary(Body body, GeneratedResume resume)
@@ -232,17 +175,7 @@ public sealed class DocxResumeExporter : IResumeExporter
             new ParagraphProperties(new SpacingBetweenLines { Before = "240", After = "60" }),
             CreateRun(text, HeadingSize, TextColor, bold: true)));
 
-        body.Append(new Paragraph(
-            new ParagraphProperties(
-                new ParagraphBorders(
-                    new BottomBorder
-                    {
-                        Val = BorderValues.Single,
-                        Color = RuleColor,
-                        Size = 4,
-                        Space = 1
-                    }),
-                new SpacingBetweenLines { After = "120" })));
+        AddRule(body);
     }
 
     private static Paragraph BulletParagraph(string text) =>
@@ -253,19 +186,4 @@ public sealed class DocxResumeExporter : IResumeExporter
                     new NumberingId { Val = 1 }),
                 new SpacingBetweenLines { After = "40" }),
             CreateRun(text, BodySize, TextColor));
-
-    private static Run CreateRun(string text, string size, string color, bool bold = false)
-    {
-        RunProperties properties = new();
-        properties.Append(new RunFonts { Ascii = Font, HighAnsi = Font });
-        if (bold)
-        {
-            properties.Append(new Bold());
-        }
-
-        properties.Append(new Color { Val = color });
-        properties.Append(new FontSize { Val = size });
-
-        return new Run(properties, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
-    }
 }
