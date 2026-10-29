@@ -10,6 +10,8 @@ public interface IJobriqRepository
 
     Task SaveProfileAsync(Guid clientId, ResumeProfile profile, CancellationToken cancellationToken);
 
+    Task<ResumeProfile> GetProfileAsync(Guid clientId, CancellationToken cancellationToken);
+
     Task<JobApplication> AddApplicationAsync(
         Guid clientId,
         JobApplication application,
@@ -40,5 +42,11 @@ public interface IJobriqRepository
     Task<GeneratedResume?> SaveStandaloneResumeAsync(
         Guid clientId,
         GeneratedResume resume,
+        CancellationToken cancellationToken);
+
+    Task<JobApplication?> SaveCoverLetterAsync(
+        Guid clientId,
+        Guid applicationId,
+        CoverLetter letter,
         CancellationToken cancellationToken);
 }

@@ -57,6 +57,20 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
         return Task.CompletedTask;
     }
 
+    public Task<ResumeProfile> GetProfileAsync(Guid clientId, CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            ResumeProfile profile = profiles.TryGetValue(clientId, out ResumeProfile? storedProfile)
+                ? storedProfile
+                : new ResumeProfile();
+
+            return Task.FromResult(profile);
+        }
+    }
+
     public Task<JobApplication> AddApplicationAsync(
         Guid clientId,
         JobApplication application,
@@ -152,6 +166,23 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
         }
 
         return Task.FromResult<GeneratedResume?>(resume);
+    }
+
+    public Task<JobApplication?> SaveCoverLetterAsync(
+        Guid clientId,
+        Guid applicationId,
+        CoverLetter letter,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            JobApplication? application = Find(clientId, applicationId);
+            application?.AttachCoverLetter(letter);
+
+            return Task.FromResult(application);
+        }
     }
 
     private JobApplication? Find(Guid clientId, Guid applicationId) =>
