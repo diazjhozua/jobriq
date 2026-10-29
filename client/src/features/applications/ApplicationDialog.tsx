@@ -70,7 +70,7 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
         {error ? (
           <div
             role="alert"
-            className="rounded-md border border-border bg-canvas p-3 text-sm text-body"
+            className="border-l-2 border-accent bg-canvas px-3 py-2 text-[0.85rem] leading-6 text-body"
           >
             {error}
           </div>

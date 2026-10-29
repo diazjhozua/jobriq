@@ -1,8 +1,8 @@
 import { Briefcase, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { ConfirmDialog } from '../../components/ui/alert-dialog'
 import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
 import type { ApplicationStatus, JobApplication } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { ApplicationDialog } from './ApplicationDialog'
@@ -50,51 +50,52 @@ export function ApplicationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Applications</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Track each role from saved to offer, and generate a resume for the ones worth pursuing.
-          </p>
-        </div>
-        <Button variant="primary" onClick={() => setAddOpen(true)}>
-          <Plus aria-hidden="true" size={16} />
-          Add application
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Applications"
+        description="Track each role from saved to offer, and generate a resume for the ones worth pursuing."
+        actions={
+          <Button variant="primary" onClick={() => setAddOpen(true)}>
+            <Plus aria-hidden="true" size={15} />
+            Add application
+          </Button>
+        }
+      />
 
       {applications.length === 0 ? (
-        <Card className="flex flex-col items-center px-6 py-14 text-center">
-          <Briefcase aria-hidden="true" size={32} className="text-brand-blue" />
-          <h2 className="mt-4 text-lg font-semibold">No applications yet</h2>
-          <p className="mt-2 max-w-md text-sm text-muted">
+        <div className="border-y border-border py-14 sm:py-16">
+          <Briefcase aria-hidden="true" size={20} className="text-accent" />
+          <h2 className="mt-4 text-[1.4rem] font-medium">No applications yet</h2>
+          <p className="mt-2 max-w-[48ch] text-[0.9rem] leading-6 text-muted">
             Add a role you are interested in, paste its job description, and generate a resume
             tailored to it.
           </p>
           <Button variant="outline" className="mt-6" onClick={() => setAddOpen(true)}>
-            <Plus aria-hidden="true" size={16} />
+            <Plus aria-hidden="true" size={15} />
             Add your first application
           </Button>
-        </Card>
+        </div>
       ) : (
-        <Card className="overflow-hidden">
-          <table className="w-full table-fixed border-collapse text-sm text-body">
+        <div className="overflow-hidden border-y border-border">
+          <table className="w-full table-fixed border-collapse text-[0.9rem] text-body">
             <caption className="sr-only">Job applications</caption>
-            <thead className="bg-canvas text-xs font-semibold text-muted">
+            <thead className="text-[0.72rem] font-medium text-muted">
               <tr className="border-b border-border">
-                <th scope="col" className="break-words px-2 py-3 text-left sm:px-4">
+                <th scope="col" className="break-words px-2 py-3 text-left font-medium sm:px-4">
                   Application
                 </th>
-                <th scope="col" className="w-28 px-2 py-3 text-left">
+                <th scope="col" className="w-32 px-2 py-3 text-left font-medium">
                   Status
                 </th>
-                <th scope="col" className="hidden px-4 py-3 text-left md:table-cell md:w-32">
+                <th
+                  scope="col"
+                  className="hidden px-4 py-3 text-left font-medium md:table-cell md:w-32"
+                >
                   Added
                 </th>
                 <th
                   scope="col"
-                  className="w-24 py-3 pl-1 pr-2 text-right sm:w-56 lg:w-72"
+                  className="w-20 py-3 pl-1 pr-2 text-right font-medium sm:w-56 lg:w-72"
                 >
                   Actions
                 </th>
@@ -114,7 +115,7 @@ export function ApplicationsPage() {
               ))}
             </tbody>
           </table>
-        </Card>
+        </div>
       )}
 
       <ApplicationDialog open={addOpen} onOpenChange={setAddOpen} />
