@@ -2,8 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, FileText, Plus, Trash2, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
 import { Field } from '../../components/ui/field'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
@@ -17,25 +17,27 @@ import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
 
 interface SectionProps {
+  id: string
   title: string
   description: string
   action?: ReactNode
   children: ReactNode
 }
 
-function Section({ title, description, action, children }: SectionProps) {
+function Section({ id, title, description, action, children }: SectionProps) {
   return (
-    <Card className="p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <div className="mt-2 h-0.5 w-10 bg-accent" aria-hidden="true" />
-          <p className="mt-2 text-sm text-muted">{description}</p>
-        </div>
-        {action}
+    <section className="grid gap-5 border-t border-border pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10">
+      <div className="lg:sticky lg:top-[6.5rem] lg:self-start">
+        <h2 id={id} className="text-[1.3rem] font-medium leading-tight">
+          {title}
+        </h2>
+        <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
+          {description}
+        </p>
+        {action ? <div className="mt-4">{action}</div> : null}
       </div>
-      <div className="mt-6">{children}</div>
-    </Card>
+      <div className="min-w-0">{children}</div>
+    </section>
   )
 }
 
@@ -172,52 +174,51 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="min-w-0 space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Profile</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Everything here feeds your resumes, whether you tailor one to an application or
-            generate one on its own.
-          </p>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
-          <span role="status" className="text-sm text-muted">
-            {saved ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Check aria-hidden="true" size={16} className="text-brand-blue" />
-                Saved
-              </span>
-            ) : null}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setImportOpen(true)}
-            disabled={isSubmitting}
-          >
-            <Upload aria-hidden="true" size={16} />
-            Import template
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setResumeOpen(true)}
-            disabled={isSubmitting}
-          >
-            <FileText aria-hidden="true" size={16} />
-            Resume
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isSubmitting || (!isDirty && !skillsDirty)}
-          >
-            Save profile
-          </Button>
-        </div>
-      </div>
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_21rem]">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="min-w-0 space-y-9">
+      <PageHeader
+        title="Profile"
+        description="Everything here feeds your resumes, whether you tailor one to an application or generate one on its own."
+        actions={
+          <>
+            <span role="status" className="mr-1 text-[0.8rem] text-muted">
+              {saved ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Check aria-hidden="true" size={15} className="text-primary" />
+                  Saved
+                </span>
+              ) : null}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              disabled={isSubmitting}
+            >
+              <Upload aria-hidden="true" size={15} />
+              Import template
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setResumeOpen(true)}
+              disabled={isSubmitting}
+            >
+              <FileText aria-hidden="true" size={15} />
+              Resume
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full sm:w-auto"
+              disabled={isSubmitting || (!isDirty && !skillsDirty)}
+            >
+              Save profile
+            </Button>
+          </>
+        }
+      />
 
       <Section
+        id="profile-personal"
         title="Personal details"
         description="Shown at the top of every generated resume."
       >
@@ -247,6 +248,7 @@ export function ProfilePage() {
       </Section>
 
       <Section
+        id="profile-summary"
         title="Summary"
         description="Write your own, or leave it blank and AI will draft one from your experience."
       >
@@ -269,6 +271,7 @@ export function ProfilePage() {
       </Section>
 
       <Section
+        id="profile-experience"
         title="Work experience"
         description="Each bullet should describe an accomplishment."
         action={
@@ -292,13 +295,15 @@ export function ProfilePage() {
         }
       >
         {experience.fields.length === 0 ? (
-          <p className="text-sm text-muted">No experience added yet.</p>
+          <p className="text-[0.85rem] italic text-muted">No experience added yet.</p>
         ) : (
           <div className="space-y-4">
             {experience.fields.map((entry, index) => (
-              <div key={entry.id} className="rounded-md border border-border bg-canvas p-4">
+              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">Experience {index + 1}</h3>
+                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                    Experience {index + 1}
+                  </h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -381,6 +386,7 @@ export function ProfilePage() {
       </Section>
 
       <Section
+        id="profile-education"
         title="Education"
         description="Degrees, certifications, and relevant coursework."
         action={
@@ -405,13 +411,15 @@ export function ProfilePage() {
         }
       >
         {education.fields.length === 0 ? (
-          <p className="text-sm text-muted">No education added yet.</p>
+          <p className="text-[0.85rem] italic text-muted">No education added yet.</p>
         ) : (
           <div className="space-y-4">
             {education.fields.map((entry, index) => (
-              <div key={entry.id} className="rounded-md border border-border bg-canvas p-4">
+              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">Education {index + 1}</h3>
+                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                    Education {index + 1}
+                  </h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -494,7 +502,11 @@ export function ProfilePage() {
         )}
       </Section>
 
-      <Section title="Skills" description="Comma-separated tools, languages, and methods.">
+      <Section
+        id="profile-skills"
+        title="Skills"
+        description="Comma-separated tools, languages, and methods."
+      >
         <Field label="Skills" htmlFor="skills" hint="Separate skills with commas.">
           <Input
             id="skills"
@@ -506,6 +518,7 @@ export function ProfilePage() {
       </Section>
 
       <Section
+        id="profile-projects"
         title="Projects"
         description="Side projects that show what you can build."
         action={
@@ -527,13 +540,15 @@ export function ProfilePage() {
         }
       >
         {projects.fields.length === 0 ? (
-          <p className="text-sm text-muted">No projects added yet.</p>
+          <p className="text-[0.85rem] italic text-muted">No projects added yet.</p>
         ) : (
           <div className="space-y-4">
             {projects.fields.map((entry, index) => (
-              <div key={entry.id} className="rounded-md border border-border bg-canvas p-4">
+              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">Project {index + 1}</h3>
+                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                    Project {index + 1}
+                  </h3>
                   <Button
                     variant="ghost"
                     size="sm"

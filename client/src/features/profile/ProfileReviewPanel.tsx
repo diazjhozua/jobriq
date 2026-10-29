@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
 import type {
   ProfileReview,
   ReviewCategory,
@@ -87,17 +86,11 @@ export function ProfileReviewPanel({
     <aside
       aria-label="Profile review"
       aria-busy={reviewing}
-      className="min-w-0 lg:sticky lg:top-20 lg:z-10 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
+      className="min-w-0 lg:sticky lg:top-[6.5rem] lg:z-10 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:border-l lg:border-border lg:pl-6"
     >
-      <Card className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Profile review</h2>
-            <div className="mt-2 h-0.5 w-10 bg-accent" aria-hidden="true" />
-          </div>
-        </div>
-
-        <p className="mt-3 text-sm text-muted">
+      <div>
+        <h2 className="text-[1.3rem] font-medium leading-tight">Profile review</h2>
+        <p className="mt-2 text-[0.8rem] leading-5 text-muted">
           Get job-agnostic feedback on this profile before you apply. Nothing is
           saved until you save the profile.
         </p>
@@ -116,17 +109,17 @@ export function ProfileReviewPanel({
         </p>
 
         {reviewing ? (
-          <p className="mt-4 text-sm text-muted">Reviewing your profile...</p>
+          <p className="mt-4 text-[0.85rem] text-muted">Reviewing your profile...</p>
         ) : null}
 
         {error ? (
-          <p role="alert" className="mt-4 text-sm text-body">
+          <p role="alert" className="mt-4 border-l-2 border-accent pl-3 text-[0.85rem] leading-6 text-body">
             {error}
           </p>
         ) : null}
 
         {!review && !reviewing && !error ? (
-          <p className="mt-4 text-sm text-muted">
+          <p className="mt-4 text-[0.85rem] leading-6 text-muted">
             The review looks at your summary, experience, projects, skills,
             education, and personal details. Run it as often as you like.
           </p>
@@ -134,7 +127,7 @@ export function ProfileReviewPanel({
 
         {review ? (
           <div className="mt-5">
-            <p className="text-xs text-muted">
+            <p className="text-[0.75rem] text-muted">
               {review.suggestions.length === 1
                 ? '1 suggestion'
                 : `${review.suggestions.length} suggestions`}
@@ -142,9 +135,11 @@ export function ProfileReviewPanel({
             </p>
 
             {review.suggestions.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">No suggestions right now.</p>
+              <p className="mt-3 text-[0.85rem] italic text-muted">
+                No suggestions right now.
+              </p>
             ) : (
-              <div className="mt-3 space-y-5">
+              <div className="mt-4 space-y-6">
                 {SECTION_ORDER.map((section) => {
                   const suggestions = review.suggestions.filter(
                     (suggestion) => suggestion.section === section,
@@ -158,11 +153,11 @@ export function ProfileReviewPanel({
                     <section key={section} aria-labelledby={`review-${section}`}>
                       <h3
                         id={`review-${section}`}
-                        className="text-xs font-semibold uppercase tracking-wide text-muted"
+                        className="font-sans text-[0.72rem] font-medium tracking-[0.01em] text-muted"
                       >
                         {SECTION_LABELS[section]}
                       </h3>
-                      <ul className="mt-2 space-y-3">
+                      <ul className="mt-2">
                         {suggestions.map((suggestion) => {
                           const isApplied = applied.has(suggestion.id)
                           const isStale = staleId === suggestion.id
@@ -170,28 +165,28 @@ export function ProfileReviewPanel({
                           return (
                             <li
                               key={suggestion.id}
-                              className="rounded-md border border-border bg-canvas p-3"
+                              className="border-t border-border py-3 first:border-t-0 first:pt-0"
                             >
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                              <p className="text-[0.7rem] font-medium text-accent">
                                 {CATEGORY_LABELS[suggestion.category]}
                               </p>
-                              <p className="mt-1 break-words text-sm font-semibold text-navy">
+                              <p className="mt-1 break-words text-[0.85rem] font-medium leading-5 text-navy">
                                 {suggestion.title}
                               </p>
                               {suggestion.detail ? (
-                                <p className="mt-1 break-words text-sm text-muted">
+                                <p className="mt-1 break-words text-[0.8rem] leading-5 text-muted">
                                   {suggestion.detail}
                                 </p>
                               ) : null}
 
                               {suggestion.originalText ? (
-                                <p className="mt-2 break-words text-xs text-muted">
+                                <p className="mt-2 break-words text-[0.75rem] leading-5 text-muted">
                                   Replaces: {suggestion.originalText}
                                 </p>
                               ) : null}
 
                               {suggestion.proposedText ? (
-                                <p className="mt-2 whitespace-pre-wrap break-words rounded-md border border-border bg-surface p-2 text-sm">
+                                <p className="mt-2 whitespace-pre-wrap break-words border-l-2 border-accent bg-surface px-3 py-2 text-[0.8rem] leading-5">
                                   <span className="sr-only">Proposed: </span>
                                   {suggestion.proposedText}
                                 </p>
@@ -215,7 +210,7 @@ export function ProfileReviewPanel({
                               ) : null}
 
                               {isStale ? (
-                                <p role="alert" className="mt-2 text-xs text-body">
+                                <p role="alert" className="mt-2 text-[0.75rem] leading-5 text-body">
                                   This suggestion no longer matches the form. Run the
                                   review again.
                                 </p>
@@ -231,7 +226,7 @@ export function ProfileReviewPanel({
             )}
           </div>
         ) : null}
-      </Card>
+      </div>
     </aside>
   )
 }
