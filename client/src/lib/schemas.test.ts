@@ -134,6 +134,69 @@ describe('apiStateSchema', () => {
     expect(apiStateSchema.safeParse(state).success).toBe(true)
   })
 
+  it('accepts an application with a stored cover letter', () => {
+    const state = createEmptyState()
+    state.profile.personal.name = 'Jane Doe'
+    state.profile.personal.email = 'jane@example.com'
+    state.applications.push({
+      id: '1',
+      company: 'Acme',
+      role: 'Engineer',
+      jobDescription: 'Build things.',
+      status: 'applied',
+      createdAt: '2026-10-24T12:00:00.000Z',
+      coverLetter: {
+        personal: state.profile.personal,
+        company: 'Acme',
+        role: 'Engineer',
+        salutation: 'Dear Acme Hiring Team,',
+        paragraphs: ['First paragraph.', 'Second paragraph.'],
+        closing: 'Sincerely,',
+        signature: 'Jane Doe',
+        generatedAt: '2026-10-24T12:00:00.000Z',
+      },
+    })
+
+    const parsed = apiStateSchema.parse(state)
+
+    expect(parsed.applications[0]?.coverLetter?.paragraphs).toHaveLength(2)
+  })
+
+  it('normalizes null cover letter fields', () => {
+    const profile = createEmptyProfile()
+    const parsed = apiStateSchema.parse({
+      profile,
+      applications: [
+        {
+          id: '1',
+          company: 'Acme',
+          role: 'Engineer',
+          jobDescription: 'Build things.',
+          status: 'applied',
+          createdAt: '2026-10-24T12:00:00.000Z',
+          coverLetter: {
+            personal: profile.personal,
+            company: 'Acme',
+            role: 'Engineer',
+            salutation: null,
+            paragraphs: null,
+            closing: null,
+            signature: null,
+            generatedAt: '2026-10-24T12:00:00.000Z',
+          },
+        },
+      ],
+      standaloneResume: null,
+    })
+
+    expect(parsed.applications[0]?.coverLetter).toMatchObject({
+      salutation: '',
+      paragraphs: [],
+      closing: '',
+      signature: '',
+    })
+  })
+
   it('accepts an application with a stored generated resume', () => {
     const state = createEmptyState()
     state.profile.personal.name = 'Jane Doe'

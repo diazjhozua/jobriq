@@ -117,6 +117,17 @@ export interface GeneratedResume {
   generatedAt: string
 }
 
+export interface CoverLetter {
+  personal: PersonalInfo
+  company: string
+  role: string
+  salutation: string
+  paragraphs: string[]
+  closing: string
+  signature: string
+  generatedAt: string
+}
+
 export interface JobApplication {
   id: string
   company: string
@@ -125,6 +136,7 @@ export interface JobApplication {
   status: ApplicationStatus
   createdAt: string
   generatedResume?: GeneratedResume | null
+  coverLetter?: CoverLetter | null
 }
 
 export interface JobriqState {

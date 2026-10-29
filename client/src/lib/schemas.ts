@@ -131,6 +131,20 @@ export const generatedResumeSchema = z.object({
   generatedAt: z.string(),
 })
 
+export const storedCoverLetterSchema = z.object({
+  personal: storedPersonalInfoSchema,
+  company: z.string(),
+  role: z.string(),
+  salutation: nullableString,
+  paragraphs: z
+    .array(z.string())
+    .nullish()
+    .transform((value) => value ?? []),
+  closing: nullableString,
+  signature: nullableString,
+  generatedAt: z.string(),
+})
+
 export const applicationSchema = z.object({
   id: z.string(),
   company: z.string().trim().min(1),
@@ -139,6 +153,7 @@ export const applicationSchema = z.object({
   status: z.enum(['saved', 'applied', 'interviewing', 'offer', 'rejected']),
   createdAt: z.string(),
   generatedResume: generatedResumeSchema.nullable().optional(),
+  coverLetter: storedCoverLetterSchema.nullable().optional(),
 })
 
 export const apiStateSchema = z.object({
