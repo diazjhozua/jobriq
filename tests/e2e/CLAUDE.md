@@ -9,4 +9,4 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 - Each test gets a fresh browser context and therefore a fresh `jobriq_client` cookie, so workspaces do not leak between tests. No database reset between tests is required.
 - The clean-cutover test seeds `jobriq.v1` with `page.addInitScript` and asserts the server workspace starts empty.
 - Run with `npm --prefix tests/e2e test` or `npm run test:e2e` from the repository root.
-- Assert user-visible behavior and the download filename pattern (`{slug}-resume-YYYYMMDD-HHMMSS`). Do not assert on AI text beyond the deterministic fake output.
+- Assert user-visible behavior and the download filename patterns (`{slug}-resume-YYYYMMDD-HHMMSS` and `{slug}-cover-letter-YYYYMMDD-HHMMSS`). Do not assert on AI text beyond the deterministic fake output.

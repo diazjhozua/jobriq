@@ -9,6 +9,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 - Hydration failure blocks the workspace with a retry panel; mutation failure rolls back optimistic updates and shows a dismissible sync banner. Do not swallow API errors silently.
 - Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
 - Generated resumes live on the application (`generatedResume`) or on the workspace state as the profile page's standalone resume (`standaloneResume`), not in a separate store.
+- A cover letter lives on the application (`coverLetter`). `CoverLetterDialog` generates through `generateCoverLetter(id)` (one server call, overwrites on regenerate), reuses `DocumentHeader` so the preview matches the resume letterhead, and exports or copies through `lib/coverLetter.ts`.
 - Profile review results are ephemeral provider state (`review`, `reviewedAt`, `reviewing`, `reviewError`) from `POST /api/profile/review`; applying a suggestion patches the form, nothing is persisted, so results reset on reload.
 
 ## Schemas
