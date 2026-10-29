@@ -36,6 +36,7 @@ interface JobriqContextValue {
   updateApplicationStatus: (id: string, status: ApplicationStatus) => Promise<void>
   deleteApplication: (id: string) => Promise<void>
   saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
+  generateCoverLetter: (id: string) => Promise<void>
   generateStandaloneResume: (profile: Profile, jobDescription?: string) => Promise<void>
   review: ProfileReview | null
   reviewedAt: string | null
@@ -247,6 +248,20 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [setJobriqState],
   )
 
+  const generateCoverLetter = useCallback(
+    async (id: string) => {
+      try {
+        const updated = await api.generateCoverLetter(id)
+        setJobriqState((current) => replaceApplication(current, updated))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
   const generateStandaloneResume = useCallback(
     async (profile: Profile, jobDescription?: string) => {
       try {
@@ -296,6 +311,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      generateCoverLetter,
       generateStandaloneResume,
       review,
       reviewedAt,
@@ -317,6 +333,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
+      generateCoverLetter,
       generateStandaloneResume,
       review,
       reviewedAt,
