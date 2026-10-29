@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Text.Json;
 using Jobriq.Application.Abstractions;
+using Jobriq.Application.CoverLetters.GenerateCoverLetter;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +25,22 @@ internal sealed class OpenAiResumeAiService(
         {
             throw new MissingApiKeyException();
         }
+    }
+
+    public async Task<CoverLetterDraft> GenerateCoverLetterAsync(
+        ResumeProfile profile,
+        string company,
+        string role,
+        string jobDescription,
+        CancellationToken cancellationToken)
+    {
+        string content = await CompleteAsync(
+            Prompts.GenerateCoverLetter(profile, company, role, jobDescription),
+            json: true,
+            cancellationToken,
+            Prompts.CoverLetterSystem);
+
+        return Parse<CoverLetterDraft>(content) ?? new CoverLetterDraft();
     }
 
     public async Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
@@ -84,7 +101,8 @@ internal sealed class OpenAiResumeAiService(
     private async Task<string> CompleteAsync(
         string userPrompt,
         bool json,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? systemPrompt = null)
     {
         try
         {
@@ -97,7 +115,7 @@ internal sealed class OpenAiResumeAiService(
 
             ChatCompletion completion = await client.CompleteChatAsync(
                 [
-                    new SystemChatMessage(Prompts.System),
+                    new SystemChatMessage(systemPrompt ?? Prompts.System),
                     new UserChatMessage(userPrompt)
                 ],
                 options,

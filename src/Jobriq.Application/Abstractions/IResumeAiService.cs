@@ -1,3 +1,4 @@
+using Jobriq.Application.CoverLetters.GenerateCoverLetter;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
@@ -6,6 +7,13 @@ namespace Jobriq.Application.Abstractions;
 public interface IResumeAiService
 {
     void EnsureAvailable();
+
+    Task<CoverLetterDraft> GenerateCoverLetterAsync(
+        ResumeProfile profile,
+        string company,
+        string role,
+        string jobDescription,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
         ResumeProfile profile,
