@@ -1,9 +1,8 @@
 <p align="center">
-  <a href="" rel="noopener">
- <img width=200px height=200px src="assets/logo.svg" alt="Project logo"></a>
+  <img width="200" height="200" src="assets/logo.svg" alt="Jobriq logo">
 </p>
 
-<h3 align="center">jobriq</h3>
+<h3 align="center">Jobriq</h3>
 
 <div align="center">
 
