@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { cn } from '../../lib/utils'
+import { Logo } from './Logo'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -22,11 +23,14 @@ export function AppShell() {
       <header className="sticky top-0 z-30 border-b border-border bg-canvas/95 backdrop-blur-sm">
         <div className="h-[3px] bg-primary" aria-hidden="true" />
         <div className={cn(shellWidth, 'flex h-[4.25rem] items-center justify-between gap-6')}>
-          <Link to="/profile" className="flex items-baseline gap-2">
-            <span className="font-display text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-navy">
-              Jobriq
+          <Link to="/profile" aria-label="Jobriq" className="flex items-center">
+            <Logo className="h-9 w-9 shrink-0" />
+            <span
+              aria-hidden="true"
+              className="font-display text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-navy"
+            >
+              obriq
             </span>
-            <span className="h-1.5 w-1.5 bg-accent" aria-hidden="true" />
           </Link>
 
           <nav aria-label="Main">
