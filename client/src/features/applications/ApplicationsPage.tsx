@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../components/ui/alert-dialog'
 import { Button } from '../../components/ui/button'
 import type { ApplicationStatus, JobApplication } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { CoverLetterDialog } from '../cover-letter/CoverLetterDialog'
 import { ApplicationDialog } from './ApplicationDialog'
 import { ApplicationRow } from './ApplicationRow'
 import { GeneratedResumeDialog } from './GeneratedResumeDialog'
@@ -13,10 +14,13 @@ export function ApplicationsPage() {
   const { applications, updateApplicationStatus, deleteApplication } = useJobriq()
   const [addOpen, setAddOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [coverLetterId, setCoverLetterId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<JobApplication | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const selected = applications.find((application) => application.id === selectedId) ?? null
+  const coverLetterApplication =
+    applications.find((application) => application.id === coverLetterId) ?? null
 
   const toggleDescription = (id: string) => {
     setExpandedId((current) => (current === id ? null : id))
@@ -38,6 +42,10 @@ export function ApplicationsPage() {
 
     if (selectedId === id) {
       setSelectedId(null)
+    }
+
+    if (coverLetterId === id) {
+      setCoverLetterId(null)
     }
 
     if (expandedId === id) {
@@ -95,7 +103,7 @@ export function ApplicationsPage() {
                 </th>
                 <th
                   scope="col"
-                  className="w-20 py-3 pl-1 pr-2 text-right font-medium sm:w-56 lg:w-72"
+                  className="w-20 py-3 pl-1 pr-2 text-right font-medium sm:w-56 lg:w-80"
                 >
                   Actions
                 </th>
@@ -110,6 +118,7 @@ export function ApplicationsPage() {
                   onToggleDescription={toggleDescription}
                   onStatusChange={handleStatusChange}
                   onOpenResume={setSelectedId}
+                  onOpenCoverLetter={setCoverLetterId}
                   onDelete={setDeleting}
                 />
               ))}
@@ -129,6 +138,16 @@ export function ApplicationsPage() {
         }}
       />
 
+      <CoverLetterDialog
+        key={coverLetterApplication?.id ?? 'none'}
+        application={coverLetterApplication}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCoverLetterId(null)
+          }
+        }}
+      />
+
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => {
@@ -139,7 +158,7 @@ export function ApplicationsPage() {
         title="Delete application"
         description={
           deleting
-            ? `Delete ${deleting.role} at ${deleting.company}? Its generated resume will be removed too.`
+            ? `Delete ${deleting.role} at ${deleting.company}? Its generated resume and cover letter will be removed too.`
             : ''
         }
         confirmLabel="Delete"

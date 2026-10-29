@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
 import { installMockApi } from '../../test/mockApi'
-import type { GeneratedResume, JobriqState } from '../../lib/types'
+import type { CoverLetter, GeneratedResume, JobriqState } from '../../lib/types'
 import { JobriqProvider, useJobriq } from '../../providers/JobriqProvider'
 import { ApplicationsPage } from './ApplicationsPage'
 
@@ -33,6 +33,25 @@ const generated: GeneratedResume = {
   skills: ['C#'],
   projects: [],
   keywords: { matched: ['C#'], missing: ['Kubernetes'] },
+  generatedAt: '2026-10-24T12:00:00.000Z',
+}
+
+const coverLetter: CoverLetter = {
+  personal: {
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    phone: '',
+    location: '',
+    linkedin: '',
+    github: '',
+    website: '',
+  },
+  company: 'Acme',
+  role: 'Engineer',
+  salutation: 'Dear Acme Hiring Team,',
+  paragraphs: ['First paragraph.', 'Second paragraph.', 'Third paragraph.'],
+  closing: 'Sincerely,',
+  signature: 'Jane Doe',
   generatedAt: '2026-10-24T12:00:00.000Z',
 }
 
@@ -288,6 +307,95 @@ describe('ApplicationsPage', () => {
     expect(
       screen.getByRole('button', { name: 'View resume for Engineer at Acme' }),
     ).toBeInTheDocument()
+  })
+
+  it('generates a cover letter and previews it', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({ state: stateWithApplication() })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Write cover letter for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Write cover letter' }))
+
+    expect(await within(dialog).findByText('Dear Acme Hiring Team,')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText(
+        'A second paragraph connecting past work to the job description.',
+      ),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.applications[0]?.coverLetter?.signature).toBe('Jane Doe')
+    })
+  })
+
+  it('regenerates an existing cover letter', async () => {
+    const user = userEvent.setup()
+    const state = stateWithApplication()
+    state.applications[0] = { ...application, coverLetter }
+    installMockApi({ state })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'View cover letter for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('First paragraph.')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Regenerate' }))
+
+    expect(
+      await within(dialog).findByText(
+        'A second paragraph connecting past work to the job description.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('copies the cover letter body to the clipboard', async () => {
+    const user = userEvent.setup()
+    const state = stateWithApplication()
+    state.applications[0] = { ...application, coverLetter }
+    installMockApi({ state })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'View cover letter for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Copy' }))
+
+    expect(await within(dialog).findByRole('button', { name: 'Copied' })).toBeInTheDocument()
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toContain('Dear Acme Hiring Team,')
+    expect(copied).toContain('Sincerely,\nJane Doe')
+    expect(copied).not.toContain('jane@example.com')
+  })
+
+  it('shows the API error message when cover letter generation fails', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      state: stateWithApplication(),
+      fail: {
+        coverLetter: {
+          status: 503,
+          detail: 'OpenAI API key is not configured.',
+          code: 'missing_api_key',
+        },
+      },
+    })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Write cover letter for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Write cover letter' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'OpenAI API key is not configured.',
+    )
   })
 
   it('shows the API error message when generation fails', async () => {

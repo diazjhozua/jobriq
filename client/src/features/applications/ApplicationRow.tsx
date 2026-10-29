@@ -1,4 +1,4 @@
-import { ChevronDown, Eye, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, Eye, FileText, PenLine, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import type { ApplicationStatus, JobApplication } from '../../lib/types'
 import { cn, formatDate } from '../../lib/utils'
@@ -13,6 +13,7 @@ interface ApplicationRowProps {
   onToggleDescription: (id: string) => void
   onStatusChange: (id: string, status: ApplicationStatus) => void
   onOpenResume: (id: string) => void
+  onOpenCoverLetter: (id: string) => void
   onDelete: (application: JobApplication) => void
 }
 
@@ -22,10 +23,14 @@ export function ApplicationRow({
   onToggleDescription,
   onStatusChange,
   onOpenResume,
+  onOpenCoverLetter,
   onDelete,
 }: ApplicationRowProps) {
   const detailId = `application-description-${application.id}`
   const resumeLabel = application.generatedResume ? 'View resume' : 'Generate resume'
+  const coverLetterLabel = application.coverLetter
+    ? 'View cover letter'
+    : 'Write cover letter'
   const target = `${application.role} at ${application.company}`
 
   return (
@@ -89,7 +94,7 @@ export function ApplicationRow({
             {formatDate(application.createdAt)}
           </time>
         </td>
-        <td className="w-20 py-3.5 pl-1 pr-2 text-right sm:w-56 lg:w-72">
+        <td className="w-20 py-3.5 pl-1 pr-2 text-right sm:w-56 lg:w-80">
           <div className="flex flex-wrap items-center justify-end gap-1.5">
             <Button
               variant="outline"
@@ -104,6 +109,20 @@ export function ApplicationRow({
                 <Sparkles aria-hidden="true" size={15} />
               )}
               <span className="hidden sm:inline">{resumeLabel}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-9 px-0 lg:w-auto lg:px-3"
+              aria-label={`${coverLetterLabel} for ${target}`}
+              onClick={() => onOpenCoverLetter(application.id)}
+            >
+              {application.coverLetter ? (
+                <FileText aria-hidden="true" size={15} />
+              ) : (
+                <PenLine aria-hidden="true" size={15} />
+              )}
+              <span className="hidden lg:inline">Cover letter</span>
             </Button>
             <Button
               variant="ghost"
