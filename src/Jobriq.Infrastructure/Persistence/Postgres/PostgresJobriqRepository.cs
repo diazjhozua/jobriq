@@ -71,6 +71,18 @@ internal sealed class PostgresJobriqRepository(
             await dbContext.SaveChangesAsync(cancellationToken);
         });
 
+    public Task<ResumeProfile> GetProfileAsync(Guid clientId, CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ProfileRow? row = await dbContext.Profiles
+                .AsNoTracking()
+                .SingleOrDefaultAsync(candidate => candidate.ClientId == clientId, cancellationToken);
+
+            return row?.ProfileJson is null
+                ? new ResumeProfile()
+                : Deserialize<ResumeProfile>(row.ProfileJson);
+        });
+
     public Task<JobApplication> AddApplicationAsync(
         Guid clientId,
         JobApplication application,
@@ -89,6 +101,9 @@ internal sealed class PostgresJobriqRepository(
                 GeneratedResumeJson = application.GeneratedResume is null
                     ? null
                     : Serialize(application.GeneratedResume),
+                CoverLetterJson = application.CoverLetter is null
+                    ? null
+                    : Serialize(application.CoverLetter),
                 UpdatedAt = timeProvider.GetUtcNow()
             });
 
@@ -202,6 +217,26 @@ internal sealed class PostgresJobriqRepository(
             return resume;
         });
 
+    public Task<JobApplication?> SaveCoverLetterAsync(
+        Guid clientId,
+        Guid applicationId,
+        CoverLetter letter,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ApplicationRow? row = await FindApplicationAsync(clientId, applicationId, cancellationToken);
+            if (row is null)
+            {
+                return null;
+            }
+
+            row.CoverLetterJson = Serialize(letter);
+            row.UpdatedAt = timeProvider.GetUtcNow();
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDomain(row);
+        });
+
     private Task<ApplicationRow?> FindApplicationAsync(
         Guid clientId,
         Guid applicationId,
@@ -220,7 +255,10 @@ internal sealed class PostgresJobriqRepository(
             row.CreatedAt,
             row.GeneratedResumeJson is null
                 ? null
-                : Deserialize<GeneratedResume>(row.GeneratedResumeJson));
+                : Deserialize<GeneratedResume>(row.GeneratedResumeJson),
+            row.CoverLetterJson is null
+                ? null
+                : Deserialize<CoverLetter>(row.CoverLetterJson));
 
     private static string Serialize<T>(T value) =>
         JsonSerializer.Serialize(value, JobriqJson.Options);

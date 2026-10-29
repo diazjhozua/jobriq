@@ -244,6 +244,86 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         state.StandaloneResume.ShouldNotBeNull();
     }
 
+    [Fact]
+    public async Task GetProfileAsync_ReturnsSavedProfileOrEmptyProfile()
+    {
+        Guid clientId = Guid.NewGuid();
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        ResumeProfile missing = await repository.GetProfileAsync(clientId, CancellationToken.None);
+        missing.Personal.Name.ShouldBeEmpty();
+
+        await repository.SaveProfileAsync(clientId, CreateProfile(), CancellationToken.None);
+
+        ResumeProfile saved = await repository.GetProfileAsync(clientId, CancellationToken.None);
+        saved.Personal.Name.ShouldBe("Jane Doe");
+        saved.Summary.ShouldBe("Summary.");
+    }
+
+    [Fact]
+    public async Task SaveCoverLetter_RoundTripsDocument()
+    {
+        Guid clientId = Guid.NewGuid();
+        JobApplication application = new("Acme", "Engineer", "Build things.");
+
+        await using (JobriqDbContext context = fixture.CreateContext())
+        {
+            PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+            await repository.AddApplicationAsync(clientId, application, CancellationToken.None);
+            JobApplication? updated = await repository.SaveCoverLetterAsync(
+                clientId,
+                application.Id,
+                CreateCoverLetter(),
+                CancellationToken.None);
+
+            updated.ShouldNotBeNull();
+            updated.CoverLetter.ShouldNotBeNull();
+        }
+
+        await using JobriqDbContext readContext = fixture.CreateContext();
+        PostgresJobriqRepository readRepository = new(readContext, TimeProvider.System);
+        JobriqState state = await readRepository.GetStateAsync(clientId, CancellationToken.None);
+        CoverLetter? saved = state.Applications.Single().CoverLetter;
+
+        saved.ShouldNotBeNull();
+        saved.Salutation.ShouldBe("Dear Acme Hiring Team,");
+        saved.Paragraphs.ShouldBe(["First paragraph.", "Second paragraph.", "Third paragraph."]);
+        saved.Closing.ShouldBe("Sincerely,");
+        saved.Signature.ShouldBe("Jane Doe");
+        saved.Personal.Email.ShouldBe("jane@example.com");
+        saved.GeneratedAt.ShouldBe(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public async Task SaveCoverLetter_ReturnsNullForUnknownApplication()
+    {
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        JobApplication? saved = await repository.SaveCoverLetterAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            CreateCoverLetter(),
+            CancellationToken.None);
+
+        saved.ShouldBeNull();
+    }
+
+    private static CoverLetter CreateCoverLetter() => new()
+    {
+        Personal = new PersonalInfo { Name = "Jane Doe", Email = "jane@example.com" },
+        Company = "Acme",
+        Role = "Engineer",
+        Salutation = "Dear Acme Hiring Team,",
+        Paragraphs = ["First paragraph.", "Second paragraph.", "Third paragraph."],
+        Closing = "Sincerely,",
+        Signature = "Jane Doe",
+        GeneratedAt = new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero)
+    };
+
     private static ResumeProfile CreateProfile() => new()
     {
         Personal = new PersonalInfo

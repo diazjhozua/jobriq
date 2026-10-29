@@ -18,5 +18,7 @@ internal sealed class ApplicationRow
 
     public string? GeneratedResumeJson { get; set; }
 
+    public string? CoverLetterJson { get; set; }
+
     public DateTimeOffset UpdatedAt { get; set; }
 }

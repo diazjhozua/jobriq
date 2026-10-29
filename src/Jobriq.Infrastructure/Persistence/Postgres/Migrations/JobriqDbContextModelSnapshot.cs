@@ -39,6 +39,10 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
                         .HasColumnType("text")
                         .HasColumnName("company");
 
+                    b.Property<string>("CoverLetterJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("cover_letter");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");

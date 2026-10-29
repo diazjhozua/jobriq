@@ -21,6 +21,11 @@ internal sealed class ApplicationRowConfiguration : IEntityTypeConfiguration<App
             .HasColumnType("jsonb");
 
         builder
+            .Property(row => row.CoverLetterJson)
+            .HasColumnName("cover_letter")
+            .HasColumnType("jsonb");
+
+        builder
             .HasIndex(row => new { row.ClientId, row.CreatedAt })
             .HasDatabaseName("ix_job_applications_client_created")
             .IsDescending(false, true);
