@@ -27,11 +27,11 @@ export function ResumeDialogContent({
   actions,
 }: ResumeDialogContentProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {error ? (
         <div
           role="alert"
-          className="rounded-md border border-border bg-canvas p-3 text-sm text-body"
+          className="border-l-2 border-accent bg-canvas px-3 py-2 text-[0.85rem] leading-6 text-body"
         >
           {error}
         </div>
@@ -40,23 +40,25 @@ export function ResumeDialogContent({
       {generating ? (
         <div
           role="status"
-          className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-md border border-border bg-canvas p-6 text-center"
+          className="flex min-h-40 flex-col items-start justify-center gap-2 border-y border-border py-10"
         >
-          <Loader2 aria-hidden="true" size={24} className="animate-spin text-brand-blue" />
-          <p className="text-sm font-medium text-navy">Generating your resume</p>
-          <p className="text-sm text-muted">
+          <Loader2 aria-hidden="true" size={20} className="animate-spin text-primary" />
+          <p className="font-display text-lg text-navy">Generating your resume</p>
+          <p className="text-[0.85rem] text-muted">
             Enhancing bullets, drafting the summary, and matching keywords.
           </p>
         </div>
       ) : resume ? (
         <ResumePreview resume={resume} />
       ) : (
-        <div className="rounded-md border border-border bg-canvas p-6">
-          {emptyContent ?? <p className="text-sm text-body">{emptyMessage}</p>}
+        <div className="border-y border-border py-6">
+          {emptyContent ?? (
+            <p className="text-[0.85rem] leading-6 text-body">{emptyMessage}</p>
+          )}
         </div>
       )}
 
-      <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+      <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-5">
         {resume ? (
           <>
             <Button
@@ -65,9 +67,9 @@ export function ResumeDialogContent({
               disabled={downloading !== null || generating}
             >
               {downloading === 'markdown' ? (
-                <Loader2 aria-hidden="true" size={16} className="animate-spin" />
+                <Loader2 aria-hidden="true" size={15} className="animate-spin" />
               ) : (
-                <Download aria-hidden="true" size={16} />
+                <Download aria-hidden="true" size={15} />
               )}
               Download Markdown
             </Button>
@@ -77,9 +79,9 @@ export function ResumeDialogContent({
               disabled={downloading !== null || generating}
             >
               {downloading === 'docx' ? (
-                <Loader2 aria-hidden="true" size={16} className="animate-spin" />
+                <Loader2 aria-hidden="true" size={15} className="animate-spin" />
               ) : (
-                <Download aria-hidden="true" size={16} />
+                <Download aria-hidden="true" size={15} />
               )}
               Download DOCX
             </Button>
