@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { createEmptyState } from '../lib/defaults'
 import type {
   ApplicationStatus,
+  CoverLetter,
   GeneratedResume,
   JobApplication,
   JobriqState,
@@ -20,6 +21,8 @@ type Operation =
   | 'generated'
   | 'generate'
   | 'standalone'
+  | 'coverLetter'
+  | 'coverLetterExport'
 
 export interface MockFailure {
   status?: number
@@ -32,6 +35,7 @@ export type MockFailures = Partial<Record<Operation, MockFailure>>
 interface MockApiOptions {
   state?: JobriqState
   generatedResume?: GeneratedResume
+  coverLetter?: CoverLetter
   review?: ProfileReview
   reviewGate?: Promise<unknown>
   fail?: MockFailures
@@ -46,6 +50,7 @@ interface Call {
 export function installMockApi({
   state = createEmptyState(),
   generatedResume,
+  coverLetter,
   review,
   reviewGate,
   fail = {},
@@ -107,6 +112,7 @@ export function installMockApi({
         status: (body?.status as ApplicationStatus | undefined) ?? 'saved',
         createdAt: new Date().toISOString(),
         generatedResume: null,
+        coverLetter: null,
       }
 
       current.applications.unshift(application)
@@ -147,6 +153,37 @@ export function installMockApi({
 
       application.generatedResume = body?.resume as GeneratedResume
       return json({ application })
+    }
+
+    const coverLetterMatch = /^\/api\/applications\/([^/]+)\/cover-letter$/.exec(path)
+    if (coverLetterMatch && method === 'POST') {
+      const application = current.applications.find(
+        (candidate) => candidate.id === decodeURIComponent(coverLetterMatch[1]),
+      )
+
+      if (!application) {
+        return problem({
+          status: 404,
+          detail: 'The application was not found.',
+          code: 'application_not_found',
+        })
+      }
+
+      application.coverLetter =
+        coverLetter ?? defaultCoverLetter(application, current.profile)
+      return json({ application })
+    }
+
+    if (path === '/api/cover-letter/export' && method === 'POST') {
+      return new Response(new Blob(['docx']), {
+        status: 200,
+        headers: {
+          'Content-Type':
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'Content-Disposition':
+            'attachment; filename="jane-doe-cover-letter.docx"',
+        },
+      })
     }
 
     const applicationMatch = /^\/api\/applications\/([^/]+)$/.exec(path)
@@ -232,6 +269,14 @@ function operationFor(path: string, method: string): Operation | null {
     return 'generated'
   }
 
+  if (path === '/api/cover-letter/export') {
+    return 'coverLetterExport'
+  }
+
+  if (path.endsWith('/cover-letter')) {
+    return 'coverLetter'
+  }
+
   if (path.startsWith('/api/applications/') && method === 'DELETE') {
     return 'delete'
   }
@@ -291,6 +336,26 @@ function defaultReview(profile: Profile | undefined): ProfileReview {
   })
 
   return { suggestions }
+}
+
+function defaultCoverLetter(
+  application: JobApplication,
+  profile: Profile,
+): CoverLetter {
+  return {
+    personal: profile.personal,
+    company: application.company,
+    role: application.role,
+    salutation: `Dear ${application.company} Hiring Team,`,
+    paragraphs: [
+      `A cover letter paragraph about the ${application.role} role.`,
+      'A second paragraph connecting past work to the job description.',
+      'A closing paragraph about what I would bring to the team.',
+    ],
+    closing: 'Sincerely,',
+    signature: profile.personal.name,
+    generatedAt: new Date().toISOString(),
+  }
 }
 
 function json(body: unknown, status = 200): Response {

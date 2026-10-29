@@ -8,6 +8,7 @@ import {
 } from './schemas'
 import type {
   ApplicationStatus,
+  CoverLetter,
   GeneratedResume,
   JobApplication,
   JobriqState,
@@ -171,6 +172,16 @@ export async function saveGeneratedResume(
   return result.application
 }
 
+export async function generateCoverLetter(id: string): Promise<JobApplication> {
+  const result = await requestJson(
+    `${applicationUrl(id)}/cover-letter`,
+    { method: 'POST' },
+    applicationResponseSchema,
+  )
+
+  return result.application
+}
+
 export async function generateResume(
   profile: Profile,
   jobDescription?: string,
@@ -203,14 +214,27 @@ export async function downloadResume(
     body: JSON.stringify({ resume, format }),
   })
 
+  await saveResponse(response, `resume.${format === 'docx' ? 'docx' : 'md'}`)
+}
+
+export async function downloadCoverLetter(letter: CoverLetter): Promise<void> {
+  const response = await fetch('/api/cover-letter/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ letter }),
+  })
+
+  await saveResponse(response, 'cover-letter.docx')
+}
+
+async function saveResponse(response: Response, fallbackName: string): Promise<void> {
   if (!response.ok) {
     throw await toApiError(response)
   }
 
   const blob = await response.blob()
   const fileName =
-    fileNameFromDisposition(response.headers.get('Content-Disposition')) ??
-    `resume.${format === 'docx' ? 'docx' : 'md'}`
+    fileNameFromDisposition(response.headers.get('Content-Disposition')) ?? fallbackName
 
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

@@ -3,7 +3,9 @@ import { installMockApi } from '../test/mockApi'
 import {
   createApplication,
   deleteApplication,
+  downloadCoverLetter,
   fetchState,
+  generateCoverLetter,
   generateStandaloneResume,
   reviewProfile,
   saveGeneratedResume,
@@ -164,6 +166,82 @@ describe('api', () => {
     expect(api.state.applications[0]?.generatedResume?.summary).toBe(
       'Tailored summary.',
     )
+  })
+
+  it('generates a cover letter and stores it on the application', async () => {
+    const api = installMockApi()
+    const application = await createApplication({
+      company: 'Acme',
+      role: 'Engineer',
+      jobDescription: 'Build things.',
+      status: 'applied',
+    })
+
+    const updated = await generateCoverLetter(application.id)
+
+    expect(updated.coverLetter?.salutation).toBe('Dear Acme Hiring Team,')
+    expect(updated.coverLetter?.paragraphs.length).toBeGreaterThan(0)
+    expect(api.state.applications[0]?.coverLetter?.salutation).toBe(
+      'Dear Acme Hiring Team,',
+    )
+    expect(api.calls.at(-1)).toMatchObject({
+      method: 'POST',
+      path: `/api/applications/${application.id}/cover-letter`,
+    })
+  })
+
+  it('maps cover letter generation failures to an ApiError', async () => {
+    const api = installMockApi({
+      fail: {
+        coverLetter: {
+          status: 503,
+          detail: 'OpenAI is unavailable.',
+          code: 'missing_api_key',
+        },
+      },
+    })
+    const application = await createApplication({
+      company: 'Acme',
+      role: 'Engineer',
+      jobDescription: 'Build things.',
+      status: 'saved',
+    })
+
+    await expect(generateCoverLetter(application.id)).rejects.toMatchObject({
+      status: 503,
+      code: 'missing_api_key',
+      message: 'OpenAI is unavailable.',
+    })
+    expect(api.state.applications[0]?.coverLetter).toBeNull()
+  })
+
+  it('downloads the cover letter from the export endpoint', async () => {
+    const createObjectURL = vi.fn(() => 'blob:cover-letter')
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: createObjectURL,
+      configurable: true,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: vi.fn(),
+      configurable: true,
+    })
+    const api = installMockApi()
+    const application = await createApplication({
+      company: 'Acme',
+      role: 'Engineer',
+      jobDescription: 'Build things.',
+      status: 'saved',
+    })
+    const updated = await generateCoverLetter(application.id)
+
+    await downloadCoverLetter(updated.coverLetter!)
+
+    expect(api.calls.at(-1)).toMatchObject({
+      method: 'POST',
+      path: '/api/cover-letter/export',
+      body: { letter: { company: 'Acme' } },
+    })
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
   })
 
   it('generates a standalone resume with a trimmed job description', async () => {
