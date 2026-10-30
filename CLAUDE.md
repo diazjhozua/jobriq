@@ -94,8 +94,10 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 
 - Run the `verify` skill (`/verify`) before every commit: fast tier for a narrow edit, standard tier for code changes, full tier (adds Playwright) before a release.
 - The `review` skill (`/review`) is the pre-commit checklist for this repo; run it on the working diff.
-- Sub-agents: `architecture-reviewer` for layer and DI checks, `feature-builder` for multi-file vertical slices, `test-runner` to diagnose failures, `ui-reviewer` for accessibility and token usage.
-- `add-api-endpoint` and `add-client-feature` encode the vertical-slice patterns used by `ResumeEndpoints` and the Profile/Applications screens.
+- `/feature-dev` is the entry point for multi-layer features: it explores with `code-explorer`, designs with `code-architect` (plus the `frontend-design` skill for UI), builds with the slice skills, reviews with `code-reviewer` + `architecture-reviewer` + `ui-reviewer`, and finishes with `verify`.
+- Sub-agents: `code-explorer` traces existing slices, `code-architect` writes blueprints, `code-reviewer` checks bugs and simplicity, `architecture-reviewer` for layer and DI checks, `feature-builder` for multi-file vertical slices, `test-runner` to diagnose failures, `ui-reviewer` for accessibility and token usage.
+- `add-api-endpoint` and `add-client-feature` encode the vertical-slice patterns used by `ResumeEndpoints` and the Profile/Applications screens; `code-architect` preloads both, and `code-reviewer` preloads `review`.
+- `feature-dev`, `frontend-design`, and the `code-*` agents are vendored from the Claude plugins of the same name (Apache-2.0, licenses kept beside the skills) and customized for Jobriq; the plugins are disabled in `.claude/settings.json` to avoid duplicate agents.
 
 ## Subdirectory instructions
 
