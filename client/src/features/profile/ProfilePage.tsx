@@ -13,6 +13,12 @@ import { profileSchema } from '../../lib/schemas'
 import type { Profile, ReviewSuggestion } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { BulletListField } from './BulletListField'
+import { entryAnchorId } from './entryNavItems'
+import {
+  EducationEntryNav,
+  ExperienceEntryNav,
+  ProjectEntryNav,
+} from './ProfileEntryNavs'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
 import { ProfileSectionNav } from './ProfileSectionNav'
 import { SkillsField } from './SkillsField'
@@ -24,23 +30,34 @@ interface SectionProps {
   title: string
   description: string
   action?: ReactNode
+  subNav?: ReactNode
   children: ReactNode
 }
 
-function Section({ id, title, description, action, children }: SectionProps) {
+function Section({
+  id,
+  title,
+  description,
+  action,
+  subNav,
+  children,
+}: SectionProps) {
   return (
     <section
       id={id}
+      aria-labelledby={`${id}-title`}
+      tabIndex={-1}
       className="grid scroll-mt-[8rem] gap-5 border-t border-border pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10"
     >
       <div className="lg:sticky lg:top-[7.75rem] lg:self-start">
-        <h2 className="text-[1.3rem] font-medium leading-tight">
+        <h2 id={`${id}-title`} className="text-[1.3rem] font-medium leading-tight">
           {title}
         </h2>
         <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
           {description}
         </p>
         {action ? <div className="mt-4">{action}</div> : null}
+        {subNav}
       </div>
       <div className="min-w-0">{children}</div>
     </section>
@@ -300,7 +317,20 @@ export function ProfilePage() {
             error={errors.summary?.message}
             hint="Leave blank to let AI write it from your experience."
           >
-            <Textarea id="summary" rows={4} {...register('summary')} />
+            <Controller
+              control={control}
+              name="summary"
+              render={({ field }) => (
+                <Textarea
+                  id="summary"
+                  rows={4}
+                  autoGrow
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
           </Field>
         </div>
       </Section>
@@ -328,15 +358,25 @@ export function ProfilePage() {
             Add experience
           </Button>
         }
+        subNav={<ExperienceEntryNav control={control} />}
       >
         {experience.fields.length === 0 ? (
           <p className="text-[0.85rem] italic text-muted">No experience added yet.</p>
         ) : (
           <div className="space-y-4">
             {experience.fields.map((entry, index) => (
-              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
+              <div
+                key={entry.id}
+                id={entryAnchorId('experience', index)}
+                aria-labelledby={`${entryAnchorId('experience', index)}-title`}
+                tabIndex={-1}
+                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+              >
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                  <h3
+                    id={`${entryAnchorId('experience', index)}-title`}
+                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
+                  >
                     Experience {index + 1}
                   </h3>
                   <Button
@@ -438,15 +478,25 @@ export function ProfilePage() {
             Add education
           </Button>
         }
+        subNav={<EducationEntryNav control={control} />}
       >
         {education.fields.length === 0 ? (
           <p className="text-[0.85rem] italic text-muted">No education added yet.</p>
         ) : (
           <div className="space-y-4">
             {education.fields.map((entry, index) => (
-              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
+              <div
+                key={entry.id}
+                id={entryAnchorId('education', index)}
+                aria-labelledby={`${entryAnchorId('education', index)}-title`}
+                tabIndex={-1}
+                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+              >
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                  <h3
+                    id={`${entryAnchorId('education', index)}-title`}
+                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
+                  >
                     Education {index + 1}
                   </h3>
                   <Button
@@ -565,15 +615,25 @@ export function ProfilePage() {
             Add project
           </Button>
         }
+        subNav={<ProjectEntryNav control={control} />}
       >
         {projects.fields.length === 0 ? (
           <p className="text-[0.85rem] italic text-muted">No projects added yet.</p>
         ) : (
           <div className="space-y-4">
             {projects.fields.map((entry, index) => (
-              <div key={entry.id} className="border-t border-border pt-5 first:border-t-0 first:pt-0">
+              <div
+                key={entry.id}
+                id={entryAnchorId('projects', index)}
+                aria-labelledby={`${entryAnchorId('projects', index)}-title`}
+                tabIndex={-1}
+                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+              >
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted">
+                  <h3
+                    id={`${entryAnchorId('projects', index)}-title`}
+                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
+                  >
                     Project {index + 1}
                   </h3>
                   <Button

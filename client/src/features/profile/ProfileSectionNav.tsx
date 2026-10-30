@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useActiveAnchor } from '../../lib/useActiveAnchor'
 import { cn } from '../../lib/utils'
 
 const PROFILE_SECTIONS = [
@@ -11,39 +12,12 @@ const PROFILE_SECTIONS = [
 ] as const
 
 export function ProfileSectionNav() {
-  const [active, setActive] = useState<string>(PROFILE_SECTIONS[0].id)
+  const active = useActiveAnchor(PROFILE_SECTIONS.map((section) => section.id))
   const activeLink = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
     activeLink.current?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
   }, [active])
-
-  useEffect(() => {
-    const elements = PROFILE_SECTIONS.map((section) =>
-      document.getElementById(section.id),
-    ).filter((element): element is HTMLElement => element !== null)
-
-    if (elements.length === 0) {
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)
-
-        if (visible[0]) {
-          setActive(visible[0].target.id)
-        }
-      },
-      { rootMargin: '-30% 0px -60% 0px' },
-    )
-
-    elements.forEach((element) => observer.observe(element))
-
-    return () => observer.disconnect()
-  }, [])
 
   return (
     <nav

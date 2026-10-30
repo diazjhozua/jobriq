@@ -72,7 +72,10 @@ describe('ProfilePage', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Jane Doe')
     await user.type(screen.getByLabelText('Email'), 'jane@example.com')
-    await user.type(screen.getByLabelText('Skills'), 'C#{Enter}React{Enter}')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Skills' }),
+      'C#{Enter}React{Enter}',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Add experience' }))
     await user.type(screen.getByLabelText('Company'), 'Acme')
@@ -183,7 +186,10 @@ describe('ProfilePage', () => {
     installMockApi()
     await renderPage()
 
-    await user.type(screen.getByLabelText('Summary'), 'Old summary')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Summary' }),
+      'Old summary',
+    )
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/2 suggestions/)
 
@@ -282,7 +288,10 @@ describe('ProfilePage', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Jane Doe')
     await user.type(screen.getByLabelText('Email'), 'jane@example.com')
-    await user.type(screen.getByLabelText('Summary'), 'Old summary')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Summary' }),
+      'Old summary',
+    )
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/2 suggestions/)
 
@@ -305,8 +314,9 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/2 suggestions/)
 
-    const skills = screen.getByRole('region', { name: 'Skills' })
-    expect(within(skills).queryByRole('button')).not.toBeInTheDocument()
+    const skills = document.getElementById('review-skills')
+    expect(skills).not.toBeNull()
+    expect(within(skills as HTMLElement).queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('generates a standalone resume from unsaved form values', async () => {
@@ -412,7 +422,10 @@ describe('ProfilePage', () => {
     installMockApi()
     await renderPage()
 
-    await user.type(screen.getByLabelText('Skills'), 'TypeScript{Enter}')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Skills' }),
+      'TypeScript{Enter}',
+    )
     expect(
       screen.getByRole('button', { name: 'Remove skill TypeScript' }),
     ).toBeInTheDocument()
@@ -465,12 +478,81 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Add project' }))
 
     expect(screen.getByLabelText('School')).toBeInTheDocument()
-    expect(screen.getByText('Project 1')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Project 1' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Remove education 1' }))
     await user.click(screen.getByRole('button', { name: 'Remove project 1' }))
 
     expect(screen.queryByLabelText('School')).not.toBeInTheDocument()
-    expect(screen.queryByText('Project 1')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Project 1' })).not.toBeInTheDocument()
+  })
+
+  it('links to each experience entry and labels it with live values', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    expect(
+      screen.queryByRole('navigation', { name: 'Work experience entries' }),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+
+    const nav = screen.getByRole('navigation', {
+      name: 'Work experience entries',
+    })
+    const first = within(nav).getByRole('link', { name: 'Experience 1' })
+    expect(first).toHaveAttribute('href', '#profile-experience-entry-1')
+    expect(first).toHaveAttribute('aria-current', 'location')
+    expect(document.getElementById('profile-experience-entry-1')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    )
+
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+
+    expect(
+      within(nav).getByRole('link', { name: '1 · Acme — Engineer' }),
+    ).toHaveAttribute('href', '#profile-experience-entry-1')
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    expect(
+      within(nav).getByRole('link', { name: 'Experience 2' }),
+    ).toHaveAttribute('href', '#profile-experience-entry-2')
+  })
+
+  it('links to each education and project entry', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add education' }))
+    await user.click(screen.getByRole('button', { name: 'Add project' }))
+
+    const educationNav = screen.getByRole('navigation', {
+      name: 'Education entries',
+    })
+    expect(
+      within(educationNav).getByRole('link', { name: 'Education 1' }),
+    ).toHaveAttribute('href', '#profile-education-entry-1')
+
+    const projectNav = screen.getByRole('navigation', { name: 'Project entries' })
+    expect(
+      within(projectNav).getByRole('link', { name: 'Project 1' }),
+    ).toHaveAttribute('href', '#profile-projects-entry-1')
+
+    await user.type(screen.getByLabelText('School'), 'State University')
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#project-0-name' }),
+      'Jobriq',
+    )
+
+    expect(
+      within(educationNav).getByRole('link', { name: '1 · State University' }),
+    ).toBeInTheDocument()
+    expect(
+      within(projectNav).getByRole('link', { name: '1 · Jobriq' }),
+    ).toBeInTheDocument()
   })
 })
