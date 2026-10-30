@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, FileText, Plus, Trash2, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import { useLocation } from 'react-router-dom'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { Button } from '../../components/ui/button'
 import { Field } from '../../components/ui/field'
@@ -10,9 +11,11 @@ import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import { profileSchema } from '../../lib/schemas'
 import type { Profile, ReviewSuggestion } from '../../lib/types'
-import { parseSkills } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { BulletListField } from './BulletListField'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
+import { ProfileSectionNav } from './ProfileSectionNav'
+import { SkillsField } from './SkillsField'
 import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
 
@@ -26,9 +29,12 @@ interface SectionProps {
 
 function Section({ id, title, description, action, children }: SectionProps) {
   return (
-    <section className="grid gap-5 border-t border-border pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10">
-      <div className="lg:sticky lg:top-[6.5rem] lg:self-start">
-        <h2 id={id} className="text-[1.3rem] font-medium leading-tight">
+    <section
+      id={id}
+      className="grid scroll-mt-[8rem] gap-5 border-t border-border pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10"
+    >
+      <div className="lg:sticky lg:top-[7.75rem] lg:self-start">
+        <h2 className="text-[1.3rem] font-medium leading-tight">
           {title}
         </h2>
         <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
@@ -51,8 +57,10 @@ export function ProfilePage() {
     reviewError,
     reviewProfile,
   } = useJobriq()
-  const [skillsText, setSkillsText] = useState(() => profile.skills.join(', '))
+  const [skills, setSkills] = useState<string[]>(() => profile.skills)
+  const [skillDraft, setSkillDraft] = useState('')
   const [saved, setSaved] = useState(false)
+  const location = useLocation()
   const [importOpen, setImportOpen] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
 
@@ -73,7 +81,19 @@ export function ProfilePage() {
   const education = useFieldArray({ control, name: 'education' })
   const projects = useFieldArray({ control, name: 'projects' })
 
-  const skillsDirty = skillsText !== profile.skills.join(', ')
+  const skillsDirty =
+    JSON.stringify(skills) !== JSON.stringify(profile.skills) ||
+    skillDraft.trim() !== ''
+
+  useEffect(() => {
+    if (!location.hash) {
+      return
+    }
+
+    const target = document.getElementById(location.hash.slice(1))
+    target?.scrollIntoView({ block: 'start' })
+    target?.focus()
+  }, [location.hash])
 
   useEffect(() => {
     if (!saved) {
@@ -84,13 +104,29 @@ export function ProfilePage() {
     return () => window.clearTimeout(timer)
   }, [saved])
 
+  const cleanBullets = (bullets: string[]) =>
+    bullets.map((bullet) => bullet.trim()).filter(Boolean)
+
+  const normalize = (values: Profile): Profile => ({
+    ...values,
+    skills,
+    experience: values.experience.map((entry) => ({
+      ...entry,
+      bullets: cleanBullets(entry.bullets),
+    })),
+    projects: values.projects.map((entry) => ({
+      ...entry,
+      bullets: cleanBullets(entry.bullets),
+    })),
+  })
+
   const onSubmit = async (values: Profile) => {
-    const next: Profile = { ...values, skills: parseSkills(skillsText) }
+    const next = normalize(values)
 
     try {
       await saveProfile(next)
       reset(next)
-      setSkillsText(next.skills.join(', '))
+      setSkills(next.skills)
       setSaved(true)
     } catch {
       // The provider surfaces the failure in the sync banner.
@@ -100,14 +136,11 @@ export function ProfilePage() {
   const handleImported = async (imported: Profile) => {
     await saveProfile(imported)
     reset(imported)
-    setSkillsText(imported.skills.join(', '))
+    setSkills(imported.skills)
     setSaved(true)
   }
 
-  const getProfile = (): Profile => ({
-    ...getValues(),
-    skills: parseSkills(skillsText),
-  })
+  const getProfile = (): Profile => normalize(getValues())
 
   const applySuggestion = (suggestion: ReviewSuggestion): boolean => {
     const proposedText = suggestion.proposedText
@@ -217,6 +250,8 @@ export function ProfilePage() {
         }
       />
 
+      <ProfileSectionNav />
+
       <Section
         id="profile-personal"
         title="Personal details"
@@ -285,7 +320,7 @@ export function ProfilePage() {
                 title: '',
                 startDate: '',
                 endDate: '',
-                bullets: [],
+                bullets: [''],
               })
             }
           >
@@ -357,27 +392,21 @@ export function ProfilePage() {
                       {...register(`experience.${index}.endDate`)}
                     />
                   </Field>
-                  <Field
-                    label="Bullets"
-                    htmlFor={`experience-${index}-bullets`}
-                    hint="One achievement per line."
-                    error={errors.experience?.[index]?.bullets?.message}
-                    className="sm:col-span-2"
-                  >
-                    <Controller
-                      control={control}
-                      name={`experience.${index}.bullets`}
-                      render={({ field }) => (
-                        <Textarea
-                          id={`experience-${index}-bullets`}
-                          rows={4}
-                          value={field.value.join('\n')}
-                          onChange={(event) => field.onChange(event.target.value.split('\n'))}
-                          onBlur={field.onBlur}
-                        />
-                      )}
-                    />
-                  </Field>
+                  <Controller
+                    control={control}
+                    name={`experience.${index}.bullets`}
+                    render={({ field, fieldState }) => (
+                      <BulletListField
+                        id={`experience-${index}-bullets`}
+                        itemLabel={`Experience ${index + 1}`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                        className="sm:col-span-2"
+                      />
+                    )}
+                  />
                 </div>
               </div>
             ))}
@@ -505,16 +534,14 @@ export function ProfilePage() {
       <Section
         id="profile-skills"
         title="Skills"
-        description="Comma-separated tools, languages, and methods."
+        description="Tools, languages, and methods, shown as tags."
       >
-        <Field label="Skills" htmlFor="skills" hint="Separate skills with commas.">
-          <Input
-            id="skills"
-            value={skillsText}
-            onChange={(event) => setSkillsText(event.target.value)}
-            placeholder="TypeScript, React, .NET, PostgreSQL"
-          />
-        </Field>
+        <SkillsField
+          id="skills"
+          skills={skills}
+          onChange={setSkills}
+          onDraftChange={setSkillDraft}
+        />
       </Section>
 
       <Section
@@ -530,7 +557,7 @@ export function ProfilePage() {
                 id: crypto.randomUUID(),
                 name: '',
                 url: '',
-                bullets: [],
+                bullets: [''],
               })
             }
           >
@@ -581,27 +608,21 @@ export function ProfilePage() {
                       {...register(`projects.${index}.url`)}
                     />
                   </Field>
-                  <Field
-                    label="Bullets"
-                    htmlFor={`project-${index}-bullets`}
-                    hint="One achievement per line."
-                    error={errors.projects?.[index]?.bullets?.message}
-                    className="sm:col-span-2"
-                  >
-                    <Controller
-                      control={control}
-                      name={`projects.${index}.bullets`}
-                      render={({ field }) => (
-                        <Textarea
-                          id={`project-${index}-bullets`}
-                          rows={3}
-                          value={field.value.join('\n')}
-                          onChange={(event) => field.onChange(event.target.value.split('\n'))}
-                          onBlur={field.onBlur}
-                        />
-                      )}
-                    />
-                  </Field>
+                  <Controller
+                    control={control}
+                    name={`projects.${index}.bullets`}
+                    render={({ field, fieldState }) => (
+                      <BulletListField
+                        id={`project-${index}-bullets`}
+                        itemLabel={`Project ${index + 1}`}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                        className="sm:col-span-2"
+                      />
+                    )}
+                  />
                 </div>
               </div>
             ))}

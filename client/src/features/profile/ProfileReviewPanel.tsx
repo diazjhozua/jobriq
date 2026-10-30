@@ -84,9 +84,11 @@ export function ProfileReviewPanel({
 
   return (
     <aside
+      id="profile-review"
       aria-label="Profile review"
       aria-busy={reviewing}
-      className="min-w-0 lg:sticky lg:top-[6.5rem] lg:z-10 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:border-l lg:border-border lg:pl-6"
+      tabIndex={-1}
+      className="min-w-0 scroll-mt-[7.75rem] outline-none lg:sticky lg:top-[7.75rem] lg:z-10 lg:max-h-[calc(100vh-9.25rem)] lg:overflow-y-auto lg:border-l lg:border-border lg:pl-6"
     >
       <div>
         <h2 className="text-[1.3rem] font-medium leading-tight">Profile review</h2>

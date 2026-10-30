@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
 import { installMockApi } from '../../test/mockApi'
@@ -75,9 +76,11 @@ function ReadyPage() {
 
 async function renderPage() {
   render(
-    <JobriqProvider>
-      <ReadyPage />
-    </JobriqProvider>,
+    <MemoryRouter>
+      <JobriqProvider>
+        <ReadyPage />
+      </JobriqProvider>
+    </MemoryRouter>,
   )
 
   await screen.findByRole('heading', { name: 'Applications' })
@@ -279,6 +282,22 @@ describe('ApplicationsPage', () => {
     await waitFor(() => {
       expect(api.state.applications).toHaveLength(0)
     })
+  })
+
+  it('warns to polish the profile before generating a resume', async () => {
+    const user = userEvent.setup()
+    installMockApi({ state: stateWithApplication() })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Generate resume for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+
+    expect(within(dialog).getByText('Polish your profile first')).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('link', { name: 'Open profile review' }),
+    ).toHaveAttribute('href', '/profile#profile-review')
   })
 
   it('generates a resume and previews it', async () => {

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
 import { installMockApi } from '../../test/mockApi'
@@ -27,9 +28,11 @@ function ReadyPage() {
 
 async function renderPage() {
   render(
-    <JobriqProvider>
-      <ReadyPage />
-    </JobriqProvider>,
+    <MemoryRouter>
+      <JobriqProvider>
+        <ReadyPage />
+      </JobriqProvider>
+    </MemoryRouter>,
   )
 
   await screen.findByRole('heading', { name: 'Profile' })
@@ -42,7 +45,8 @@ describe('ProfilePage', () => {
 
     expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe')
     expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com')
-    expect(screen.getByLabelText('Skills')).toHaveValue('C#, React')
+    expect(screen.getByRole('button', { name: 'Remove skill C#' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove skill React' })).toBeInTheDocument()
   })
 
   it('blocks invalid input with inline errors', async () => {
@@ -68,12 +72,12 @@ describe('ProfilePage', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Jane Doe')
     await user.type(screen.getByLabelText('Email'), 'jane@example.com')
-    await user.type(screen.getByLabelText('Skills'), 'C#, React')
+    await user.type(screen.getByLabelText('Skills'), 'C#{Enter}React{Enter}')
 
     await user.click(screen.getByRole('button', { name: 'Add experience' }))
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.type(screen.getByLabelText('Title'), 'Engineer')
-    await user.type(screen.getByLabelText('Bullets'), 'Built a thing')
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Built a thing')
 
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
@@ -120,7 +124,8 @@ describe('ProfilePage', () => {
     })
     expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe')
     expect(screen.getByLabelText('LinkedIn')).toHaveValue('https://linkedin.com/in/jane')
-    expect(screen.getByLabelText('Skills')).toHaveValue('C#, React')
+    expect(screen.getByRole('button', { name: 'Remove skill C#' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove skill React' })).toBeInTheDocument()
     expect(screen.getByText('Saved')).toBeInTheDocument()
     expect(api.state.profile.experience[0]?.company).toBe('Acme')
   })
@@ -152,7 +157,7 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Add experience' }))
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.type(screen.getByLabelText('Title'), 'Engineer')
-    await user.type(screen.getByLabelText('Bullets'), 'Unsaved bullet')
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Unsaved bullet')
 
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/3 suggestions/)
@@ -227,7 +232,7 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Add experience' }))
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.type(screen.getByLabelText('Title'), 'Engineer')
-    await user.type(screen.getByLabelText('Bullets'), 'Built a thing')
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Built a thing')
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/3 suggestions/)
 
@@ -237,7 +242,9 @@ describe('ProfilePage', () => {
       }),
     )
 
-    expect(screen.getByLabelText('Bullets')).toHaveValue('Reviewed: Built a thing')
+    expect(screen.getByLabelText('Experience 1 bullet 1')).toHaveValue(
+      'Reviewed: Built a thing',
+    )
   })
 
   it('refuses a bullet proposal after the bullet is edited', async () => {
@@ -248,12 +255,12 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: 'Add experience' }))
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.type(screen.getByLabelText('Title'), 'Engineer')
-    await user.type(screen.getByLabelText('Bullets'), 'Built a thing')
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Built a thing')
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/3 suggestions/)
 
-    await user.clear(screen.getByLabelText('Bullets'))
-    await user.type(screen.getByLabelText('Bullets'), 'Edited bullet')
+    await user.clear(screen.getByLabelText('Experience 1 bullet 1'))
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Edited bullet')
     await user.click(
       screen.getByRole('button', {
         name: 'Apply suggestion: Quantify your impact',
@@ -265,7 +272,7 @@ describe('ProfilePage', () => {
         'This suggestion no longer matches the form. Run the review again.',
       ),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Bullets')).toHaveValue('Edited bullet')
+    expect(screen.getByLabelText('Experience 1 bullet 1')).toHaveValue('Edited bullet')
   })
 
   it('keeps suggestions after saving the profile', async () => {
@@ -379,6 +386,74 @@ describe('ProfilePage', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'OpenAI is unavailable.',
     )
+  })
+
+  it('links to every profile section', async () => {
+    installMockApi()
+    await renderPage()
+
+    const nav = screen.getByRole('navigation', { name: 'Profile sections' })
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual([
+      '#profile-personal',
+      '#profile-summary',
+      '#profile-experience',
+      '#profile-education',
+      '#profile-skills',
+      '#profile-projects',
+    ])
+  })
+
+  it('adds and removes skills as tags', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Skills'), 'TypeScript{Enter}')
+    expect(
+      screen.getByRole('button', { name: 'Remove skill TypeScript' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Remove skill TypeScript' }))
+    expect(
+      screen.queryByRole('button', { name: 'Remove skill TypeScript' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('adds and removes individual bullets', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'First')
+    await user.click(screen.getByRole('button', { name: 'Add bullet' }))
+    await user.type(screen.getByLabelText('Experience 1 bullet 2'), 'Second')
+
+    expect(screen.getByLabelText('Experience 1 bullet 1')).toHaveValue('First')
+    expect(screen.getByLabelText('Experience 1 bullet 2')).toHaveValue('Second')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Experience 1 bullet 2' }),
+    )
+    expect(screen.queryByLabelText('Experience 1 bullet 2')).not.toBeInTheDocument()
+  })
+
+  it('warns to polish the profile before generating a resume', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+    const dialog = await screen.findByRole('dialog')
+
+    expect(within(dialog).getByText('Polish your profile first')).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('button', { name: 'Open profile review' }),
+    ).toBeInTheDocument()
   })
 
   it('adds and removes repeatable entries', async () => {

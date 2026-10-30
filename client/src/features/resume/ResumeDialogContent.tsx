@@ -11,6 +11,7 @@ interface ResumeDialogContentProps {
   downloading: ExportFormat | null
   error: string | null
   emptyMessage: string
+  notice?: ReactNode
   emptyContent?: ReactNode
   onDownload: (format: ExportFormat) => void
   actions: ReactNode
@@ -22,6 +23,7 @@ export function ResumeDialogContent({
   downloading,
   error,
   emptyMessage,
+  notice,
   emptyContent,
   onDownload,
   actions,
@@ -51,10 +53,10 @@ export function ResumeDialogContent({
       ) : resume ? (
         <ResumePreview resume={resume} />
       ) : (
-        <div className="border-y border-border py-6">
-          {emptyContent ?? (
-            <p className="text-[0.85rem] leading-6 text-body">{emptyMessage}</p>
-          )}
+        <div className="space-y-4 border-y border-border py-6">
+          {notice}
+          <p className="text-[0.85rem] leading-6 text-body">{emptyMessage}</p>
+          {emptyContent}
         </div>
       )}
 

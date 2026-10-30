@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function parseSkills(value: string): string[] {
   return value
-    .split(',')
+    .split(/[,\n]/)
     .map((skill) => skill.trim())
     .filter(Boolean)
 }

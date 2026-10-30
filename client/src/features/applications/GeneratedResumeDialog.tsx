@@ -1,10 +1,12 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
 import { generateResume } from '../../lib/api'
 import type { JobApplication } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { EnhanceProfileNotice } from '../resume/EnhanceProfileNotice'
 import { ResumeDialogContent } from '../resume/ResumeDialogContent'
 import { useResumeDownload } from '../resume/useResumeDownload'
 
@@ -65,6 +67,22 @@ export function GeneratedResumeDialog({
         downloading={downloading}
         error={generateError ?? downloadError}
         emptyMessage="Generate a resume from your saved profile and this job description. The result is saved with this application so you can come back to it."
+        notice={
+          <EnhanceProfileNotice
+            action={
+              <Link
+                to="/profile#profile-review"
+                className="font-medium text-link underline-offset-4 hover:underline"
+              >
+                Open profile review
+              </Link>
+            }
+          >
+            Run Profile review and apply its suggestions before generating. This
+            resume reuses your saved profile, so polished bullets carry straight
+            into it.
+          </EnhanceProfileNotice>
+        }
         onDownload={(format) => void download(format)}
         actions={
           resume ? (

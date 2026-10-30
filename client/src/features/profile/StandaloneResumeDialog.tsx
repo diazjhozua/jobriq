@@ -1,11 +1,12 @@
 import { Loader2, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
 import { Field } from '../../components/ui/field'
 import { Textarea } from '../../components/ui/textarea'
 import type { Profile } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { EnhanceProfileNotice } from '../resume/EnhanceProfileNotice'
 import { ResumeDialogContent } from '../resume/ResumeDialogContent'
 import { useResumeDownload } from '../resume/useResumeDownload'
 
@@ -28,17 +29,17 @@ export function StandaloneResumeDialog({
   const { downloading, downloadError, download, clearDownloadError } =
     useResumeDownload(standaloneResume)
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      setDrafting(standaloneResume === null)
-      setJobDescription('')
-      setGenerating(false)
-      setGenerateError(null)
-      clearDownloadError()
+  useEffect(() => {
+    if (!open) {
+      return
     }
 
-    onOpenChange(next)
-  }
+    setDrafting(standaloneResume === null)
+    setJobDescription('')
+    setGenerating(false)
+    setGenerateError(null)
+    clearDownloadError()
+  }, [open, standaloneResume, clearDownloadError])
 
   const handleGenerate = async () => {
     setGenerating(true)
@@ -57,12 +58,21 @@ export function StandaloneResumeDialog({
     }
   }
 
+  const openReview = () => {
+    onOpenChange(false)
+    window.requestAnimationFrame(() => {
+      const review = document.getElementById('profile-review')
+      review?.scrollIntoView({ block: 'start' })
+      review?.focus()
+    })
+  }
+
   const resume = drafting ? null : standaloneResume
 
   return (
     <Dialog
       open={open}
-      onOpenChange={handleOpenChange}
+      onOpenChange={onOpenChange}
       title="Resume"
       description="Generate a resume from your profile without creating an application."
       className="max-w-2xl"
@@ -73,6 +83,22 @@ export function StandaloneResumeDialog({
         downloading={downloading}
         error={generateError ?? downloadError}
         emptyMessage="Generate a resume from your profile. Add a job description to match its keywords and tailor the result."
+        notice={
+          <EnhanceProfileNotice
+            action={
+              <button
+                type="button"
+                onClick={openReview}
+                className="font-medium text-link underline-offset-4 hover:underline"
+              >
+                Open profile review
+              </button>
+            }
+          >
+            Run Profile review and apply its suggestions before generating. This
+            resume reuses your saved profile.
+          </EnhanceProfileNotice>
+        }
         emptyContent={
           <Field
             label="Job description (optional)"
