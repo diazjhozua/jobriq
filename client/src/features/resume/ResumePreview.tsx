@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Minus } from 'lucide-react'
+import { Check, Minus } from 'lucide-react'
 import type { EnhancedBullet, GeneratedResume } from '../../lib/types'
 import { DocumentHeader } from '../documents/DocumentHeader'
 
@@ -6,28 +6,14 @@ function Bullet({ bullet }: { bullet: EnhancedBullet }) {
   return (
     <li className="flex gap-2 text-[0.84rem] leading-6 text-body">
       <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-muted" aria-hidden="true" />
-      <span>
-        {bullet.enhanced}
-        {bullet.needsQuantification ? (
-          <span
-            title="Add a measurable number to strengthen this bullet."
-            className="ml-2 inline-flex items-center gap-1 border border-border px-1.5 py-0.5 align-middle text-[0.68rem] text-muted"
-          >
-            <AlertCircle aria-hidden="true" size={11} />
-            quantify
-            <span className="sr-only">
-              Add a measurable number to strengthen this bullet.
-            </span>
-          </span>
-        ) : null}
-      </span>
+      <span>{bullet.enhanced}</span>
     </li>
   )
 }
 
 function KeywordChip({ keyword, matched }: { keyword: string; matched: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1 border border-border bg-surface px-2 py-0.5 text-[0.72rem] text-body">
+    <span className="inline-flex max-w-full items-center gap-1 break-words border border-border bg-surface px-2 py-0.5 text-[0.72rem] text-body [overflow-wrap:anywhere]">
       {matched ? (
         <Check aria-hidden="true" size={11} className="text-primary" />
       ) : (
@@ -69,7 +55,7 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
           <div className="mt-3 space-y-4">
             {resume.experience.map((experience) => (
               <div key={experience.id}>
-                <p className="text-[0.86rem] font-medium text-navy">
+                <p className="break-words text-[0.86rem] font-medium text-navy">
                   {experience.title} — {experience.company}
                 </p>
                 <p className="text-[0.72rem] tabular-nums text-muted">
@@ -92,7 +78,7 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
           <div className="mt-3 space-y-3">
             {resume.education.map((education) => (
               <div key={education.id}>
-                <p className="text-[0.86rem] font-medium text-navy">
+                <p className="break-words text-[0.86rem] font-medium text-navy">
                   {education.degree} in {education.field} — {education.school}
                 </p>
                 <p className="text-[0.72rem] tabular-nums text-muted">
@@ -122,7 +108,7 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
           <div className="mt-3 space-y-4">
             {resume.projects.map((project) => (
               <div key={project.id}>
-                <p className="break-all text-[0.86rem] font-medium text-navy">
+                <p className="break-words text-[0.86rem] font-medium text-navy [overflow-wrap:anywhere]">
                   {project.name}
                   {project.url ? ` — ${project.url}` : ''}
                 </p>

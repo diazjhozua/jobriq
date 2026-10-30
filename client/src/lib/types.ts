@@ -82,7 +82,6 @@ export interface ProfileReview {
 export interface EnhancedBullet {
   original: string
   enhanced: string
-  needsQuantification: boolean
 }
 
 export interface GeneratedExperience {

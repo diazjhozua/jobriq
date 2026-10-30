@@ -96,7 +96,6 @@ const storedProfileSchema = z.object({
 export const enhancedBulletSchema = z.object({
   original: z.string(),
   enhanced: z.string(),
-  needsQuantification: z.boolean(),
 })
 
 export const generatedExperienceSchema = z.object({
