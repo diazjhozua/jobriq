@@ -7,11 +7,14 @@ import { PageHeader } from '../../components/layout/PageHeader'
 import { Button } from '../../components/ui/button'
 import { Field } from '../../components/ui/field'
 import { Input } from '../../components/ui/input'
+import { MonthYearField } from '../../components/ui/month-year-field'
 import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
+import { formatMonthYearValue } from '../../lib/monthYear'
 import { profileSchema } from '../../lib/schemas'
 import type { Profile, ReviewSuggestion } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { AssociatedWithField } from './AssociatedWithField'
 import { BulletListField } from './BulletListField'
 import { entryAnchorId } from './entryNavItems'
 import {
@@ -62,6 +65,23 @@ function Section({
       <div className="min-w-0">{children}</div>
     </section>
   )
+}
+
+function canonicalDates(profile: Profile): Profile {
+  function fix<T extends { startDate: string; endDate: string }>(entry: T): T {
+    return {
+      ...entry,
+      startDate: formatMonthYearValue(entry.startDate),
+      endDate: formatMonthYearValue(entry.endDate),
+    }
+  }
+
+  return {
+    ...profile,
+    experience: profile.experience.map(fix),
+    education: profile.education.map(fix),
+    projects: profile.projects.map(fix),
+  }
 }
 
 export function ProfilePage() {
@@ -124,18 +144,22 @@ export function ProfilePage() {
   const cleanBullets = (bullets: string[]) =>
     bullets.map((bullet) => bullet.trim()).filter(Boolean)
 
-  const normalize = (values: Profile): Profile => ({
-    ...values,
-    skills,
-    experience: values.experience.map((entry) => ({
-      ...entry,
-      bullets: cleanBullets(entry.bullets),
-    })),
-    projects: values.projects.map((entry) => ({
-      ...entry,
-      bullets: cleanBullets(entry.bullets),
-    })),
-  })
+  const normalize = (values: Profile): Profile => {
+    const dated = canonicalDates(values)
+
+    return {
+      ...dated,
+      skills,
+      experience: dated.experience.map((entry) => ({
+        ...entry,
+        bullets: cleanBullets(entry.bullets),
+      })),
+      projects: dated.projects.map((entry) => ({
+        ...entry,
+        bullets: cleanBullets(entry.bullets),
+      })),
+    }
+  }
 
   const onSubmit = async (values: Profile) => {
     const next = normalize(values)
@@ -151,9 +175,11 @@ export function ProfilePage() {
   }
 
   const handleImported = async (imported: Profile) => {
-    await saveProfile(imported)
-    reset(imported)
-    setSkills(imported.skills)
+    const next = canonicalDates(imported)
+
+    await saveProfile(next)
+    reset(next)
+    setSkills(next.skills)
     setSaved(true)
   }
 
@@ -410,28 +436,23 @@ export function ProfilePage() {
                       {...register(`experience.${index}.title`)}
                     />
                   </Field>
-                  <Field
+                  <MonthYearField
+                    control={control}
+                    name={`experience.${index}.startDate`}
+                    id={`experience-${index}-start`}
                     label="Start date"
-                    htmlFor={`experience-${index}-start`}
+                    pickerLabel={`Experience ${index + 1} start date`}
                     error={errors.experience?.[index]?.startDate?.message}
-                  >
-                    <Input
-                      id={`experience-${index}-start`}
-                      placeholder="Jan 2022"
-                      {...register(`experience.${index}.startDate`)}
-                    />
-                  </Field>
-                  <Field
+                  />
+                  <MonthYearField
+                    control={control}
+                    name={`experience.${index}.endDate`}
+                    id={`experience-${index}-end`}
                     label="End date"
-                    htmlFor={`experience-${index}-end`}
+                    pickerLabel={`Experience ${index + 1} end date`}
                     error={errors.experience?.[index]?.endDate?.message}
-                  >
-                    <Input
-                      id={`experience-${index}-end`}
-                      placeholder="Present"
-                      {...register(`experience.${index}.endDate`)}
-                    />
-                  </Field>
+                    allowPresent
+                  />
                   <Controller
                     control={control}
                     name={`experience.${index}.bullets`}
@@ -552,28 +573,23 @@ export function ProfilePage() {
                       {...register(`education.${index}.gpa`)}
                     />
                   </Field>
-                  <Field
+                  <MonthYearField
+                    control={control}
+                    name={`education.${index}.startDate`}
+                    id={`education-${index}-start`}
                     label="Start date"
-                    htmlFor={`education-${index}-start`}
+                    pickerLabel={`Education ${index + 1} start date`}
                     error={errors.education?.[index]?.startDate?.message}
-                  >
-                    <Input
-                      id={`education-${index}-start`}
-                      placeholder="2018"
-                      {...register(`education.${index}.startDate`)}
-                    />
-                  </Field>
-                  <Field
+                  />
+                  <MonthYearField
+                    control={control}
+                    name={`education.${index}.endDate`}
+                    id={`education-${index}-end`}
                     label="End date"
-                    htmlFor={`education-${index}-end`}
+                    pickerLabel={`Education ${index + 1} end date`}
                     error={errors.education?.[index]?.endDate?.message}
-                  >
-                    <Input
-                      id={`education-${index}-end`}
-                      placeholder="2022"
-                      {...register(`education.${index}.endDate`)}
-                    />
-                  </Field>
+                    allowPresent
+                  />
                 </div>
               </div>
             ))}
@@ -607,6 +623,9 @@ export function ProfilePage() {
                 id: crypto.randomUUID(),
                 name: '',
                 url: '',
+                startDate: '',
+                endDate: '',
+                associatedWith: '',
                 bullets: [''],
               })
             }
@@ -668,6 +687,28 @@ export function ProfilePage() {
                       {...register(`projects.${index}.url`)}
                     />
                   </Field>
+                  <AssociatedWithField
+                    control={control}
+                    index={index}
+                    id={`project-${index}-associated`}
+                  />
+                  <MonthYearField
+                    control={control}
+                    name={`projects.${index}.startDate`}
+                    id={`project-${index}-start`}
+                    label="Start date"
+                    pickerLabel={`Project ${index + 1} start date`}
+                    error={errors.projects?.[index]?.startDate?.message}
+                  />
+                  <MonthYearField
+                    control={control}
+                    name={`projects.${index}.endDate`}
+                    id={`project-${index}-end`}
+                    label="End date"
+                    pickerLabel={`Project ${index + 1} end date`}
+                    error={errors.projects?.[index]?.endDate?.message}
+                    allowPresent
+                  />
                   <Controller
                     control={control}
                     name={`projects.${index}.bullets`}

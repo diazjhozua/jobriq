@@ -1,4 +1,5 @@
 import { Check, Minus } from 'lucide-react'
+import { formatDateRange, formatProjectMeta } from '../../lib/monthYear'
 import type { EnhancedBullet, GeneratedResume } from '../../lib/types'
 import { DocumentHeader } from '../documents/DocumentHeader'
 
@@ -53,21 +54,25 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
         <section>
           <SectionHeading>Work experience</SectionHeading>
           <div className="mt-3 space-y-4">
-            {resume.experience.map((experience) => (
-              <div key={experience.id}>
-                <p className="break-words text-[0.86rem] font-medium text-navy">
-                  {experience.title} — {experience.company}
-                </p>
-                <p className="text-[0.72rem] tabular-nums text-muted">
-                  {experience.startDate} – {experience.endDate}
-                </p>
-                <ul className="mt-2 space-y-1.5">
-                  {experience.bullets.map((bullet, index) => (
-                    <Bullet key={`${experience.id}-${index}`} bullet={bullet} />
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {resume.experience.map((experience) => {
+              const dates = formatDateRange(experience.startDate, experience.endDate)
+
+              return (
+                <div key={experience.id}>
+                  <p className="break-words text-[0.86rem] font-medium text-navy">
+                    {experience.title} — {experience.company}
+                  </p>
+                  {dates ? (
+                    <p className="text-[0.72rem] tabular-nums text-muted">{dates}</p>
+                  ) : null}
+                  <ul className="mt-2 space-y-1.5">
+                    {experience.bullets.map((bullet, index) => (
+                      <Bullet key={`${experience.id}-${index}`} bullet={bullet} />
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
           </div>
         </section>
       ) : null}
@@ -76,19 +81,23 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
         <section>
           <SectionHeading>Education</SectionHeading>
           <div className="mt-3 space-y-3">
-            {resume.education.map((education) => (
-              <div key={education.id}>
-                <p className="break-words text-[0.86rem] font-medium text-navy">
-                  {education.degree} in {education.field} — {education.school}
-                </p>
-                <p className="text-[0.72rem] tabular-nums text-muted">
-                  {education.startDate} – {education.endDate}
-                </p>
-                {education.gpa ? (
-                  <p className="text-[0.72rem] text-muted">GPA: {education.gpa}</p>
-                ) : null}
-              </div>
-            ))}
+            {resume.education.map((education) => {
+              const dates = formatDateRange(education.startDate, education.endDate)
+
+              return (
+                <div key={education.id}>
+                  <p className="break-words text-[0.86rem] font-medium text-navy">
+                    {education.degree} in {education.field} — {education.school}
+                  </p>
+                  {dates ? (
+                    <p className="text-[0.72rem] tabular-nums text-muted">{dates}</p>
+                  ) : null}
+                  {education.gpa ? (
+                    <p className="text-[0.72rem] text-muted">GPA: {education.gpa}</p>
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
         </section>
       ) : null}
@@ -106,19 +115,30 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
         <section>
           <SectionHeading>Projects</SectionHeading>
           <div className="mt-3 space-y-4">
-            {resume.projects.map((project) => (
-              <div key={project.id}>
-                <p className="break-words text-[0.86rem] font-medium text-navy [overflow-wrap:anywhere]">
-                  {project.name}
-                  {project.url ? ` — ${project.url}` : ''}
-                </p>
-                <ul className="mt-2 space-y-1.5">
-                  {project.bullets.map((bullet, index) => (
-                    <Bullet key={`${project.id}-${index}`} bullet={bullet} />
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {resume.projects.map((project) => {
+              const meta = formatProjectMeta(
+                project.startDate,
+                project.endDate,
+                project.associatedWith,
+              )
+
+              return (
+                <div key={project.id}>
+                  <p className="break-words text-[0.86rem] font-medium text-navy [overflow-wrap:anywhere]">
+                    {project.name}
+                    {project.url ? ` — ${project.url}` : ''}
+                  </p>
+                  {meta ? (
+                    <p className="text-[0.72rem] tabular-nums text-muted">{meta}</p>
+                  ) : null}
+                  <ul className="mt-2 space-y-1.5">
+                    {project.bullets.map((bullet, index) => (
+                      <Bullet key={`${project.id}-${index}`} bullet={bullet} />
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
           </div>
         </section>
       ) : null}

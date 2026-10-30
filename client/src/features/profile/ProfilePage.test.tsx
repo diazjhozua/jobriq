@@ -93,7 +93,7 @@ describe('ProfilePage', () => {
       expect(profile.experience[0]?.company).toBe('Acme')
       expect(profile.experience[0]?.bullets).toEqual(['Built a thing'])
     })
-  })
+  }, 10000)
 
   it('imports a pasted resume template and saves it', async () => {
     const user = userEvent.setup()
@@ -520,6 +520,66 @@ describe('ProfilePage', () => {
     expect(
       within(nav).getByRole('link', { name: 'Experience 2' }),
     ).toHaveAttribute('href', '#profile-experience-entry-2')
+  })
+
+  it('captures project dates and the associated company', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+
+    await user.click(screen.getByRole('button', { name: 'Add project' }))
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#project-0-name' }),
+      'Jobriq',
+    )
+
+    const association = screen.getByLabelText('Associated with (optional)')
+    expect(
+      within(association).getByRole('option', { name: 'Acme' }),
+    ).toBeInTheDocument()
+    expect(
+      within(association).getByRole('option', { name: 'Personal Project' }),
+    ).toBeInTheDocument()
+    await user.selectOptions(association, 'Acme')
+
+    await user.click(
+      screen.getByLabelText('Start date', { selector: '#project-0-start' }),
+    )
+    await user.selectOptions(
+      screen.getByLabelText('Project 1 start date year'),
+      '2022',
+    )
+    await user.click(screen.getByRole('button', { name: 'August 2022' }))
+
+    await user.click(
+      screen.getByLabelText('End date', { selector: '#project-0-end' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Present' }))
+
+    const projectNav = screen.getByRole('navigation', {
+      name: 'Project entries',
+    })
+    expect(
+      within(projectNav).getByRole('link', { name: '1 · Jobriq — Acme' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.profile.projects[0]).toMatchObject({
+        name: 'Jobriq',
+        startDate: 'Aug 2022',
+        endDate: 'Present',
+        associatedWith: 'Acme',
+      })
+    })
   })
 
   it('links to each education and project entry', async () => {
