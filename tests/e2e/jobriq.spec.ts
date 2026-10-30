@@ -2,6 +2,23 @@ import { expect, test, type Page } from '@playwright/test'
 
 const fileNamePattern = /^jane-doe-resume-\d{8}-\d{6}\.(md|docx)$/
 
+async function pickMonthYear(
+  page: Page,
+  fieldLabel: string,
+  pickerLabel: string,
+  month: string,
+  year: string,
+) {
+  await page.getByLabel(fieldLabel).first().click()
+  await page.getByLabel(`${pickerLabel} year`).selectOption(year)
+  await page.getByRole('button', { name: `${month} ${year}` }).click()
+}
+
+async function pickPresent(page: Page, fieldLabel: string) {
+  await page.getByLabel(fieldLabel).first().click()
+  await page.getByRole('button', { name: 'Present' }).click()
+}
+
 async function addApplication(page: Page, company: string, role: string) {
   await page.getByRole('button', { name: 'Add application' }).click()
   const dialog = page.getByRole('dialog')
@@ -57,6 +74,61 @@ test('imports a pasted resume template', async ({ page }) => {
   await expect(page.getByLabel('Company')).toHaveValue('Acme')
 })
 
+test('captures project dates and the associated company', async ({ page }) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+
+  await page.getByRole('button', { name: 'Add experience' }).click()
+  await page.getByLabel('Company').fill('Acme')
+  await page.getByLabel('Title').fill('Engineer')
+
+  await page.getByRole('button', { name: 'Add project' }).click()
+  await page.locator('#project-0-name').fill('Jobriq')
+  await page.locator('#project-0-associated').selectOption('Acme')
+
+  await page.locator('#project-0-start').click()
+  await page.getByLabel('Project 1 start date year').selectOption('2022')
+  await page.getByRole('button', { name: 'August 2022' }).click()
+
+  await page.locator('#project-0-end').click()
+  await page.getByRole('button', { name: 'Present' }).click()
+
+  await expect(
+    page.getByRole('link', { name: '1 · Jobriq — Acme' }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(page.locator('#project-0-start')).toContainText('Aug 2022')
+  await expect(page.locator('#project-0-end')).toContainText('Present')
+  await expect(page.locator('#project-0-associated')).toHaveValue('Acme')
+})
+
+test('edits an application and sets its applied date', async ({ page }) => {
+  await page.goto('/applications')
+  await addApplication(page, 'Globex', 'Senior Engineer')
+
+  await page
+    .getByRole('button', { name: 'Edit Senior Engineer at Globex' })
+    .click()
+  const dialog = page.getByRole('dialog')
+
+  await dialog.getByLabel('Date applied (optional)').click()
+  await page.getByLabel('Date applied year').selectOption('2022')
+  await page.getByRole('button', { name: 'August 2022' }).click()
+  await dialog.getByRole('button', { name: 'Save changes' }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText('Applied Aug 2022').last()).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByText('Applied Aug 2022').last()).toBeVisible()
+})
+
 test('profile, application, generation, and downloads', async ({ page }) => {
   await page.goto('/profile')
 
@@ -67,14 +139,14 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await page.getByRole('button', { name: 'Add experience' }).click()
   await page.getByLabel('Company').fill('Acme')
   await page.getByLabel('Title').fill('Engineer')
-  await page.getByLabel('Start date').first().fill('2022')
-  await page.getByLabel('End date').first().fill('Present')
+  await pickMonthYear(page, 'Start date', 'Experience 1 start date', 'August', '2022')
+  await pickPresent(page, 'End date')
   await page
     .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
     .fill('Built a thing')
 
-  await page.getByLabel('Skills').fill('C#, React')
-  await page.getByLabel('Skills').press('Enter')
+  await page.getByRole('textbox', { name: 'Skills' }).fill('C#, React')
+  await page.getByRole('textbox', { name: 'Skills' }).press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -143,13 +215,13 @@ test('generates and keeps a standalone resume without an application', async ({
   await page.getByRole('button', { name: 'Add experience' }).click()
   await page.getByLabel('Company').fill('Acme')
   await page.getByLabel('Title').fill('Engineer')
-  await page.getByLabel('Start date').first().fill('2022')
-  await page.getByLabel('End date').first().fill('Present')
+  await pickMonthYear(page, 'Start date', 'Experience 1 start date', 'August', '2022')
+  await pickPresent(page, 'End date')
   await page
     .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
     .fill('Built a thing')
-  await page.getByLabel('Skills').fill('C#, React')
-  await page.getByLabel('Skills').press('Enter')
+  await page.getByRole('textbox', { name: 'Skills' }).fill('C#, React')
+  await page.getByRole('textbox', { name: 'Skills' }).press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -422,7 +494,7 @@ test('ignores legacy localStorage data', async ({ page }) => {
   ).toBeVisible()
   await expect(page.getByLabel('Name')).toHaveValue('')
   await expect(page.getByLabel('Email')).toHaveValue('')
-  await expect(page.getByLabel('Skills')).toHaveValue('')
+  await expect(page.getByRole('textbox', { name: 'Skills' })).toHaveValue('')
 
   await page.getByRole('link', { name: 'Applications' }).click()
   await expect(page.getByText('No applications yet')).toBeVisible()
