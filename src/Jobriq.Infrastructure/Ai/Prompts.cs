@@ -11,7 +11,7 @@ internal static class Prompts
         - Bullets describe accomplishments, not tasks
         - Every bullet answers "so what?" — what was the impact on the user, team, or company?
         - Use strong action verbs (Built, Led, Reduced, Increased, Delivered, Automated...)
-        - Add quantification where possible; use [X units] as a placeholder when the user must supply the number, and set needsQuantification to true
+        - Use a number only when the user already wrote it; never invent a metric and never leave a placeholder
         - Keep language concise, specific, and professional
         - Never fabricate facts — only enhance what the user has already written
         """;
@@ -40,8 +40,7 @@ internal static class Prompts
             1. Rewrite it as an accomplishment (not a task description)
             2. Add results or outcomes — answer "so what?"
             3. Use a strong action verb at the start
-            4. If a specific number would strengthen the bullet but you cannot determine it, insert [X unit] as a placeholder and set needsQuantification to true
-            5. If the bullet already has a number or the impact is inherently clear, set needsQuantification to false
+            4. Keep any number the user already wrote, and never invent or placeholder a metric
 
             Bullets:
             {{BulletList(experience.Bullets)}}
@@ -51,8 +50,7 @@ internal static class Prompts
               "bullets": [
                 {
                   "original": "exact original text",
-                  "enhanced": "rewritten bullet",
-                  "needsQuantification": true or false
+                  "enhanced": "rewritten bullet"
                 }
               ]
             }
@@ -66,8 +64,7 @@ internal static class Prompts
             1. Rewrite it as an accomplishment (not a task description)
             2. Add results or outcomes — answer "so what?"
             3. Use a strong action verb at the start
-            4. If a specific number would strengthen the bullet but you cannot determine it, insert [X unit] as a placeholder and set needsQuantification to true
-            5. If the bullet already has a number or the impact is inherently clear, set needsQuantification to false
+            4. Keep any number the user already wrote, and never invent or placeholder a metric
 
             Bullets:
             {{BulletList(project.Bullets)}}
@@ -77,8 +74,7 @@ internal static class Prompts
               "bullets": [
                 {
                   "original": "exact original text",
-                  "enhanced": "rewritten bullet",
-                  "needsQuantification": true or false
+                  "enhanced": "rewritten bullet"
                 }
               ]
             }

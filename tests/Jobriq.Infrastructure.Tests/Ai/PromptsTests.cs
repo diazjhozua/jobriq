@@ -12,7 +12,8 @@ public sealed class PromptsTests
         Prompts.System.ShouldStartWith(
             "You are an expert resume writer with 20 years of experience helping professionals land their dream jobs at top companies like Google, Amazon, and Microsoft.");
         Prompts.System.ShouldContain(
-            "- Add quantification where possible; use [X units] as a placeholder when the user must supply the number, and set needsQuantification to true");
+            "- Use a number only when the user already wrote it; never invent a metric and never leave a placeholder");
+        Prompts.System.ShouldNotContain("[X units]");
         Prompts.System.ShouldNotContain("\r");
     }
 
@@ -30,7 +31,9 @@ public sealed class PromptsTests
 
         prompt.ShouldContain("role of \"Engineer\" at \"Acme\"");
         prompt.ShouldContain("1. Built a thing\n2. Fixed a bug");
-        prompt.ShouldContain("\"needsQuantification\": true or false");
+        prompt.ShouldContain("never invent or placeholder a metric");
+        prompt.ShouldNotContain("needsQuantification");
+        prompt.ShouldNotContain("[X unit]");
         prompt.ShouldNotContain("\r");
     }
 
