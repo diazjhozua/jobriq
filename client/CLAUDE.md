@@ -28,6 +28,8 @@ When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.
 - Status colors appear only in `features/applications/StatusBadge.tsx`.
 - Forms use React Hook Form with the Zod resolver, explicit Save, and inline field errors. Do not add autosave.
 - The Profile screen keeps skills in component state (`SkillsField` tags) rather than in the RHF form, and normalizes them plus trimmed, non-empty bullets before every save, review, or generation call.
+- Experience, education, and projects each get an entry sub-nav (`EntryNav`) under the Add button. Labels come from `useWatch`, not `useFieldArray().fields`, which does not update while typing. Entry anchors are index-based (`profile-{section}-entry-{n}`) with `scroll-mt-[8rem]` and `tabIndex={-1}`.
+- `Textarea` supports `autoGrow`, which resizes on mount, value change, input, and window resize. It only tracks controlled values, so pass `value`/`onChange` (use `Controller`, not `register`, for auto-growing fields).
 - Both Generate Resume dialogs show `EnhanceProfileNotice` before the first generation, pointing at `#profile-review`.
 - Keep the focus ring (`--brand-blue`, 2px, 2px offset) and label/input associations intact; dialogs are Radix primitives.
 

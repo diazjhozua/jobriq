@@ -70,7 +70,7 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 - `lib/template.ts` parses the legacy plain-text template format (`[PERSONAL]`, `[SUMMARY]`, `[EXPERIENCE]`, `[EDUCATION]`, `[SKILLS]`, `[PROJECT]`) for the Profile screen's Import template dialog. It is the only remaining consumer of that format.
 - Generated resumes are stored on the application (`generatedResume`) or, for the profile page's standalone flow, on the profile row (`standaloneResume`); both reopen from there.
 - Generated bullets carry only `original` and `enhanced`. The AI keeps numbers the user already wrote and never inserts a metric placeholder, so the resume preview shows no quantification prompt.
-- The Profile screen has a sticky section nav (`ProfileSectionNav`), skills edited as removable tags (`SkillsField`), and one textarea per bullet (`BulletListField`). Blank bullets are dropped before save, review, or generation.
+- The Profile screen has a sticky section nav (`ProfileSectionNav`), entry sub-navs for experience, education, and projects (`EntryNav` fed by `useWatch` adapters), skills edited as removable tags (`SkillsField`), and one textarea per bullet (`BulletListField`). Blank bullets are dropped before save, review, or generation. Profile textareas use `Textarea`'s `autoGrow` prop, which measures `scrollHeight` and must be controlled.
 - `lib/api.ts` parses `ProblemDetails.code` and downloads blobs using the `Content-Disposition` filename.
 
 ## Tests
