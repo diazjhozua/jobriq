@@ -48,7 +48,8 @@ test('imports a pasted resume template', async ({ page }) => {
   await expect(page.getByLabel('LinkedIn')).toHaveValue(
     'https://linkedin.com/in/imported',
   )
-  await expect(page.getByLabel('Skills')).toHaveValue('C#, React')
+  await expect(page.getByRole('button', { name: 'Remove skill C#' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Remove skill React' })).toBeVisible()
   await expect(page.getByLabel('Company')).toHaveValue('Acme')
 
   await page.reload()
@@ -68,16 +69,19 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await page.getByLabel('Title').fill('Engineer')
   await page.getByLabel('Start date').first().fill('2022')
   await page.getByLabel('End date').first().fill('Present')
-  await page.getByLabel('Bullets').fill('Built a thing')
+  await page
+    .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
+    .fill('Built a thing')
 
   await page.getByLabel('Skills').fill('C#, React')
+  await page.getByLabel('Skills').press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
   await page.reload()
   await expect(page.getByLabel('Name')).toHaveValue('Jane Doe')
   await expect(page.getByLabel('Company')).toHaveValue('Acme')
-  await expect(page.getByLabel('Skills')).toHaveValue('C#, React')
+  await expect(page.getByRole('button', { name: 'Remove skill C#' })).toBeVisible()
 
   await page.getByRole('link', { name: 'Applications' }).click()
   await expect(page.getByText('No applications yet')).toBeVisible()
@@ -141,8 +145,11 @@ test('generates and keeps a standalone resume without an application', async ({
   await page.getByLabel('Title').fill('Engineer')
   await page.getByLabel('Start date').first().fill('2022')
   await page.getByLabel('End date').first().fill('Present')
-  await page.getByLabel('Bullets').fill('Built a thing')
+  await page
+    .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
+    .fill('Built a thing')
   await page.getByLabel('Skills').fill('C#, React')
+  await page.getByLabel('Skills').press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -338,7 +345,9 @@ test('reviews the profile, applies a suggestion, and keeps the review in session
   await page.getByRole('button', { name: 'Add experience' }).click()
   await page.getByLabel('Company').fill('Acme')
   await page.getByLabel('Title').fill('Engineer')
-  await page.getByLabel('Bullets').fill('Built a thing')
+  await page
+    .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
+    .fill('Built a thing')
 
   await page.getByRole('button', { name: 'Review profile' }).click()
 
