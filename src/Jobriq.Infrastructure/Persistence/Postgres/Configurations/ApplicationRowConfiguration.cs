@@ -16,6 +16,11 @@ internal sealed class ApplicationRowConfiguration : IEntityTypeConfiguration<App
         builder.HasKey(row => row.Id);
 
         builder
+            .Property(row => row.AppliedDate)
+            .HasColumnName("applied_date")
+            .HasColumnType("date");
+
+        builder
             .Property(row => row.GeneratedResumeJson)
             .HasColumnName("generated_resume")
             .HasColumnType("jsonb");

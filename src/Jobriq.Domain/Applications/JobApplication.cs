@@ -4,7 +4,11 @@ namespace Jobriq.Domain.Applications;
 
 public sealed class JobApplication
 {
-    public JobApplication(string company, string role, string jobDescription)
+    public JobApplication(
+        string company,
+        string role,
+        string jobDescription,
+        DateOnly? appliedDate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(company);
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
@@ -12,19 +16,22 @@ public sealed class JobApplication
         Company = company.Trim();
         Role = role.Trim();
         JobDescription = jobDescription;
+        AppliedDate = appliedDate;
     }
 
     public Guid Id { get; init; } = Guid.NewGuid();
 
-    public string Company { get; }
+    public string Company { get; private set; }
 
-    public string Role { get; }
+    public string Role { get; private set; }
 
     public string JobDescription { get; }
 
     public ApplicationStatus Status { get; private set; } = ApplicationStatus.Saved;
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    public DateOnly? AppliedDate { get; private set; }
 
     public GeneratedResume? GeneratedResume { get; private set; }
 
@@ -38,9 +45,10 @@ public sealed class JobApplication
         ApplicationStatus status,
         DateTimeOffset createdAt,
         GeneratedResume? generatedResume,
-        CoverLetter? coverLetter = null)
+        CoverLetter? coverLetter = null,
+        DateOnly? appliedDate = null)
     {
-        JobApplication application = new(company, role, jobDescription)
+        JobApplication application = new(company, role, jobDescription, appliedDate)
         {
             Id = id,
             CreatedAt = createdAt,
@@ -59,6 +67,16 @@ public sealed class JobApplication
         }
 
         return application;
+    }
+
+    public void UpdateDetails(string company, string role, DateOnly? appliedDate)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(company);
+        ArgumentException.ThrowIfNullOrWhiteSpace(role);
+
+        Company = company.Trim();
+        Role = role.Trim();
+        AppliedDate = appliedDate;
     }
 
     public void ChangeStatus(ApplicationStatus status)

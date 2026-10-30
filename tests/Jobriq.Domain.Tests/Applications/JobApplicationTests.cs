@@ -97,12 +97,50 @@ public sealed class JobApplicationTests
     }
 
     [Fact]
+    public void Constructor_StoresAppliedDate()
+    {
+        DateOnly appliedDate = new(2022, 8, 1);
+
+        JobApplication application = new("Acme", "Engineer", "", appliedDate);
+
+        application.AppliedDate.ShouldBe(appliedDate);
+    }
+
+    [Fact]
+    public void UpdateDetails_TrimsValuesAndReplacesAppliedDate()
+    {
+        DateOnly appliedDate = new(2023, 2, 1);
+        JobApplication application = new("Acme", "Engineer", "");
+
+        application.UpdateDetails("  Globex  ", "  Developer  ", appliedDate);
+
+        application.Company.ShouldBe("Globex");
+        application.Role.ShouldBe("Developer");
+        application.AppliedDate.ShouldBe(appliedDate);
+    }
+
+    [Theory]
+    [InlineData("", "Developer")]
+    [InlineData("   ", "Developer")]
+    [InlineData("Globex", "")]
+    [InlineData("Globex", "   ")]
+    public void UpdateDetails_RejectsEmptyValues(string company, string role)
+    {
+        JobApplication application = new("Acme", "Engineer", "");
+
+        Should.Throw<ArgumentException>(
+            () => application.UpdateDetails(company, role, null));
+    }
+
+    [Fact]
     public void Restore_PreservesPersistedValues()
     {
         Guid id = Guid.NewGuid();
         DateTimeOffset createdAt = new(2026, 10, 1, 12, 30, 0, TimeSpan.Zero);
         GeneratedResume resume = new() { Summary = "Tailored summary." };
         CoverLetter letter = new() { Company = "Acme", Role = "Engineer" };
+
+        DateOnly appliedDate = new(2022, 8, 1);
 
         JobApplication application = JobApplication.Restore(
             id,
@@ -112,7 +150,8 @@ public sealed class JobApplicationTests
             ApplicationStatus.Interviewing,
             createdAt,
             resume,
-            letter);
+            letter,
+            appliedDate);
 
         application.Id.ShouldBe(id);
         application.Company.ShouldBe("Acme");
@@ -120,6 +159,7 @@ public sealed class JobApplicationTests
         application.JobDescription.ShouldBe("Build things.");
         application.Status.ShouldBe(ApplicationStatus.Interviewing);
         application.CreatedAt.ShouldBe(createdAt);
+        application.AppliedDate.ShouldBe(appliedDate);
         application.GeneratedResume.ShouldBeSameAs(resume);
         application.CoverLetter.ShouldBeSameAs(letter);
     }

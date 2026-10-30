@@ -30,6 +30,10 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("AppliedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("applied_date");
+
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid")
                         .HasColumnName("client_id");

@@ -89,6 +89,48 @@ public sealed class DataEndpointsTests
     }
 
     [Fact]
+    public async Task CreateApplication_StoresAppliedDate()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/applications",
+            new
+            {
+                company = "Acme",
+                role = "Engineer",
+                jobDescription = "Build things.",
+                appliedDate = "2022-08-01"
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        JsonElement application = (await ReadJsonAsync(response)).GetProperty("application");
+        application.GetProperty("appliedDate").GetString().ShouldBe("2022-08-01");
+    }
+
+    [Fact]
+    public async Task CreateApplication_InvalidAppliedDate_ReturnsInvalidRequest()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/applications",
+            new
+            {
+                company = "Acme",
+                role = "Engineer",
+                jobDescription = "Build things.",
+                appliedDate = "August 2022"
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        JsonElement problem = await ReadJsonAsync(response);
+        problem.GetProperty("code").GetString().ShouldBe("invalid_request");
+    }
+
+    [Fact]
     public async Task CreateApplication_WithoutCompany_ReturnsInvalidRequest()
     {
         await using JobriqWebFactory factory = new();
@@ -118,6 +160,65 @@ public sealed class DataEndpointsTests
         JsonElement application = (await ReadJsonAsync(response)).GetProperty("application");
         application.GetProperty("id").GetGuid().ShouldBe(id);
         application.GetProperty("status").GetString().ShouldBe("interviewing");
+    }
+
+    [Fact]
+    public async Task UpdateApplicationDetails_UpdatesCompanyRoleAndAppliedDate()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+        Guid id = await CreateApplicationAsync(client);
+
+        HttpResponseMessage response = await client.PutAsJsonAsync(
+            $"/api/applications/{id}",
+            new
+            {
+                company = "Globex",
+                role = "Developer",
+                appliedDate = "2022-08-01"
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        JsonElement application = (await ReadJsonAsync(response)).GetProperty("application");
+        application.GetProperty("company").GetString().ShouldBe("Globex");
+        application.GetProperty("role").GetString().ShouldBe("Developer");
+        application.GetProperty("appliedDate").GetString().ShouldBe("2022-08-01");
+    }
+
+    [Fact]
+    public async Task UpdateApplicationDetails_InvalidAppliedDate_ReturnsInvalidRequest()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+        Guid id = await CreateApplicationAsync(client);
+
+        HttpResponseMessage response = await client.PutAsJsonAsync(
+            $"/api/applications/{id}",
+            new
+            {
+                company = "Globex",
+                role = "Developer",
+                appliedDate = "August 2022"
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        JsonElement problem = await ReadJsonAsync(response);
+        problem.GetProperty("code").GetString().ShouldBe("invalid_request");
+    }
+
+    [Fact]
+    public async Task UpdateApplicationDetails_UnknownApplication_ReturnsNotFound()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PutAsJsonAsync(
+            $"/api/applications/{Guid.NewGuid()}",
+            new { company = "Globex", role = "Developer" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        JsonElement problem = await ReadJsonAsync(response);
+        problem.GetProperty("code").GetString().ShouldBe("application_not_found");
     }
 
     [Fact]

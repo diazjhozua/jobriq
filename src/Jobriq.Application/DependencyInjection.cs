@@ -1,6 +1,7 @@
 using Jobriq.Application.Applications.CreateApplication;
 using Jobriq.Application.Applications.DeleteApplication;
 using Jobriq.Application.Applications.SaveGeneratedResume;
+using Jobriq.Application.Applications.UpdateApplicationDetails;
 using Jobriq.Application.Applications.UpdateApplicationStatus;
 using Jobriq.Application.CoverLetters.ExportCoverLetter;
 using Jobriq.Application.CoverLetters.GenerateCoverLetter;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ReviewProfileUseCase>();
         services.AddScoped<GenerateStandaloneResumeUseCase>();
         services.AddScoped<CreateApplicationUseCase>();
+        services.AddScoped<UpdateApplicationDetailsUseCase>();
         services.AddScoped<UpdateApplicationStatusUseCase>();
         services.AddScoped<DeleteApplicationUseCase>();
         services.AddScoped<SaveGeneratedResumeUseCase>();

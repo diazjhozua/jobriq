@@ -47,6 +47,9 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.Education.Single().School.ShouldBe("State University");
         saved.Skills.ShouldBe(["C#", "React"]);
         saved.Projects.Single().Url.ShouldBe("https://example.com/tool");
+        saved.Projects.Single().StartDate.ShouldBe("Aug 2022");
+        saved.Projects.Single().EndDate.ShouldBe("Present");
+        saved.Projects.Single().AssociatedWith.ShouldBe("Acme");
     }
 
     [Fact]
@@ -101,6 +104,60 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
             .ShouldBeTrue();
         (await repository.GetApplicationAsync(clientId, application.Id, CancellationToken.None))
             .ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task ApplicationAppliedDate_RoundTrips()
+    {
+        Guid clientId = Guid.NewGuid();
+        DateOnly appliedDate = new(2022, 8, 1);
+        JobApplication application = new("Acme", "Engineer", "", appliedDate);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        await repository.AddApplicationAsync(clientId, application, CancellationToken.None);
+
+        JobApplication? saved = await repository.GetApplicationAsync(
+            clientId,
+            application.Id,
+            CancellationToken.None);
+
+        saved.ShouldNotBeNull();
+        saved.AppliedDate.ShouldBe(appliedDate);
+    }
+
+    [Fact]
+    public async Task UpdateApplicationDetails_RoundTrips()
+    {
+        Guid clientId = Guid.NewGuid();
+        JobApplication application = new("Acme", "Engineer", "");
+        DateOnly appliedDate = new(2022, 8, 1);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        await repository.AddApplicationAsync(clientId, application, CancellationToken.None);
+        JobApplication? updated = await repository.UpdateApplicationDetailsAsync(
+            clientId,
+            application.Id,
+            "Globex",
+            "Developer",
+            appliedDate,
+            CancellationToken.None);
+
+        updated.ShouldNotBeNull();
+        updated.Company.ShouldBe("Globex");
+        updated.Role.ShouldBe("Developer");
+        updated.AppliedDate.ShouldBe(appliedDate);
+
+        JobApplication? saved = await repository.GetApplicationAsync(
+            clientId,
+            application.Id,
+            CancellationToken.None);
+        saved.ShouldNotBeNull();
+        saved.Company.ShouldBe("Globex");
+        saved.AppliedDate.ShouldBe(appliedDate);
     }
 
     [Fact]
@@ -376,6 +433,9 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
             {
                 Name = "Tool",
                 Url = "https://example.com/tool",
+                StartDate = "Aug 2022",
+                EndDate = "Present",
+                AssociatedWith = "Acme",
                 Bullets = ["Shipped a tool"],
                 EnhancedBullets =
                 [
@@ -435,6 +495,9 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
             {
                 Name = "Tool",
                 Url = "https://example.com/tool",
+                StartDate = "Aug 2022",
+                EndDate = "Present",
+                AssociatedWith = "Acme",
                 Bullets =
                 [
                     new EnhancedBullet

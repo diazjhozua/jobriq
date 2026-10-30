@@ -1,6 +1,8 @@
+using System.Globalization;
 using Jobriq.Application.Applications.CreateApplication;
 using Jobriq.Application.Applications.DeleteApplication;
 using Jobriq.Application.Applications.SaveGeneratedResume;
+using Jobriq.Application.Applications.UpdateApplicationDetails;
 using Jobriq.Application.Applications.UpdateApplicationStatus;
 using Jobriq.Application.CoverLetters.GenerateCoverLetter;
 using Jobriq.Domain.Applications;
@@ -15,6 +17,7 @@ internal static class ApplicationEndpoints
         RouteGroupBuilder group = endpoints.MapGroup("/api/applications");
 
         group.MapPost("", CreateAsync);
+        group.MapPut("/{id:guid}", UpdateDetailsAsync);
         group.MapPatch("/{id:guid}/status", UpdateStatusAsync);
         group.MapDelete("/{id:guid}", DeleteAsync);
         group.MapPut("/{id:guid}/generated-resume", SaveGeneratedResumeAsync);
@@ -38,16 +41,71 @@ internal static class ApplicationEndpoints
             return EndpointProblems.InvalidRequest("Unknown application status.");
         }
 
+        if (!TryParseAppliedDate(request.AppliedDate, out DateOnly? appliedDate))
+        {
+            return EndpointProblems.InvalidRequest("Date applied must be a valid date.");
+        }
+
         JobApplication application = await useCase.ExecuteAsync(
             request.Company!,
             request.Role!,
             request.JobDescription ?? string.Empty,
             request.Status,
+            appliedDate,
             cancellationToken);
 
         return Results.Created(
             $"/api/applications/{application.Id}",
             new ApplicationResponse(application));
+    }
+
+    private static async Task<IResult> UpdateDetailsAsync(
+        Guid id,
+        UpdateApplicationDetailsRequest request,
+        UpdateApplicationDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Company) || string.IsNullOrWhiteSpace(request.Role))
+        {
+            return EndpointProblems.InvalidRequest("Company and role are required.");
+        }
+
+        if (!TryParseAppliedDate(request.AppliedDate, out DateOnly? appliedDate))
+        {
+            return EndpointProblems.InvalidRequest("Date applied must be a valid date.");
+        }
+
+        JobApplication application = await useCase.ExecuteAsync(
+            id,
+            request.Company!,
+            request.Role!,
+            appliedDate,
+            cancellationToken);
+
+        return Results.Ok(new ApplicationResponse(application));
+    }
+
+    private static bool TryParseAppliedDate(string? raw, out DateOnly? appliedDate)
+    {
+        appliedDate = null;
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return true;
+        }
+
+        if (!DateOnly.TryParseExact(
+                raw,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out DateOnly parsed))
+        {
+            return false;
+        }
+
+        appliedDate = parsed;
+        return true;
     }
 
     private static async Task<IResult> UpdateStatusAsync(
@@ -116,6 +174,17 @@ internal static class ApplicationEndpoints
         public string? JobDescription { get; set; }
 
         public ApplicationStatus? Status { get; set; }
+
+        public string? AppliedDate { get; set; }
+    }
+
+    internal sealed class UpdateApplicationDetailsRequest
+    {
+        public string? Company { get; set; }
+
+        public string? Role { get; set; }
+
+        public string? AppliedDate { get; set; }
     }
 
     internal sealed class UpdateStatusRequest

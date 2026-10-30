@@ -33,6 +33,7 @@ public sealed class CreateApplicationUseCaseTests
             " Engineer ",
             "Build things.",
             ApplicationStatus.Applied,
+            null,
             CancellationToken.None);
 
         result.ShouldBeSameAs(created);
@@ -54,11 +55,34 @@ public sealed class CreateApplicationUseCaseTests
             .AddApplicationAsync(ClientId, Arg.Any<JobApplication>(), Arg.Any<CancellationToken>())
             .Returns(created);
 
-        await useCase.ExecuteAsync("Acme", "Engineer", "", null, CancellationToken.None);
+        await useCase.ExecuteAsync("Acme", "Engineer", "", null, null, CancellationToken.None);
 
         await repository.Received(1).AddApplicationAsync(
             ClientId,
             Arg.Is<JobApplication>(application => application.Status == ApplicationStatus.Saved),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_StoresAppliedDate()
+    {
+        JobApplication created = new("Acme", "Engineer", "");
+        repository
+            .AddApplicationAsync(ClientId, Arg.Any<JobApplication>(), Arg.Any<CancellationToken>())
+            .Returns(created);
+
+        DateOnly appliedDate = new(2022, 8, 1);
+        await useCase.ExecuteAsync(
+            "Acme",
+            "Engineer",
+            "",
+            null,
+            appliedDate,
+            CancellationToken.None);
+
+        await repository.Received(1).AddApplicationAsync(
+            ClientId,
+            Arg.Is<JobApplication>(application => application.AppliedDate == appliedDate),
             Arg.Any<CancellationToken>());
     }
 
@@ -71,6 +95,7 @@ public sealed class CreateApplicationUseCaseTests
                 "Engineer",
                 "",
                 (ApplicationStatus)999,
+                null,
                 CancellationToken.None));
 
         await repository.DidNotReceive().AddApplicationAsync(

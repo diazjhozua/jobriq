@@ -28,6 +28,14 @@ public interface IJobriqRepository
         ApplicationStatus status,
         CancellationToken cancellationToken);
 
+    Task<JobApplication?> UpdateApplicationDetailsAsync(
+        Guid clientId,
+        Guid applicationId,
+        string company,
+        string role,
+        DateOnly? appliedDate,
+        CancellationToken cancellationToken);
+
     Task<bool> DeleteApplicationAsync(
         Guid clientId,
         Guid applicationId,

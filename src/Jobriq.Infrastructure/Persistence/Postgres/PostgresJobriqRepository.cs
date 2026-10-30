@@ -98,6 +98,7 @@ internal sealed class PostgresJobriqRepository(
                 JobDescription = application.JobDescription,
                 Status = application.Status.ToString(),
                 CreatedAt = application.CreatedAt,
+                AppliedDate = application.AppliedDate,
                 GeneratedResumeJson = application.GeneratedResume is null
                     ? null
                     : Serialize(application.GeneratedResume),
@@ -141,6 +142,30 @@ internal sealed class PostgresJobriqRepository(
             }
 
             row.Status = status.ToString();
+            row.UpdatedAt = timeProvider.GetUtcNow();
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDomain(row);
+        });
+
+    public Task<JobApplication?> UpdateApplicationDetailsAsync(
+        Guid clientId,
+        Guid applicationId,
+        string company,
+        string role,
+        DateOnly? appliedDate,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ApplicationRow? row = await FindApplicationAsync(clientId, applicationId, cancellationToken);
+            if (row is null)
+            {
+                return null;
+            }
+
+            row.Company = company.Trim();
+            row.Role = role.Trim();
+            row.AppliedDate = appliedDate;
             row.UpdatedAt = timeProvider.GetUtcNow();
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -258,7 +283,8 @@ internal sealed class PostgresJobriqRepository(
                 : Deserialize<GeneratedResume>(row.GeneratedResumeJson),
             row.CoverLetterJson is null
                 ? null
-                : Deserialize<CoverLetter>(row.CoverLetterJson));
+                : Deserialize<CoverLetter>(row.CoverLetterJson),
+            row.AppliedDate);
 
     private static string Serialize<T>(T value) =>
         JsonSerializer.Serialize(value, JobriqJson.Options);

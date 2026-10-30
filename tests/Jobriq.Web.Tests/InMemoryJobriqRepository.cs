@@ -116,6 +116,25 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
         }
     }
 
+    public Task<JobApplication?> UpdateApplicationDetailsAsync(
+        Guid clientId,
+        Guid applicationId,
+        string company,
+        string role,
+        DateOnly? appliedDate,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            JobApplication? application = Find(clientId, applicationId);
+            application?.UpdateDetails(company, role, appliedDate);
+
+            return Task.FromResult(application);
+        }
+    }
+
     public Task<bool> DeleteApplicationAsync(
         Guid clientId,
         Guid applicationId,

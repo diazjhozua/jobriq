@@ -10,9 +10,10 @@ public sealed class CreateApplicationUseCase(IJobriqRepository repository, IClie
         string role,
         string jobDescription,
         ApplicationStatus? status,
+        DateOnly? appliedDate,
         CancellationToken cancellationToken)
     {
-        JobApplication application = new(company, role, jobDescription);
+        JobApplication application = new(company, role, jobDescription, appliedDate);
 
         if (status is { } requestedStatus)
         {

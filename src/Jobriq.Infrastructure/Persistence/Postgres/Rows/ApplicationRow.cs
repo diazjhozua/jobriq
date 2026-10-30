@@ -16,6 +16,8 @@ internal sealed class ApplicationRow
 
     public DateTimeOffset CreatedAt { get; set; }
 
+    public DateOnly? AppliedDate { get; set; }
+
     public string? GeneratedResumeJson { get; set; }
 
     public string? CoverLetterJson { get; set; }
