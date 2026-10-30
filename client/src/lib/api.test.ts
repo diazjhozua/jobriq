@@ -10,6 +10,7 @@ import {
   reviewProfile,
   saveGeneratedResume,
   saveProfile,
+  updateApplication,
   updateApplicationStatus,
 } from './api'
 import { createEmptyProfile, createEmptyState } from './defaults'
@@ -133,6 +134,33 @@ describe('api', () => {
     expect(application.id).not.toBe('')
     expect(application.status).toBe('applied')
     expect(api.state.applications).toHaveLength(1)
+  })
+
+  it('updates application details', async () => {
+    const api = installMockApi()
+    const application = await createApplication({
+      company: 'Acme',
+      role: 'Engineer',
+      jobDescription: 'Build things.',
+      status: 'saved',
+    })
+
+    const updated = await updateApplication(application.id, {
+      company: 'Globex',
+      role: 'Developer',
+      appliedDate: '2022-08-01',
+    })
+
+    expect(updated).toMatchObject({
+      company: 'Globex',
+      role: 'Developer',
+      appliedDate: '2022-08-01',
+    })
+    expect(api.state.applications[0]).toMatchObject({
+      company: 'Globex',
+      role: 'Developer',
+      appliedDate: '2022-08-01',
+    })
   })
 
   it('updates a status and deletes an application', async () => {

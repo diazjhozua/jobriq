@@ -115,6 +115,11 @@ function parseProjects(sections: Section[]): Project[] {
     id: crypto.randomUUID(),
     name: field(section.lines, 'Name'),
     url: normalizeUrl(field(section.lines, 'URL')),
+    startDate: field(section.lines, 'Start'),
+    endDate: field(section.lines, 'End'),
+    associatedWith:
+      field(section.lines, 'Associated with') ||
+      field(section.lines, 'Associated'),
     bullets: bullets(section.lines),
   }))
 }

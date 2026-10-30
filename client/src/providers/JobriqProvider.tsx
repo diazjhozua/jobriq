@@ -9,8 +9,12 @@ import {
   type ReactNode,
 } from 'react'
 import * as api from '../lib/api'
-import type { NewApplicationInput } from '../lib/api'
+import type {
+  ApplicationDetailsInput,
+  NewApplicationInput,
+} from '../lib/api'
 import { createEmptyState } from '../lib/defaults'
+import { monthYearToIso } from '../lib/monthYear'
 import type {
   ApplicationStatus,
   GeneratedResume,
@@ -33,6 +37,10 @@ interface JobriqContextValue {
   clearSyncError: () => void
   saveProfile: (profile: Profile) => Promise<void>
   addApplication: (application: NewApplicationInput) => Promise<JobApplication>
+  updateApplication: (
+    id: string,
+    details: ApplicationDetailsInput,
+  ) => Promise<void>
   updateApplicationStatus: (id: string, status: ApplicationStatus) => Promise<void>
   deleteApplication: (id: string) => Promise<void>
   saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
@@ -146,6 +154,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
           company: application.company.trim(),
           role: application.role.trim(),
           jobDescription: application.jobDescription.trim(),
+          appliedDate: monthYearToIso(application.appliedDate?.trim() ?? ''),
         })
 
         setJobriqState((current) => ({
@@ -156,6 +165,46 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
 
         return created
       } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const updateApplication = useCallback(
+    async (id: string, details: ApplicationDetailsInput) => {
+      const previous = stateRef.current.applications.find(
+        (application) => application.id === id,
+      )
+
+      if (!previous) {
+        return
+      }
+
+      const company = details.company.trim()
+      const role = details.role.trim()
+      const appliedDate = monthYearToIso(details.appliedDate?.trim() ?? '') ?? ''
+
+      setJobriqState((current) => ({
+        ...current,
+        applications: current.applications.map((application) =>
+          application.id === id
+            ? { ...application, company, role, appliedDate }
+            : application,
+        ),
+      }))
+
+      try {
+        const updated = await api.updateApplication(id, {
+          company,
+          role,
+          appliedDate: appliedDate || null,
+        })
+        setJobriqState((current) => replaceApplication(current, updated))
+        setSyncError(null)
+      } catch (error) {
+        setJobriqState((current) => replaceApplication(current, previous))
         setSyncError(errorMessage(error))
         throw error
       }
@@ -308,6 +357,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       clearSyncError,
       saveProfile,
       addApplication,
+      updateApplication,
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,
@@ -330,6 +380,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       clearSyncError,
       saveProfile,
       addApplication,
+      updateApplication,
       updateApplicationStatus,
       deleteApplication,
       saveGeneratedResume,

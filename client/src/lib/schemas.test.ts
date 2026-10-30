@@ -108,6 +108,9 @@ describe('apiStateSchema', () => {
     expect(parsed.profile.personal.website).toBe('')
     expect(parsed.profile.education[0]?.gpa).toBe('')
     expect(parsed.profile.projects[0]?.url).toBe('')
+    expect(parsed.profile.projects[0]?.startDate).toBe('')
+    expect(parsed.profile.projects[0]?.endDate).toBe('')
+    expect(parsed.profile.projects[0]?.associatedWith).toBe('')
   })
 
   it('defaults a missing standalone resume to null', () => {
@@ -145,6 +148,7 @@ describe('apiStateSchema', () => {
       jobDescription: 'Build things.',
       status: 'applied',
       createdAt: '2026-10-24T12:00:00.000Z',
+      appliedDate: '',
       coverLetter: {
         personal: state.profile.personal,
         company: 'Acme',
@@ -208,6 +212,7 @@ describe('apiStateSchema', () => {
       jobDescription: 'Build things.',
       status: 'offer',
       createdAt: '2026-10-24T12:00:00.000Z',
+      appliedDate: '',
       generatedResume: {
         personal: state.profile.personal,
         summary: 'Summary.',

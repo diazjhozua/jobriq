@@ -45,6 +45,9 @@ C#, React, .NET
 [PROJECT]
 Name: Tool
 URL: example.com/tool
+Start: Aug 2022
+End: Present
+Associated: Acme
 - Shipped it
 
 [JOB DESCRIPTION]
@@ -77,6 +80,9 @@ describe('parseResumeTemplate', () => {
     expect(profile.projects[0]).toMatchObject({
       name: 'Tool',
       url: 'https://example.com/tool',
+      startDate: 'Aug 2022',
+      endDate: 'Present',
+      associatedWith: 'Acme',
       bullets: ['Shipped it'],
     })
   })

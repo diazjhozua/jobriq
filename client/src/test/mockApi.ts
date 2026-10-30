@@ -111,12 +111,33 @@ export function installMockApi({
         jobDescription: String(body?.jobDescription ?? ''),
         status: (body?.status as ApplicationStatus | undefined) ?? 'saved',
         createdAt: new Date().toISOString(),
+        appliedDate: String(body?.appliedDate ?? ''),
         generatedResume: null,
         coverLetter: null,
       }
 
       current.applications.unshift(application)
       return json({ application }, 201)
+    }
+
+    const updateMatch = /^\/api\/applications\/([^/]+)$/.exec(path)
+    if (updateMatch && method === 'PUT') {
+      const application = current.applications.find(
+        (candidate) => candidate.id === decodeURIComponent(updateMatch[1]),
+      )
+
+      if (!application) {
+        return problem({
+          status: 404,
+          detail: 'The application was not found.',
+          code: 'application_not_found',
+        })
+      }
+
+      application.company = String(body?.company ?? application.company)
+      application.role = String(body?.role ?? application.role)
+      application.appliedDate = String(body?.appliedDate ?? '')
+      return json({ application })
     }
 
     const statusMatch = /^\/api\/applications\/([^/]+)\/status$/.exec(path)

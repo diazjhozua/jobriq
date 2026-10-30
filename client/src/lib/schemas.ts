@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseMonthYear } from './monthYear'
 import type { ApplicationStatus, SummaryType } from './types'
 
 const urlOrEmpty = (message: string) =>
@@ -40,6 +41,9 @@ export const projectSchema = z.object({
   id: z.string(),
   name: z.string().trim().min(1, 'Project name is required'),
   url: urlOrEmpty('Enter a valid project URL'),
+  startDate: z.string(),
+  endDate: z.string(),
+  associatedWith: z.string(),
   bullets: z.array(z.string()),
 })
 
@@ -71,16 +75,23 @@ const storedPersonalInfoSchema = z.object({
 const storedWorkExperienceSchema = workExperienceSchema.extend({
   company: z.string(),
   title: z.string(),
+  startDate: nullableString,
+  endDate: nullableString,
 })
 
 const storedEducationSchema = educationSchema.extend({
   school: z.string(),
   gpa: nullableString,
+  startDate: nullableString,
+  endDate: nullableString,
 })
 
 const storedProjectSchema = projectSchema.extend({
   name: z.string(),
   url: nullableString,
+  startDate: nullableString,
+  endDate: nullableString,
+  associatedWith: nullableString,
 })
 
 const storedProfileSchema = z.object({
@@ -102,8 +113,8 @@ export const generatedExperienceSchema = z.object({
   id: z.string(),
   company: z.string(),
   title: z.string(),
-  startDate: z.string(),
-  endDate: z.string(),
+  startDate: nullableString,
+  endDate: nullableString,
   bullets: z.array(enhancedBulletSchema),
 })
 
@@ -111,6 +122,9 @@ export const generatedProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
   url: z.string().nullable(),
+  startDate: nullableString,
+  endDate: nullableString,
+  associatedWith: nullableString,
   bullets: z.array(enhancedBulletSchema),
 })
 
@@ -151,6 +165,7 @@ export const applicationSchema = z.object({
   jobDescription: z.string(),
   status: z.enum(['saved', 'applied', 'interviewing', 'offer', 'rejected']),
   createdAt: z.string(),
+  appliedDate: nullableString,
   generatedResume: generatedResumeSchema.nullable().optional(),
   coverLetter: storedCoverLetterSchema.nullable().optional(),
 })
@@ -198,14 +213,33 @@ export const applicationResponseSchema = z.object({
   application: applicationSchema,
 })
 
+const optionalMonthYear = z
+  .string()
+  .optional()
+  .refine(
+    (value) =>
+      value === undefined ||
+      value.trim() === '' ||
+      parseMonthYear(value).kind === 'month',
+    'Choose a month and year',
+  )
+
 export const applicationFormSchema = z.object({
   company: z.string().trim().min(1, 'Company is required'),
   role: z.string().trim().min(1, 'Role is required'),
   jobDescription: z.string().trim().min(1, 'Job description is required'),
   status: z.enum(['saved', 'applied', 'interviewing', 'offer', 'rejected']),
+  appliedDate: optionalMonthYear,
+})
+
+export const applicationDetailsSchema = z.object({
+  company: z.string().trim().min(1, 'Company is required'),
+  role: z.string().trim().min(1, 'Role is required'),
+  appliedDate: optionalMonthYear,
 })
 
 export type ApplicationFormValues = z.infer<typeof applicationFormSchema>
+export type ApplicationDetailsValues = z.infer<typeof applicationDetailsSchema>
 
 export const isSummaryType = (value: string): value is SummaryType =>
   value === 'objective' || value === 'professional'

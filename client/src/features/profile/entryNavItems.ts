@@ -51,6 +51,10 @@ export function projectNavItems(entries: readonly Project[]): EntryNavItem[] {
   return entries.map((entry, index) => ({
     id: entryAnchorId('projects', index),
     entryId: entry.id,
-    label: entryLabel(index, entry.name.trim(), 'Project'),
+    label: entryLabel(
+      index,
+      filled(entry.name, entry.associatedWith).join(' — '),
+      'Project',
+    ),
   }))
 }

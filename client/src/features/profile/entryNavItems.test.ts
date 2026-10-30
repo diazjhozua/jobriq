@@ -37,6 +37,9 @@ function project(overrides: Partial<Project> = {}): Project {
     id: crypto.randomUUID(),
     name: '',
     url: '',
+    startDate: '',
+    endDate: '',
+    associatedWith: '',
     bullets: [],
     ...overrides,
   }
@@ -93,5 +96,17 @@ describe('projectNavItems', () => {
     ])
 
     expect(items.map((item) => item.label)).toEqual(['1 · Jobriq', 'Project 2'])
+  })
+
+  it('includes the associated company in the label', () => {
+    const items = projectNavItems([
+      project({ name: 'Jobriq', associatedWith: 'Acme' }),
+      project({ associatedWith: 'Personal Project' }),
+    ])
+
+    expect(items.map((item) => item.label)).toEqual([
+      '1 · Jobriq — Acme',
+      '2 · Personal Project',
+    ])
   })
 })

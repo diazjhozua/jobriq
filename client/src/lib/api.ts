@@ -23,6 +23,13 @@ export interface NewApplicationInput {
   role: string
   jobDescription: string
   status: ApplicationStatus
+  appliedDate?: string | null
+}
+
+export interface ApplicationDetailsInput {
+  company: string
+  role: string
+  appliedDate?: string | null
 }
 
 export class ApiError extends Error {
@@ -132,6 +139,19 @@ export async function createApplication(
   const result = await requestJson(
     '/api/applications',
     jsonRequest('POST', application),
+    applicationResponseSchema,
+  )
+
+  return result.application
+}
+
+export async function updateApplication(
+  id: string,
+  details: ApplicationDetailsInput,
+): Promise<JobApplication> {
+  const result = await requestJson(
+    `/api/applications/${id}`,
+    jsonRequest('PUT', details),
     applicationResponseSchema,
   )
 

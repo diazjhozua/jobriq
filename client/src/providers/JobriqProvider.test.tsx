@@ -13,6 +13,7 @@ const application = {
   jobDescription: 'Build things.',
   status: 'saved' as const,
   createdAt: '2026-10-24T12:00:00.000Z',
+  appliedDate: '',
   generatedResume: null,
 }
 
@@ -27,6 +28,7 @@ function Harness() {
     retry,
     saveProfile,
     addApplication,
+    updateApplication,
     updateApplicationStatus,
     deleteApplication,
     saveGeneratedResume,
@@ -83,6 +85,17 @@ function Harness() {
         }
       >
         Add application
+      </button>
+      <button
+        onClick={() =>
+          void updateApplication('app-1', {
+            company: '  Globex  ',
+            role: '  Developer  ',
+            appliedDate: 'Aug 2022',
+          }).catch(() => {})
+        }
+      >
+        Update details
       </button>
       <button
         onClick={() =>
@@ -193,6 +206,23 @@ describe('JobriqProvider', () => {
 
     await waitFor(() => {
       expect(api.state.applications[0]?.status).toBe('offer')
+    })
+  })
+
+  it('updates application details', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({ state: stateWithApplication() })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Update details' }))
+
+    await waitFor(() => {
+      expect(api.state.applications[0]).toMatchObject({
+        company: 'Globex',
+        role: 'Developer',
+        appliedDate: '2022-08-01',
+      })
     })
   })
 

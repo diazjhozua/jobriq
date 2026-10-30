@@ -40,6 +40,9 @@ export interface Project {
   id: string
   name: string
   url: string
+  startDate: string
+  endDate: string
+  associatedWith: string
   bullets: string[]
 }
 
@@ -97,6 +100,9 @@ export interface GeneratedProject {
   id: string
   name: string
   url: string | null
+  startDate: string
+  endDate: string
+  associatedWith: string
   bullets: EnhancedBullet[]
 }
 
@@ -134,6 +140,7 @@ export interface JobApplication {
   jobDescription: string
   status: ApplicationStatus
   createdAt: string
+  appliedDate: string
   generatedResume?: GeneratedResume | null
   coverLetter?: CoverLetter | null
 }
