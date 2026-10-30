@@ -58,7 +58,13 @@ public sealed class MarkdownResumeExporter : IResumeExporter
             {
                 lines.Add(string.Empty);
                 lines.Add($"### {experience.Title} — {experience.Company}");
-                lines.Add($"*{experience.StartDate} – {experience.EndDate}*");
+
+                string dates = ResumeExportText.DateRange(experience.StartDate, experience.EndDate);
+                if (dates.Length > 0)
+                {
+                    lines.Add($"*{dates}*");
+                }
+
                 lines.Add(string.Empty);
                 foreach (EnhancedBullet bullet in experience.Bullets)
                 {
@@ -80,7 +86,12 @@ public sealed class MarkdownResumeExporter : IResumeExporter
             {
                 lines.Add(string.Empty);
                 lines.Add($"### {education.Degree} in {education.Field} — {education.School}");
-                lines.Add($"*{education.StartDate} – {education.EndDate}*");
+
+                string dates = ResumeExportText.DateRange(education.StartDate, education.EndDate);
+                if (dates.Length > 0)
+                {
+                    lines.Add($"*{dates}*");
+                }
                 if (!string.IsNullOrEmpty(education.Gpa))
                 {
                     lines.Add($"GPA: {education.Gpa}");
@@ -99,7 +110,8 @@ public sealed class MarkdownResumeExporter : IResumeExporter
         }
 
         List<GeneratedProject> activeProjects = [.. resume.Projects.Where(project =>
-            !string.IsNullOrEmpty(project.Name) && project.Bullets.Count > 0)];
+            !string.IsNullOrEmpty(project.Name)
+            && (project.Bullets.Count > 0 || ResumeExportText.ProjectMeta(project).Length > 0))];
         if (activeProjects.Count > 0)
         {
             lines.Add(string.Empty);
@@ -113,6 +125,13 @@ public sealed class MarkdownResumeExporter : IResumeExporter
                 lines.Add(string.IsNullOrEmpty(project.Url)
                     ? $"### {project.Name}"
                     : $"### [{project.Name}]({project.Url})");
+
+                string meta = ResumeExportText.ProjectMeta(project);
+                if (meta.Length > 0)
+                {
+                    lines.Add($"*{meta}*");
+                }
+
                 foreach (EnhancedBullet bullet in project.Bullets)
                 {
                     lines.Add($"- {bullet.Enhanced}");

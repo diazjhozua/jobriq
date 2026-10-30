@@ -24,6 +24,7 @@ public sealed class DocxResumeExporterTests
         text.ShouldContain("GPA: 3.9");
         text.ShouldContain("C#, React");
         text.ShouldContain("Tool — https://example.com/tool");
+        text.ShouldContain("Aug 2022 – Present · Acme");
         text.ShouldContain("Enhanced: Shipped a tool");
 
         text.IndexOf("Professional Summary", StringComparison.Ordinal)
@@ -116,6 +117,9 @@ public sealed class DocxResumeExporterTests
                 Id = Guid.NewGuid(),
                 Name = "Tool",
                 Url = "https://example.com/tool",
+                StartDate = "Aug 2022",
+                EndDate = "Present",
+                AssociatedWith = "Acme",
                 Bullets =
                 [
                     new EnhancedBullet

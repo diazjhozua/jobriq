@@ -300,6 +300,8 @@ internal static class Prompts
                 lines.Add($"id: {project.Id}");
                 lines.Add($"Name: {Value(project.Name)}");
                 lines.Add($"URL: {Value(project.Url)}");
+                lines.Add($"Dates: {Value(project.StartDate)} - {Value(project.EndDate)}");
+                lines.Add($"Associated with: {Value(project.AssociatedWith)}");
                 lines.Add("Bullets:");
                 lines.Add(IndexedBullets(project.Bullets));
                 lines.Add(string.Empty);

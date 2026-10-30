@@ -157,6 +157,9 @@ public sealed class PromptsTests
                     Id = projectId,
                     Name = "Jobriq",
                     Url = "https://github.com/jane/jobriq",
+                    StartDate = "Aug 2022",
+                    EndDate = "Present",
+                    AssociatedWith = "Acme",
                     Bullets = ["Shipped a tool"]
                 }
             ]
@@ -176,6 +179,8 @@ public sealed class PromptsTests
         prompt.ShouldContain("C#, React");
         prompt.ShouldContain($"id: {projectId}");
         prompt.ShouldContain("Jobriq");
+        prompt.ShouldContain("Dates: Aug 2022 - Present");
+        prompt.ShouldContain("Associated with: Acme");
         prompt.ShouldContain("0. Shipped a tool");
         prompt.ShouldContain("job-agnostic");
         prompt.ShouldContain("proposedText");

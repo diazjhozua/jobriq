@@ -89,10 +89,21 @@ public sealed class DocxResumeExporter : IResumeExporter
 
         foreach (GeneratedExperience experience in active)
         {
-            body.Append(new Paragraph(
-                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
-                CreateRun($"{experience.Title} — {experience.Company}", BodySize, TextColor, bold: true),
-                CreateRun($"   {experience.StartDate} – {experience.EndDate}", SmallSize, MutedColor)));
+            List<OpenXmlElement> runs =
+            [
+                CreateRun($"{experience.Title} — {experience.Company}", BodySize, TextColor, bold: true)
+            ];
+
+            string dates = ResumeExportText.DateRange(experience.StartDate, experience.EndDate);
+            if (dates.Length > 0)
+            {
+                runs.Add(CreateRun($"   {dates}", SmallSize, MutedColor));
+            }
+
+            Paragraph experienceHeader = new(
+                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }));
+            experienceHeader.Append(runs.ToArray());
+            body.Append(experienceHeader);
 
             foreach (EnhancedBullet bullet in experience.Bullets)
             {
@@ -114,10 +125,21 @@ public sealed class DocxResumeExporter : IResumeExporter
 
         foreach (Education education in active)
         {
-            body.Append(new Paragraph(
-                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
-                CreateRun($"{education.Degree} in {education.Field} — {education.School}", BodySize, TextColor, bold: true),
-                CreateRun($"   {education.StartDate} – {education.EndDate}", SmallSize, MutedColor)));
+            List<OpenXmlElement> runs =
+            [
+                CreateRun($"{education.Degree} in {education.Field} — {education.School}", BodySize, TextColor, bold: true)
+            ];
+
+            string dates = ResumeExportText.DateRange(education.StartDate, education.EndDate);
+            if (dates.Length > 0)
+            {
+                runs.Add(CreateRun($"   {dates}", SmallSize, MutedColor));
+            }
+
+            Paragraph educationHeader = new(
+                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }));
+            educationHeader.Append(runs.ToArray());
+            body.Append(educationHeader);
 
             if (!string.IsNullOrEmpty(education.Gpa))
             {
@@ -144,7 +166,8 @@ public sealed class DocxResumeExporter : IResumeExporter
     private static void AddProjects(Body body, GeneratedResume resume)
     {
         List<GeneratedProject> active = [.. resume.Projects.Where(project =>
-            !string.IsNullOrEmpty(project.Name) && project.Bullets.Count > 0)];
+            !string.IsNullOrEmpty(project.Name)
+            && (project.Bullets.Count > 0 || ResumeExportText.ProjectMeta(project).Length > 0))];
         if (active.Count == 0)
         {
             return;
@@ -161,6 +184,14 @@ public sealed class DocxResumeExporter : IResumeExporter
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
                 CreateRun(header, BodySize, TextColor, bold: true)));
+
+            string meta = ResumeExportText.ProjectMeta(project);
+            if (meta.Length > 0)
+            {
+                body.Append(new Paragraph(
+                    new ParagraphProperties(new SpacingBetweenLines { After = "40" }),
+                    CreateRun(meta, SmallSize, MutedColor)));
+            }
 
             foreach (EnhancedBullet bullet in project.Bullets)
             {

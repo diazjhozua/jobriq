@@ -57,6 +57,7 @@ public sealed class MarkdownResumeExporterTests
             ## Projects
 
             ### [Tool](https://example.com/tool)
+            *Aug 2022 – Present · Acme*
             - Enhanced: Shipped a tool
 
             """.ReplaceLineEndings("\n"));
@@ -140,6 +141,9 @@ public sealed class MarkdownResumeExporterTests
                 Id = Guid.NewGuid(),
                 Name = "Tool",
                 Url = "https://example.com/tool",
+                StartDate = "Aug 2022",
+                EndDate = "Present",
+                AssociatedWith = "Acme",
                 Bullets =
                 [
                     new EnhancedBullet
