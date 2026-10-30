@@ -105,12 +105,13 @@ export function BulletListField({
               aria-label={`${itemLabel} bullet ${index + 1}`}
               aria-describedby={[hintId, errorId].filter(Boolean).join(' ')}
               aria-invalid={error ? true : undefined}
+              autoGrow
               rows={rows}
               value={bullet}
               onChange={(event) => update(index, event.target.value)}
               onBlur={onBlur}
               onPaste={(event) => handlePaste(event, index)}
-              className="min-h-0 flex-1 resize-y"
+              className="min-h-[3.25rem] flex-1"
             />
             <Button
               variant="ghost"
