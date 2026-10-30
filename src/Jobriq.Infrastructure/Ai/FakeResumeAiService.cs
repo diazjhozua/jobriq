@@ -108,7 +108,6 @@ internal sealed class FakeResumeAiService : IResumeAiService
         [.. bullets.Select(bullet => new EnhancedBullet
         {
             Original = bullet,
-            Enhanced = $"Enhanced: {bullet}",
-            NeedsQuantification = false
+            Enhanced = $"Enhanced: {bullet}"
         })];
 }

@@ -29,8 +29,7 @@ public sealed class GenerateStandaloneResumeUseCaseTests
                 .Select(bullet => new EnhancedBullet
                 {
                     Original = bullet,
-                    Enhanced = $"Enhanced: {bullet}",
-                    NeedsQuantification = false
+                    Enhanced = $"Enhanced: {bullet}"
                 })
                 .ToList());
 

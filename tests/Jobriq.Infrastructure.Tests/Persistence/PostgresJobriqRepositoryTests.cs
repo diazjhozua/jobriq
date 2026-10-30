@@ -157,7 +157,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.ShouldNotBeNull();
         saved.Summary.ShouldBe("Tailored summary.");
         saved.Experience.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
-        saved.Projects.Single().Bullets.Single().NeedsQuantification.ShouldBeTrue();
+        saved.Projects.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Shipped a tool");
         saved.Keywords.ShouldNotBeNull();
         saved.Keywords!.Matched.ShouldBe(["C#", "React"]);
         saved.Keywords.Missing.ShouldBe(["Kubernetes"]);
@@ -352,8 +352,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                     new EnhancedBullet
                     {
                         Original = "Built a thing",
-                        Enhanced = "Enhanced: Built a thing",
-                        NeedsQuantification = true
+                        Enhanced = "Enhanced: Built a thing"
                     }
                 ]
             }
@@ -383,8 +382,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                     new EnhancedBullet
                     {
                         Original = "Shipped a tool",
-                        Enhanced = "Enhanced: Shipped a tool",
-                        NeedsQuantification = false
+                        Enhanced = "Enhanced: Shipped a tool"
                     }
                 ]
             }
@@ -413,8 +411,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                     new EnhancedBullet
                     {
                         Original = "Built a thing",
-                        Enhanced = "Enhanced: Built a thing",
-                        NeedsQuantification = true
+                        Enhanced = "Enhanced: Built a thing"
                     }
                 ]
             }
@@ -443,8 +440,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                     new EnhancedBullet
                     {
                         Original = "Shipped a tool",
-                        Enhanced = "Enhanced: Shipped a tool",
-                        NeedsQuantification = true
+                        Enhanced = "Enhanced: Shipped a tool"
                     }
                 ]
             }
