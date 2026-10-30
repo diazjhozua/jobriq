@@ -27,6 +27,8 @@ When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.
 - Brand mark is `components/layout/Logo.tsx` (inline SVG using `fill-primary`, `fill-canvas`, `fill-accent`). Static copies `public/favicon.svg`, `public/apple-touch-icon.png`, and `../assets/logo.svg` hardcode the palette hex because they render outside CSS; update all three with the tokens.
 - Status colors appear only in `features/applications/StatusBadge.tsx`.
 - Forms use React Hook Form with the Zod resolver, explicit Save, and inline field errors. Do not add autosave.
+- The Profile screen keeps skills in component state (`SkillsField` tags) rather than in the RHF form, and normalizes them plus trimmed, non-empty bullets before every save, review, or generation call.
+- Both Generate Resume dialogs show `EnhanceProfileNotice` before the first generation, pointing at `#profile-review`.
 - Keep the focus ring (`--brand-blue`, 2px, 2px offset) and label/input associations intact; dialogs are Radix primitives.
 
 ## Commands

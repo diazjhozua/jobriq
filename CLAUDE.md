@@ -69,6 +69,8 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 - `lib/schemas.ts` has two profiles: strict `profileSchema` for form validation and lenient `stored*` schemas for API hydration, so partially filled profiles still load. Keep this split when adding fields.
 - `lib/template.ts` parses the legacy plain-text template format (`[PERSONAL]`, `[SUMMARY]`, `[EXPERIENCE]`, `[EDUCATION]`, `[SKILLS]`, `[PROJECT]`) for the Profile screen's Import template dialog. It is the only remaining consumer of that format.
 - Generated resumes are stored on the application (`generatedResume`) or, for the profile page's standalone flow, on the profile row (`standaloneResume`); both reopen from there.
+- Generated bullets carry only `original` and `enhanced`. The AI keeps numbers the user already wrote and never inserts a metric placeholder, so the resume preview shows no quantification prompt.
+- The Profile screen has a sticky section nav (`ProfileSectionNav`), skills edited as removable tags (`SkillsField`), and one textarea per bullet (`BulletListField`). Blank bullets are dropped before save, review, or generation.
 - `lib/api.ts` parses `ProblemDetails.code` and downloads blobs using the `Content-Disposition` filename.
 
 ## Tests
