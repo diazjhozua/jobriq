@@ -10,6 +10,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 - Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
 - Generated resumes live on the application (`generatedResume`) or on the workspace state as the profile page's standalone resume (`standaloneResume`), not in a separate store.
 - A cover letter lives on the application (`coverLetter`). `CoverLetterDialog` generates through `generateCoverLetter(id)` (one server call, overwrites on regenerate), reuses `DocumentHeader` so the preview matches the resume letterhead, and exports or copies through `lib/coverLetter.ts`.
+- `EditApplicationDialog` edits company, role, and the optional applied date through `updateApplication(id, details)`; it is the only path that changes an existing application's date.
 - Profile review results are ephemeral provider state (`review`, `reviewedAt`, `reviewing`, `reviewError`) from `POST /api/profile/review`; applying a suggestion patches the form, nothing is persisted, so results reset on reload.
 
 ## Schemas
@@ -30,6 +31,7 @@ When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.
 - The Profile screen keeps skills in component state (`SkillsField` tags) rather than in the RHF form, and normalizes them plus trimmed, non-empty bullets before every save, review, or generation call.
 - Experience, education, and projects each get an entry sub-nav (`EntryNav`) under the Add button. Labels come from `useWatch`, not `useFieldArray().fields`, which does not update while typing. Entry anchors are index-based (`profile-{section}-entry-{n}`) with `scroll-mt-[8rem]` and `tabIndex={-1}`.
 - `Textarea` supports `autoGrow`, which resizes on mount, value change, input, and window resize. It only tracks controlled values, so pass `value`/`onChange` (use `Controller`, not `register`, for auto-growing fields).
+- Dates use `MonthYearPicker` (`components/ui/month-year-picker.tsx`), which stores display strings (`Aug 2022`, `Present`) and parses legacy free text such as `2018` or `Jan 2022`. It is a controlled composite, so wire it through `Controller`. Project entries also have an optional associated company (`AssociatedWithField`) sourced live from experience companies plus `Personal Project`.
 - Both Generate Resume dialogs show `EnhanceProfileNotice` before the first generation, pointing at `#profile-review`.
 - Keep the focus ring (`--brand-blue`, 2px, 2px offset) and label/input associations intact; dialogs are Radix primitives.
 
