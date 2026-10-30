@@ -87,6 +87,9 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
         Id = project.Id,
         Name = project.Name,
         Url = project.Url,
+        StartDate = project.StartDate,
+        EndDate = project.EndDate,
+        AssociatedWith = project.AssociatedWith,
         Bullets = [.. project.Bullets]
     };
 
@@ -116,6 +119,9 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
         Id = project.Id,
         Name = project.Name,
         Url = project.Url,
+        StartDate = project.StartDate,
+        EndDate = project.EndDate,
+        AssociatedWith = project.AssociatedWith,
         Bullets = project.EnhancedBullets ?? []
     };
 }

@@ -8,6 +8,12 @@ public sealed class Project
 
     public string? Url { get; set; }
 
+    public string StartDate { get; set; } = string.Empty;
+
+    public string EndDate { get; set; } = string.Empty;
+
+    public string AssociatedWith { get; set; } = string.Empty;
+
     public List<string> Bullets { get; set; } = [];
 
     public List<EnhancedBullet>? EnhancedBullets { get; set; }

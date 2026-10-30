@@ -60,6 +60,19 @@ public sealed class GenerateResumeUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_CopiesProjectDatesAndAssociation()
+    {
+        ResumeProfile profile = CreateProfile(projects: [CreateProject([])]);
+
+        GeneratedResume result = await useCase.ExecuteAsync(profile, null, CancellationToken.None);
+
+        GeneratedProject project = result.Projects.Single();
+        project.StartDate.ShouldBe("Aug 2022");
+        project.EndDate.ShouldBe("Present");
+        project.AssociatedWith.ShouldBe("Acme");
+    }
+
+    [Fact]
     public async Task Execute_GeneratesSummaryWhenBlankAndExperienceExists()
     {
         ResumeProfile profile = CreateProfile(
@@ -231,6 +244,9 @@ public sealed class GenerateResumeUseCaseTests
         Id = Guid.NewGuid(),
         Name = "Tool",
         Url = "https://example.com",
+        StartDate = "Aug 2022",
+        EndDate = "Present",
+        AssociatedWith = "Acme",
         Bullets = [.. bullets]
     };
 }
