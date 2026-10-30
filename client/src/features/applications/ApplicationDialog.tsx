@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
 import { Field } from '../../components/ui/field'
 import { Input } from '../../components/ui/input'
+import { MonthYearField } from '../../components/ui/month-year-field'
 import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import {
@@ -24,6 +25,7 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
   const { addApplication } = useJobriq()
   const [error, setError] = useState<string | null>(null)
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -35,6 +37,7 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
       role: '',
       jobDescription: '',
       status: 'saved',
+      appliedDate: '',
     },
   })
 
@@ -85,15 +88,25 @@ export function ApplicationDialog({ open, onOpenChange }: ApplicationDialogProps
           </Field>
         </div>
 
-        <Field label="Status" htmlFor="application-status" error={errors.status?.message}>
-          <Select id="application-status" {...register('status')}>
-            {APPLICATION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Status" htmlFor="application-status" error={errors.status?.message}>
+            <Select id="application-status" {...register('status')}>
+              {APPLICATION_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {STATUS_LABELS[status]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <MonthYearField
+            control={control}
+            name="appliedDate"
+            id="application-applied-date"
+            label="Date applied (optional)"
+            pickerLabel="Date applied"
+            error={errors.appliedDate?.message}
+          />
+        </div>
 
         <Field
           label="Job description"

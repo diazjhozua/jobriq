@@ -1,5 +1,6 @@
-import { ChevronDown, Eye, FileText, PenLine, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, Eye, FileText, PenLine, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
+import { formatMonthYearValue } from '../../lib/monthYear'
 import type { ApplicationStatus, JobApplication } from '../../lib/types'
 import { cn, formatDate } from '../../lib/utils'
 import { StatusBadge } from './StatusBadge'
@@ -14,6 +15,7 @@ interface ApplicationRowProps {
   onStatusChange: (id: string, status: ApplicationStatus) => void
   onOpenResume: (id: string) => void
   onOpenCoverLetter: (id: string) => void
+  onEdit: (application: JobApplication) => void
   onDelete: (application: JobApplication) => void
 }
 
@@ -24,6 +26,7 @@ export function ApplicationRow({
   onStatusChange,
   onOpenResume,
   onOpenCoverLetter,
+  onEdit,
   onDelete,
 }: ApplicationRowProps) {
   const detailId = `application-description-${application.id}`
@@ -32,6 +35,9 @@ export function ApplicationRow({
     ? 'View cover letter'
     : 'Write cover letter'
   const target = `${application.role} at ${application.company}`
+  const appliedLabel = application.appliedDate
+    ? formatMonthYearValue(application.appliedDate)
+    : ''
 
   return (
     <>
@@ -75,6 +81,11 @@ export function ApplicationRow({
               <span className="mt-1 block text-[0.72rem] text-muted md:hidden">
                 Added {formatDate(application.createdAt)}
               </span>
+              {appliedLabel ? (
+                <span className="mt-0.5 block text-[0.72rem] text-muted md:hidden">
+                  Applied {appliedLabel}
+                </span>
+              ) : null}
             </div>
           </div>
         </th>
@@ -93,6 +104,11 @@ export function ApplicationRow({
           >
             {formatDate(application.createdAt)}
           </time>
+          {appliedLabel ? (
+            <span className="mt-0.5 block whitespace-nowrap text-[0.72rem] tabular-nums text-muted">
+              Applied {appliedLabel}
+            </span>
+          ) : null}
         </td>
         <td className="w-20 py-3.5 pl-1 pr-2 text-right sm:w-56 lg:w-80">
           <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -123,6 +139,16 @@ export function ApplicationRow({
                 <PenLine aria-hidden="true" size={15} />
               )}
               <span className="hidden lg:inline">Cover letter</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-9 px-0 lg:w-auto lg:px-3"
+              aria-label={`Edit ${target}`}
+              onClick={() => onEdit(application)}
+            >
+              <Pencil aria-hidden="true" size={15} />
+              <span className="hidden lg:inline">Edit</span>
             </Button>
             <Button
               variant="ghost"

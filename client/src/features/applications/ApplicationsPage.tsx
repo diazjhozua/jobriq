@@ -8,6 +8,7 @@ import { useJobriq } from '../../providers/JobriqProvider'
 import { CoverLetterDialog } from '../cover-letter/CoverLetterDialog'
 import { ApplicationDialog } from './ApplicationDialog'
 import { ApplicationRow } from './ApplicationRow'
+import { EditApplicationDialog } from './EditApplicationDialog'
 import { GeneratedResumeDialog } from './GeneratedResumeDialog'
 
 export function ApplicationsPage() {
@@ -16,6 +17,7 @@ export function ApplicationsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [coverLetterId, setCoverLetterId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<JobApplication | null>(null)
+  const [editing, setEditing] = useState<JobApplication | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const selected = applications.find((application) => application.id === selectedId) ?? null
@@ -119,6 +121,7 @@ export function ApplicationsPage() {
                   onStatusChange={handleStatusChange}
                   onOpenResume={setSelectedId}
                   onOpenCoverLetter={setCoverLetterId}
+                  onEdit={setEditing}
                   onDelete={setDeleting}
                 />
               ))}
@@ -128,6 +131,16 @@ export function ApplicationsPage() {
       )}
 
       <ApplicationDialog open={addOpen} onOpenChange={setAddOpen} />
+
+      <EditApplicationDialog
+        key={editing?.id ?? 'closed'}
+        application={editing}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditing(null)
+          }
+        }}
+      />
 
       <GeneratedResumeDialog
         application={selected}
