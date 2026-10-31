@@ -123,11 +123,49 @@ public sealed class GenerateResumeUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_CopiesCertificationsAndAwardsVerbatim()
+    {
+        Certification certification = CreateCertification();
+        Award award = CreateAward();
+        ResumeProfile profile = CreateProfile(
+            certifications: [certification],
+            awards: [award]);
+
+        GeneratedResume result = await useCase.ExecuteAsync(profile, null, CancellationToken.None);
+
+        Certification copiedCertification = result.Certifications.Single();
+        copiedCertification.Id.ShouldBe(certification.Id);
+        copiedCertification.Name.ShouldBe(certification.Name);
+        copiedCertification.IssuingOrganization.ShouldBe(certification.IssuingOrganization);
+        copiedCertification.IssueDate.ShouldBe(certification.IssueDate);
+        copiedCertification.ExpirationDate.ShouldBe(certification.ExpirationDate);
+        copiedCertification.CredentialId.ShouldBe(certification.CredentialId);
+        copiedCertification.CredentialUrl.ShouldBe(certification.CredentialUrl);
+
+        Award copiedAward = result.Awards.Single();
+        copiedAward.Id.ShouldBe(award.Id);
+        copiedAward.Title.ShouldBe(award.Title);
+        copiedAward.AssociatedWith.ShouldBe(award.AssociatedWith);
+        copiedAward.Issuer.ShouldBe(award.Issuer);
+        copiedAward.IssueDate.ShouldBe(award.IssueDate);
+        copiedAward.Description.ShouldBe(award.Description);
+
+        await aiService.DidNotReceive().EnhanceExperienceBulletsAsync(
+            Arg.Any<WorkExperience>(),
+            Arg.Any<CancellationToken>());
+        await aiService.DidNotReceive().EnhanceProjectBulletsAsync(
+            Arg.Any<Project>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Execute_ExtractsKeywordsWhenJobDescriptionExists()
     {
         ResumeProfile profile = CreateProfile(
             experience: [CreateExperience(["Built a thing"])],
-            projects: [CreateProject(["Shipped a tool"])]);
+            projects: [CreateProject(["Shipped a tool"])],
+            certifications: [CreateCertification()],
+            awards: [CreateAward()]);
         StubEnhancements();
 
         GeneratedResume result = await useCase.ExecuteAsync(
@@ -141,7 +179,9 @@ public sealed class GenerateResumeUseCaseTests
                 enhanced.Experience.Single().EnhancedBullets != null
                 && enhanced.Experience.Single().EnhancedBullets!.Count == 1
                 && enhanced.Projects.Single().EnhancedBullets != null
-                && enhanced.Projects.Single().EnhancedBullets!.Count == 1),
+                && enhanced.Projects.Single().EnhancedBullets!.Count == 1
+                && enhanced.Certifications.Count == 1
+                && enhanced.Awards.Count == 1),
             Arg.Any<CancellationToken>());
         result.Keywords.ShouldNotBeNull();
         result.Keywords!.Matched.ShouldBe(["C#"]);
@@ -211,6 +251,8 @@ public sealed class GenerateResumeUseCaseTests
     private static ResumeProfile CreateProfile(
         WorkExperience[]? experience = null,
         Project[]? projects = null,
+        Certification[]? certifications = null,
+        Award[]? awards = null,
         string summary = "")
     {
         return new ResumeProfile
@@ -224,10 +266,33 @@ public sealed class GenerateResumeUseCaseTests
             Summary = summary,
             Experience = [.. experience ?? []],
             Education = [],
+            Certifications = [.. certifications ?? []],
+            Awards = [.. awards ?? []],
             Skills = ["C#"],
             Projects = [.. projects ?? []]
         };
     }
+
+    private static Certification CreateCertification() => new()
+    {
+        Id = Guid.NewGuid(),
+        Name = "AWS Solutions Architect",
+        IssuingOrganization = "Amazon Web Services",
+        IssueDate = "Mar 2024",
+        ExpirationDate = "Mar 2027",
+        CredentialId = "ABC-123",
+        CredentialUrl = "https://example.com/verify/ABC-123"
+    };
+
+    private static Award CreateAward() => new()
+    {
+        Id = Guid.NewGuid(),
+        Title = "Engineer of the Year",
+        AssociatedWith = "Acme",
+        Issuer = "Acme",
+        IssueDate = "Dec 2023",
+        Description = "Recognized for reliability work."
+    };
 
     private static WorkExperience CreateExperience(string[] bullets) => new()
     {

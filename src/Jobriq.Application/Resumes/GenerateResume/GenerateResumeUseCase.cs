@@ -52,6 +52,8 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
                 Summary = summary,
                 Experience = experiences,
                 Education = profile.Education,
+                Certifications = profile.Certifications,
+                Awards = profile.Awards,
                 Skills = profile.Skills,
                 Projects = projects
             };
@@ -65,6 +67,8 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
             Summary = summary,
             Experience = [.. experiences.Select(ToGenerated)],
             Education = [.. profile.Education.Select(Clone)],
+            Certifications = [.. profile.Certifications.Select(Clone)],
+            Awards = [.. profile.Awards.Select(Clone)],
             Skills = [.. profile.Skills],
             Projects = [.. projects.Select(ToGenerated)],
             Keywords = keywords,
@@ -102,6 +106,27 @@ public sealed class GenerateResumeUseCase(IResumeAiService aiService, TimeProvid
         StartDate = education.StartDate,
         EndDate = education.EndDate,
         Gpa = education.Gpa
+    };
+
+    private static Certification Clone(Certification certification) => new()
+    {
+        Id = certification.Id,
+        Name = certification.Name,
+        IssuingOrganization = certification.IssuingOrganization,
+        IssueDate = certification.IssueDate,
+        ExpirationDate = certification.ExpirationDate,
+        CredentialId = certification.CredentialId,
+        CredentialUrl = certification.CredentialUrl
+    };
+
+    private static Award Clone(Award award) => new()
+    {
+        Id = award.Id,
+        Title = award.Title,
+        AssociatedWith = award.AssociatedWith,
+        Issuer = award.Issuer,
+        IssueDate = award.IssueDate,
+        Description = award.Description
     };
 
     private static GeneratedExperience ToGenerated(WorkExperience experience) => new()
