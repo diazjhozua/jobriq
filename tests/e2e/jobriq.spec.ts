@@ -456,7 +456,24 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Save profile' }),
+  ).toHaveCount(0)
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await expect(
+    page.getByRole('region', { name: 'Profile save' }),
   ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Save profile' }),
+  ).toBeVisible()
+
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animation) => animation.finished)),
+  )
+
+  const bar = await page.getByRole('region', { name: 'Profile save' }).boundingBox()
+  expect(bar).not.toBeNull()
+  expect(bar!.y).toBeGreaterThanOrEqual(0)
+  expect(bar!.y + bar!.height).toBeLessThanOrEqual(812)
 
   const headerOverflow = await page.evaluate(
     () =>
@@ -482,6 +499,31 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
     return content ? content.scrollWidth - content.clientWidth : -1
   })
   expect(dialogOverflow).toBe(0)
+})
+
+test('keeps the last project field above the save bar', async ({ page }) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByRole('button', { name: 'Add project' }).click()
+  await page.locator('#project-0-name').fill('Jobriq')
+  await page
+    .getByRole('textbox', { name: 'Project 1 bullet 1', exact: true })
+    .fill('Built a resume builder')
+
+  await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = 'auto'
+    window.scrollTo(0, document.documentElement.scrollHeight)
+  })
+
+  const bar = await page.getByRole('region', { name: 'Profile save' }).boundingBox()
+  const bullet = await page
+    .getByRole('textbox', { name: 'Project 1 bullet 1', exact: true })
+    .boundingBox()
+
+  expect(bar).not.toBeNull()
+  expect(bullet).not.toBeNull()
+  expect(bullet!.y + bullet!.height).toBeLessThanOrEqual(bar!.y)
 })
 
 test('reviews the profile, applies a suggestion, and keeps the review in session', async ({
