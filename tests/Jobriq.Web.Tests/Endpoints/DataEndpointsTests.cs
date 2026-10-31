@@ -51,12 +51,88 @@ public sealed class DataEndpointsTests
     }
 
     [Fact]
+    public async Task SaveProfile_RoundTripsCertificationsAndAwards()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage saveResponse = await client.PutAsJsonAsync(
+            "/api/profile",
+            new
+            {
+                profile = new
+                {
+                    certifications = new[]
+                    {
+                        new
+                        {
+                            id = Guid.NewGuid(),
+                            name = "AWS Solutions Architect",
+                            issuingOrganization = "Amazon Web Services",
+                            issueDate = "Mar 2024",
+                            expirationDate = "Mar 2027",
+                            credentialId = "ABC-123",
+                            credentialUrl = "https://example.com/verify/ABC-123"
+                        }
+                    },
+                    awards = new[]
+                    {
+                        new
+                        {
+                            id = Guid.NewGuid(),
+                            title = "Engineer of the Year",
+                            associatedWith = "Acme",
+                            issuer = "IEEE",
+                            issueDate = "Dec 2023",
+                            description = "Recognized for reliability work."
+                        }
+                    }
+                }
+            });
+
+        saveResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        JsonElement state = await ReadJsonAsync(await client.GetAsync("/api/state"));
+        JsonElement profile = state.GetProperty("profile");
+        profile.GetProperty("certifications")[0].GetProperty("name").GetString()
+            .ShouldBe("AWS Solutions Architect");
+        profile.GetProperty("certifications")[0].GetProperty("credentialId").GetString()
+            .ShouldBe("ABC-123");
+        profile.GetProperty("awards")[0].GetProperty("title").GetString()
+            .ShouldBe("Engineer of the Year");
+        profile.GetProperty("awards")[0].GetProperty("issuer").GetString()
+            .ShouldBe("IEEE");
+    }
+
+    [Fact]
     public async Task SaveProfile_WithoutProfile_ReturnsInvalidRequest()
     {
         await using JobriqWebFactory factory = new();
         using HttpClient client = factory.CreateClient();
 
         HttpResponseMessage response = await client.PutAsJsonAsync("/api/profile", new { profile = (object?)null });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        JsonElement problem = await ReadJsonAsync(response);
+        problem.GetProperty("code").GetString().ShouldBe("invalid_request");
+    }
+
+    [Fact]
+    public async Task SaveProfile_WithNullCertifications_ReturnsInvalidRequest()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PutAsJsonAsync(
+            "/api/profile",
+            new
+            {
+                profile = new
+                {
+                    certifications = (object?)null,
+                    awards = Array.Empty<object>()
+                }
+            });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         JsonElement problem = await ReadJsonAsync(response);

@@ -22,9 +22,9 @@ internal static class ProfileEndpoints
         GenerateStandaloneResumeUseCase useCase,
         CancellationToken cancellationToken)
     {
-        if (request.Profile is null)
+        if (request.Profile is null || !HasValidCollections(request.Profile))
         {
-            return EndpointProblems.InvalidRequest("A profile is required.");
+            return EndpointProblems.InvalidRequest("A complete profile is required.");
         }
 
         GeneratedResume resume = await useCase.ExecuteAsync(
@@ -40,7 +40,7 @@ internal static class ProfileEndpoints
         ReviewProfileUseCase useCase,
         CancellationToken cancellationToken)
     {
-        if (request.Profile is null || !IsReviewable(request.Profile))
+        if (request.Profile is null || !HasValidCollections(request.Profile))
         {
             return EndpointProblems.InvalidRequest("A complete profile is required.");
         }
@@ -50,12 +50,16 @@ internal static class ProfileEndpoints
         return Results.Ok(new ReviewProfileResponse(review.Suggestions));
     }
 
-    private static bool IsReviewable(ResumeProfile profile) =>
+    private static bool HasValidCollections(ResumeProfile profile) =>
         profile.Personal is not null &&
         profile.Experience is not null &&
         profile.Experience.All(experience => experience is not null && experience.Bullets is not null) &&
         profile.Education is not null &&
         profile.Education.All(education => education is not null) &&
+        profile.Certifications is not null &&
+        profile.Certifications.All(certification => certification is not null) &&
+        profile.Awards is not null &&
+        profile.Awards.All(award => award is not null) &&
         profile.Skills is not null &&
         profile.Projects is not null &&
         profile.Projects.All(project => project is not null && project.Bullets is not null);
@@ -65,9 +69,9 @@ internal static class ProfileEndpoints
         SaveProfileUseCase useCase,
         CancellationToken cancellationToken)
     {
-        if (request.Profile is null)
+        if (request.Profile is null || !HasValidCollections(request.Profile))
         {
-            return EndpointProblems.InvalidRequest("A profile is required.");
+            return EndpointProblems.InvalidRequest("A complete profile is required.");
         }
 
         ResumeProfile profile = await useCase.ExecuteAsync(request.Profile, cancellationToken);

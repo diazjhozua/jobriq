@@ -85,6 +85,35 @@ public sealed class ProfileReviewEndpointsTests
     }
 
     [Fact]
+    public async Task Review_WithNullCertifications_ReturnsInvalidRequest()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/profile/review",
+            new
+            {
+                profile = new
+                {
+                    personal = new { name = "Jane Doe" },
+                    summaryType = "professional",
+                    summary = string.Empty,
+                    experience = Array.Empty<object>(),
+                    education = Array.Empty<object>(),
+                    certifications = (object?)null,
+                    awards = Array.Empty<object>(),
+                    skills = Array.Empty<string>(),
+                    projects = Array.Empty<object>()
+                }
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        string body = await response.Content.ReadAsStringAsync();
+        body.ShouldContain("invalid_request");
+    }
+
+    [Fact]
     public async Task Review_WithoutApiKey_ReturnsMissingKeyProblem()
     {
         await using MissingKeyWebFactory factory = new();
@@ -146,6 +175,8 @@ public sealed class ProfileReviewEndpointsTests
                 }
             },
             education = Array.Empty<object>(),
+            certifications = Array.Empty<object>(),
+            awards = Array.Empty<object>(),
             skills = new[] { "C#" },
             projects = Array.Empty<object>()
         }

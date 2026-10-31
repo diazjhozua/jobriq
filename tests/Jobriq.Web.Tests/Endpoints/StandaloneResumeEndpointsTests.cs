@@ -26,9 +26,19 @@ public sealed class StandaloneResumeEndpointsTests
             .GetString()
             .ShouldBe("Enhanced: Built a thing");
         resume.GetProperty("keywords").ValueKind.ShouldBe(JsonValueKind.Null);
+        resume.GetProperty("certifications")[0].GetProperty("name").GetString()
+            .ShouldBe("AWS Solutions Architect");
+        resume.GetProperty("certifications")[0].GetProperty("credentialId").GetString()
+            .ShouldBe("ABC-123");
+        resume.GetProperty("awards")[0].GetProperty("title").GetString()
+            .ShouldBe("Engineer of the Year");
 
         JsonElement state = await ReadJsonAsync(await client.GetAsync("/api/state"));
         state.GetProperty("standaloneResume").GetProperty("summary").GetString().ShouldBe("Summary.");
+        state.GetProperty("standaloneResume").GetProperty("certifications")[0]
+            .GetProperty("name").GetString().ShouldBe("AWS Solutions Architect");
+        state.GetProperty("standaloneResume").GetProperty("awards")[0]
+            .GetProperty("title").GetString().ShouldBe("Engineer of the Year");
         state.GetProperty("applications").GetArrayLength().ShouldBe(0);
     }
 
@@ -84,6 +94,28 @@ public sealed class StandaloneResumeEndpointsTests
     }
 
     [Fact]
+    public async Task Generate_WithNullAwards_ReturnsInvalidRequest()
+    {
+        await using JobriqWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/profile/resume",
+            new
+            {
+                profile = new
+                {
+                    certifications = Array.Empty<object>(),
+                    awards = (object?)null
+                }
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        JsonElement problem = await ReadJsonAsync(response);
+        problem.GetProperty("code").GetString().ShouldBe("invalid_request");
+    }
+
+    [Fact]
     public async Task Generate_WithoutApiKey_ReturnsMissingKeyProblem()
     {
         await using MissingKeyWebFactory factory = new();
@@ -127,6 +159,31 @@ public sealed class StandaloneResumeEndpointsTests
                 }
             },
             education = Array.Empty<object>(),
+            certifications = new[]
+            {
+                new
+                {
+                    id = Guid.NewGuid(),
+                    name = "AWS Solutions Architect",
+                    issuingOrganization = "Amazon Web Services",
+                    issueDate = "Mar 2024",
+                    expirationDate = "Mar 2027",
+                    credentialId = "ABC-123",
+                    credentialUrl = "https://example.com/verify/ABC-123"
+                }
+            },
+            awards = new[]
+            {
+                new
+                {
+                    id = Guid.NewGuid(),
+                    title = "Engineer of the Year",
+                    associatedWith = "Acme",
+                    issuer = "IEEE",
+                    issueDate = "Dec 2023",
+                    description = "Recognized for reliability work."
+                }
+            },
             skills = new[] { "C#" },
             projects = Array.Empty<object>()
         },
