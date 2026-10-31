@@ -45,6 +45,11 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.Experience.Single().EnhancedBullets.ShouldNotBeNull();
         saved.Experience.Single().EnhancedBullets!.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
         saved.Education.Single().School.ShouldBe("State University");
+        saved.Certifications.Single().Name.ShouldBe("AWS Solutions Architect");
+        saved.Certifications.Single().CredentialId.ShouldBe("ABC-123");
+        saved.Certifications.Single().CredentialUrl.ShouldBe("https://example.com/verify/ABC-123");
+        saved.Awards.Single().Title.ShouldBe("Engineer of the Year");
+        saved.Awards.Single().Issuer.ShouldBe("IEEE");
         saved.Skills.ShouldBe(["C#", "React"]);
         saved.Projects.Single().Url.ShouldBe("https://example.com/tool");
         saved.Projects.Single().StartDate.ShouldBe("Aug 2022");
@@ -215,6 +220,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.Summary.ShouldBe("Tailored summary.");
         saved.Experience.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
         saved.Projects.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Shipped a tool");
+        saved.Certifications.Single().Name.ShouldBe("AWS Solutions Architect");
+        saved.Awards.Single().Title.ShouldBe("Engineer of the Year");
         saved.Keywords.ShouldNotBeNull();
         saved.Keywords!.Matched.ShouldBe(["C#", "React"]);
         saved.Keywords.Missing.ShouldBe(["Kubernetes"]);
@@ -247,6 +254,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         standalone.ShouldNotBeNull();
         standalone.Summary.ShouldBe("Tailored summary.");
         standalone.Experience.Single().Bullets.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
+        standalone.Certifications.Single().Name.ShouldBe("AWS Solutions Architect");
+        standalone.Awards.Single().Title.ShouldBe("Engineer of the Year");
         standalone.Keywords.ShouldNotBeNull();
         standalone.Keywords!.Missing.ShouldBe(["Kubernetes"]);
         standalone.GeneratedAt.ShouldBe(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
@@ -426,6 +435,29 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 Gpa = "3.9"
             }
         ],
+        Certifications =
+        [
+            new Certification
+            {
+                Name = "AWS Solutions Architect",
+                IssuingOrganization = "Amazon Web Services",
+                IssueDate = "Mar 2024",
+                ExpirationDate = "Mar 2027",
+                CredentialId = "ABC-123",
+                CredentialUrl = "https://example.com/verify/ABC-123"
+            }
+        ],
+        Awards =
+        [
+            new Award
+            {
+                Title = "Engineer of the Year",
+                AssociatedWith = "Acme",
+                Issuer = "IEEE",
+                IssueDate = "Dec 2023",
+                Description = "Recognized for reliability work."
+            }
+        ],
         Skills = ["C#", "React"],
         Projects =
         [
@@ -486,6 +518,29 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 StartDate = "2018",
                 EndDate = "2022",
                 Gpa = "3.9"
+            }
+        ],
+        Certifications =
+        [
+            new Certification
+            {
+                Name = "AWS Solutions Architect",
+                IssuingOrganization = "Amazon Web Services",
+                IssueDate = "Mar 2024",
+                ExpirationDate = "Mar 2027",
+                CredentialId = "ABC-123",
+                CredentialUrl = "https://example.com/verify/ABC-123"
+            }
+        ],
+        Awards =
+        [
+            new Award
+            {
+                Title = "Engineer of the Year",
+                AssociatedWith = "Acme",
+                Issuer = "IEEE",
+                IssueDate = "Dec 2023",
+                Description = "Recognized for reliability work."
             }
         ],
         Skills = ["C#"],
