@@ -102,6 +102,81 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
         </section>
       ) : null}
 
+      {resume.certifications.length > 0 ? (
+        <section>
+          <SectionHeading>Licenses &amp; certifications</SectionHeading>
+          <div className="mt-3 space-y-3">
+            {resume.certifications.map((certification) => {
+              const dates = formatDateRange(
+                certification.issueDate,
+                certification.expirationDate,
+              )
+              const meta = [
+                dates,
+                certification.credentialId
+                  ? `Credential ID: ${certification.credentialId}`
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+
+              return (
+                <div key={certification.id}>
+                  <p className="break-words text-[0.86rem] font-medium text-navy">
+                    {certification.name}
+                    {certification.issuingOrganization
+                      ? ` — ${certification.issuingOrganization}`
+                      : ''}
+                  </p>
+                  {meta ? (
+                    <p className="break-words text-[0.72rem] tabular-nums text-muted [overflow-wrap:anywhere]">
+                      {meta}
+                    </p>
+                  ) : null}
+                  {certification.credentialUrl ? (
+                    <p className="break-words text-[0.72rem] text-muted [overflow-wrap:anywhere]">
+                      {certification.credentialUrl}
+                    </p>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {resume.awards.length > 0 ? (
+        <section>
+          <SectionHeading>Honors &amp; awards</SectionHeading>
+          <div className="mt-3 space-y-3">
+            {resume.awards.map((award) => {
+              const meta = [award.issueDate, award.associatedWith]
+                .filter(Boolean)
+                .join(' · ')
+
+              return (
+                <div key={award.id}>
+                  <p className="break-words text-[0.86rem] font-medium text-navy">
+                    {award.title}
+                    {award.issuer ? ` — ${award.issuer}` : ''}
+                  </p>
+                  {meta ? (
+                    <p className="break-words text-[0.72rem] tabular-nums text-muted [overflow-wrap:anywhere]">
+                      {meta}
+                    </p>
+                  ) : null}
+                  {award.description ? (
+                    <p className="mt-1 break-words text-[0.84rem] leading-6 text-body">
+                      {award.description}
+                    </p>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {resume.skills.length > 0 ? (
         <section>
           <SectionHeading>Skills</SectionHeading>

@@ -30,6 +30,8 @@ const resume: GeneratedResume = {
     },
   ],
   education: [],
+  certifications: [],
+  awards: [],
   skills: ['C#'],
   projects: [],
   keywords: { matched: ['C#'], missing: [] },
@@ -65,6 +67,63 @@ describe('ResumePreview', () => {
     )
 
     expect(screen.getByText('Aug 2022 – Present · Acme')).toBeInTheDocument()
+  })
+
+  it('renders certifications and awards with their metadata', () => {
+    render(
+      <ResumePreview
+        resume={{
+          ...resume,
+          certifications: [
+            {
+              id: 'cert-1',
+              name: 'AWS Solutions Architect',
+              issuingOrganization: 'Amazon Web Services',
+              issueDate: 'Mar 2024',
+              expirationDate: 'Mar 2027',
+              credentialId: 'ABC-123',
+              credentialUrl: 'https://example.com/verify/ABC-123',
+            },
+          ],
+          awards: [
+            {
+              id: 'award-1',
+              title: 'Engineer of the Year',
+              associatedWith: 'Acme',
+              issuer: 'IEEE',
+              issueDate: 'Dec 2023',
+              description: 'Recognized for reliability work.',
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Licenses & certifications')).toBeInTheDocument()
+    expect(
+      screen.getByText('AWS Solutions Architect — Amazon Web Services'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Mar 2024 – Mar 2027 · Credential ID: ABC-123'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('https://example.com/verify/ABC-123'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Honors & awards')).toBeInTheDocument()
+    expect(screen.getByText('Engineer of the Year — IEEE')).toBeInTheDocument()
+    expect(screen.getByText('Dec 2023 · Acme')).toBeInTheDocument()
+    expect(
+      screen.getByText('Recognized for reliability work.'),
+    ).toBeInTheDocument()
+  })
+
+  it('omits certification and award sections when empty', () => {
+    render(<ResumePreview resume={resume} />)
+
+    expect(
+      screen.queryByText('Licenses & certifications'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Honors & awards')).not.toBeInTheDocument()
   })
 
   it('omits the project metadata line when it is empty', () => {
