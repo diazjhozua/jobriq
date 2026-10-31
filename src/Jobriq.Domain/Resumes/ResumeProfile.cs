@@ -12,6 +12,10 @@ public sealed class ResumeProfile
 
     public List<Education> Education { get; set; } = [];
 
+    public List<Certification> Certifications { get; set; } = [];
+
+    public List<Award> Awards { get; set; } = [];
+
     public List<string> Skills { get; set; } = [];
 
     public List<Project> Projects { get; set; } = [];

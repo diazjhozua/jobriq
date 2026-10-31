@@ -7,5 +7,7 @@ public enum ReviewSection
     Experience,
     Education,
     Skills,
-    Projects
+    Projects,
+    Certifications,
+    Awards
 }
