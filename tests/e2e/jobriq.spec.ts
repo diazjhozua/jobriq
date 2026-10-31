@@ -108,6 +108,74 @@ test('captures project dates and the associated company', async ({ page }) => {
   await expect(page.locator('#project-0-associated')).toHaveValue('Acme')
 })
 
+test('captures certifications and awards in the generated resume', async ({
+  page,
+}) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+
+  await page.getByRole('button', { name: 'Add certification' }).click()
+  await page.locator('#certification-0-name').fill('AWS Solutions Architect')
+  await page
+    .locator('#certification-0-issuer')
+    .fill('Amazon Web Services')
+  await page.locator('#certification-0-issue').click()
+  await page.getByLabel('Certification 1 issue date year').selectOption('2024')
+  await page.getByRole('button', { name: 'March 2024' }).click()
+  await page.locator('#certification-0-credential-id').fill('ABC-123')
+  await page
+    .locator('#certification-0-credential-url')
+    .fill('https://example.com/verify/ABC-123')
+
+  await page.getByRole('button', { name: 'Add award' }).click()
+  await page.locator('#award-0-title').fill('Engineer of the Year')
+  await page.locator('#award-0-associated').fill('Acme')
+  await page.locator('#award-0-issuer').fill('IEEE')
+  await page.locator('#award-0-issue').click()
+  await page.getByLabel('Award 1 issue date year').selectOption('2023')
+  await page.getByRole('button', { name: 'December 2023' }).click()
+  await page
+    .locator('#award-0-description')
+    .fill('Recognized for reliability work.')
+
+  await expect(
+    page.getByRole('link', {
+      name: '1 · AWS Solutions Architect — Amazon Web Services',
+    }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(page.locator('#certification-0-name')).toHaveValue(
+    'AWS Solutions Architect',
+  )
+  await expect(page.locator('#certification-0-issue')).toContainText('Mar 2024')
+  await expect(page.locator('#award-0-title')).toHaveValue('Engineer of the Year')
+  await expect(page.locator('#award-0-issue')).toContainText('Dec 2023')
+
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Generate resume' }).click()
+
+  await expect(dialog.getByText('Licenses & certifications')).toBeVisible()
+  await expect(
+    dialog.getByText('AWS Solutions Architect — Amazon Web Services'),
+  ).toBeVisible()
+  await expect(dialog.getByText('Credential ID: ABC-123')).toBeVisible()
+  await expect(dialog.getByText('Honors & awards')).toBeVisible()
+  await expect(dialog.getByText('Engineer of the Year — IEEE')).toBeVisible()
+  await expect(dialog.getByText('Dec 2023 · Acme')).toBeVisible()
+  await expect(dialog.getByText('Recognized for reliability work.')).toBeVisible()
+
+  const markdownDownload = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'Markdown' }).click()
+  expect((await markdownDownload).suggestedFilename()).toMatch(fileNamePattern)
+})
+
 test('edits an application and sets its applied date', async ({ page }) => {
   await page.goto('/applications')
   await addApplication(page, 'Globex', 'Senior Engineer')
@@ -395,6 +463,15 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(headerOverflow).toBe(0)
+
+  await page.getByRole('button', { name: 'Add certification' }).click()
+  await page.getByRole('button', { name: 'Add award' }).click()
+
+  const entryOverflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(entryOverflow).toBe(0)
 
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
   const dialog = page.getByRole('dialog')
