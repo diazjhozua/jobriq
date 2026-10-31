@@ -19,7 +19,7 @@ npm run test:e2e       # Playwright (disposable Postgres, builds client, runs ho
 
 dotnet build Jobriq.sln
 dotnet test Jobriq.sln
-dotnet test tests/Jobriq.Application.Tests --filter FullyQualifiedName~GenerateResumeUseCaseTests
+dotnet test tests/Jobriq.Application.Tests --filter FullyQualifiedName~GenerateResumeCommandHandlerTests
 dotnet run --project src/Jobriq.Web
 ASPNETCORE_ENVIRONMENT=Testing dotnet run --project src/Jobriq.Web --no-launch-profile
 
@@ -38,16 +38,20 @@ npm --prefix client test -- src/lib/schemas.test.ts   # single Vitest file
 ## Architecture
 
 ```
+src/Jobriq.SharedKernel    Result, Error, ErrorType, ValidationError (leaf)
+src/Jobriq.Contracts       flat HTTP request/response DTOs and enums (leaf, no Jobriq references)
 src/Jobriq.Domain          models only, no dependencies
-src/Jobriq.Application     use cases + abstractions, depends on Domain
-src/Jobriq.Infrastructure  OpenAI service, exporters, EF Core/Postgres persistence, depends on Application
-src/Jobriq.Web             ASP.NET Core minimal API host, depends on Infrastructure
+src/Jobriq.Application     commands/queries, handlers, validators, mappings, abstractions; depends on Domain, Contracts, SharedKernel
+src/Jobriq.Infrastructure  OpenAI service, exporters, EF Core/Postgres persistence; depends on Application
+src/Jobriq.Web             ASP.NET Core minimal API host and IEndpoint classes; depends on Application, Contracts, Infrastructure, SharedKernel
 client                     React + TypeScript SPA (Vite, Tailwind v4, Radix, RHF, Zod)
 ```
 
-Dependency direction is inward only and enforced by `tests/Jobriq.Web.Tests/Architecture/LayerTests.cs`.
+Dependency direction is inward only and enforced by `tests/Jobriq.Web.Tests/Architecture/LayerTests.cs`. `Jobriq.Contracts` and `Jobriq.SharedKernel` are leaves; Infrastructure must not reference Contracts; Web endpoints must not reference Domain.
 
-Request flow: `ResumeEndpoints` -> `GenerateResumeUseCase` (enhance experience/project bullets, generate summary only when blank, extract keywords only when a job description exists) -> `IResumeAiService` / `IResumeExporter` implementations. `ExportResumeUseCase` selects an exporter and builds the `{slug}-resume-YYYYMMDD-HHMMSS` filename using `TimeProvider`. `ProfileEndpoints` maps profile save, `/api/profile/review` (`ReviewProfileUseCase`; suggestions are returned, never persisted), and `/api/profile/resume` (`GenerateStandaloneResumeUseCase`). `ApplicationEndpoints` and `StateEndpoints` cover application CRUD, status, editable details (`PUT /api/applications/{id}` for company, role, and applied date), and workspace hydration. `ApplicationEndpoints` also maps `POST /api/applications/{id}/cover-letter`, which generates and persists a cover letter in one call (`GenerateCoverLetterUseCase` -> `CoverLetterNormalizer`); `CoverLetterEndpoints` maps `POST /api/cover-letter/export` (`ExportCoverLetterUseCase`, `{slug}-cover-letter-YYYYMMDD-HHMMSS.docx`).
+Request flow: an `IEndpoint` class under `src/Jobriq.Web/Endpoints/<Model>/` binds a Contracts request, builds a command or query, and calls `ICommandHandler`/`IQueryHandler`. Scrutor wraps every handler with `ErrorHandlingDecorator` (maps known exceptions to `Result` failures) and `ValidationDecorator` (runs FluentValidation and returns `invalid_request`). Handlers map Contracts to Domain, call `IJobriqRepository`, `IResumeAiService`, or an exporter, and map the result back to Contracts. `ResultExtensions.Match` turns success into `Results.Ok`/`Created`/`File` and failure into `CustomResults.Problem`, preserving the existing `ProblemDetails.code` values. `GlobalExceptionHandler` remains the safety net for unmapped exceptions.
+
+`GenerateResumeCommandHandler` enhances experience/project bullets, generates a summary only when blank, and extracts keywords only when a job description exists. `ExportResumeQueryHandler` selects an exporter and builds the `{slug}-resume-YYYYMMDD-HHMMSS` filename using `TimeProvider`. `GenerateStandaloneResumeCommandHandler` calls the decorated `GenerateResume` handler and persists the standalone resume. `ReviewProfileCommandHandler` returns suggestions without persisting them. `GenerateCoverLetterCommandHandler` generates and persists a cover letter in one call through `CoverLetterNormalizer`; `ExportCoverLetterQueryHandler` builds `{slug}-cover-letter-YYYYMMDD-HHMMSS.docx`.
 
 The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appsettings.Testing.json`) or the default `OpenAI`. OpenAI config reads `OpenAI:ApiKey`, `OpenAI:Model`, `OpenAI:BaseUrl` with fallbacks to `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`. The `ChatClient` is cached after first use, so configuration changes require a server restart. Enhance, review, and keyword calls request JSON object mode; `JsonResponseParser` strips code fences and extracts a JSON object from surrounding prose. Parse failures log the raw response and map to `openai_invalid_response`. Failures map to `ProblemDetails` with a stable `code` extension (`missing_api_key`, `openai_unauthorized`, `openai_rate_limited`, `openai_invalid_response`, `export_failed`, ...) via `GlobalExceptionHandler`.
 
@@ -78,12 +82,17 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 ## Tests
 
 - `dotnet test` covers Domain, Application, Infrastructure, and Web (`WebApplicationFactory<Program>`), plus layer rules.
+- Application tests are grouped under `Handlers`, `Validators`, `Mapping`, `Behaviors`, `CoverLetters`, and `Resumes`; they construct handlers directly and assert `Result` values.
+- Web tests include contract snapshots under `tests/Jobriq.Web.Tests/Contracts/Snapshots` and a route-inventory test. Regenerate snapshots only for an intentional contract change with `UPDATE_SNAPSHOTS=1 dotnet test tests/Jobriq.Web.Tests --filter FullyQualifiedName~ContractSnapshotTests`.
 - Vitest + React Testing Library tests are colocated with the code under `client/src/**/*.test.ts(x)`; there is no `tests/client` directory.
 - Playwright runs against an isolated server on port 5081 with the fake AI provider, a disposable PostgreSQL container, and `reuseExistingServer: false`. It never calls OpenAI and must not reuse a developer server on 5080 or the development database.
 
 ## Conventions
 
-- Minimal APIs only; no controllers or MediatR. Persistence goes through `IJobriqRepository`; never reference EF Core or Npgsql from Domain or Application.
+- Minimal APIs only; no controllers or MediatR. CQRS uses Jobriq's own `ICommand`/`IQuery` + handler interfaces, with Scrutor registration and decorators.
+- Put HTTP request and response DTOs in `Jobriq.Contracts`; Application maps between Contracts and Domain. Expected failures return `Result<T>`; infrastructure failures may throw and are mapped by `ErrorHandlingDecorator` or `GlobalExceptionHandler`.
+- Never change an existing route, JSON field name, enum casing, `ProblemDetails.code`, cookie name, or export filename without updating the contract snapshots and the client schemas.
+- Persistence goes through `IJobriqRepository`; never reference EF Core or Npgsql from Domain or Application.
 - `TreatWarningsAsErrors`, nullable, and file-scoped namespaces are mandatory for all .NET projects; central package versions in `Directory.Packages.props`.
 - Use `TimeProvider` for timestamps so tests can substitute it.
 - Do not call OpenAI from tests; use the `Testing` environment or substitute `IResumeAiService`.
@@ -97,7 +106,7 @@ The AI provider is chosen by `Ai:Provider`: `Fake` (deterministic, set by `appse
 - The `review` skill (`/review`) is the pre-commit checklist for this repo; run it on the working diff.
 - `/feature-dev` is the entry point for multi-layer features: it explores with `code-explorer`, designs with `code-architect` (plus the `frontend-design` skill for UI), builds with the slice skills, reviews with `code-reviewer` + `architecture-reviewer` + `ui-reviewer`, and finishes with `verify`.
 - Sub-agents: `code-explorer` traces existing slices, `code-architect` writes blueprints, `code-reviewer` checks bugs and simplicity, `architecture-reviewer` for layer and DI checks, `feature-builder` for multi-file vertical slices, `test-runner` to diagnose failures, `ui-reviewer` for accessibility and token usage.
-- `add-api-endpoint` and `add-client-feature` encode the vertical-slice patterns used by `ResumeEndpoints` and the Profile/Applications screens; `code-architect` preloads both, and `code-reviewer` preloads `review`.
+- `add-api-endpoint` and `add-client-feature` encode the vertical-slice patterns used by the `IEndpoint` slices and the Profile/Applications screens; `code-architect` preloads both, and `code-reviewer` preloads `review`.
 - `feature-dev`, `frontend-design`, and the `code-*` agents are vendored from the Claude plugins of the same name (Apache-2.0, licenses kept beside the skills) and customized for Jobriq; the plugins are disabled in `.claude/settings.json` to avoid duplicate agents.
 
 ## Subdirectory instructions

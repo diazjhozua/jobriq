@@ -22,6 +22,8 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 
 When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.ts`.
 
+Backend request/response DTOs live in `src/Jobriq.Contracts`; `src/lib/schemas.ts` is the consumer contract for those DTOs. A structural backend refactor must not require client changes. After a backend DTO change, run `npm --prefix client test -- src/lib/schemas.test.ts src/lib/api.test.ts` and update the backend contract snapshots only for an intentional contract change.
+
 ## UI
 
 - Tailwind tokens only, defined in `src/index.css`. No hex literals in components.
