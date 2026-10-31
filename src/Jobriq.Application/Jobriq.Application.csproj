@@ -1,11 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Scrutor" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Jobriq.Contracts\Jobriq.Contracts.csproj" />
     <ProjectReference Include="..\Jobriq.Domain\Jobriq.Domain.csproj" />
+    <ProjectReference Include="..\Jobriq.SharedKernel\Jobriq.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jobriq.Application.Tests" />
   </ItemGroup>
 
 </Project>

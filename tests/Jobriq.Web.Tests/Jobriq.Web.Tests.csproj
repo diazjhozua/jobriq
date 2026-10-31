@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Jobriq.Application\Jobriq.Application.csproj" />
+    <ProjectReference Include="..\..\src\Jobriq.Contracts\Jobriq.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Jobriq.Domain\Jobriq.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Jobriq.SharedKernel\Jobriq.SharedKernel.csproj" />
     <ProjectReference Include="..\..\src\Jobriq.Web\Jobriq.Web.csproj" />
   </ItemGroup>
 

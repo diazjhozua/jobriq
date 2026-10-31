@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -26,6 +27,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jobriq.Application\Jobriq.Application.csproj" />
+    <ProjectReference Include="..\..\src\Jobriq.Contracts\Jobriq.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Jobriq.SharedKernel\Jobriq.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

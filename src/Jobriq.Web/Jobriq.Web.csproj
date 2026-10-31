@@ -12,7 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Jobriq.Application\Jobriq.Application.csproj" />
+    <ProjectReference Include="..\Jobriq.Contracts\Jobriq.Contracts.csproj" />
     <ProjectReference Include="..\Jobriq.Infrastructure\Jobriq.Infrastructure.csproj" />
+    <ProjectReference Include="..\Jobriq.SharedKernel\Jobriq.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>
