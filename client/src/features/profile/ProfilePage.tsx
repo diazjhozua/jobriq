@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, FileText, Plus, Trash2, Upload } from 'lucide-react'
+import { Check, FileText, Plus, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
@@ -12,16 +12,23 @@ import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import { formatMonthYearValue } from '../../lib/monthYear'
 import { profileSchema } from '../../lib/schemas'
-import type { Profile, ReviewSuggestion } from '../../lib/types'
+import type {
+  Award,
+  Certification,
+  Profile,
+  ReviewSuggestion,
+} from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { AssociatedWithField } from './AssociatedWithField'
 import { BulletListField } from './BulletListField'
-import { entryAnchorId } from './entryNavItems'
 import {
+  AwardEntryNav,
+  CertificationEntryNav,
   EducationEntryNav,
   ExperienceEntryNav,
   ProjectEntryNav,
 } from './ProfileEntryNavs'
+import { ProfileEntryCard } from './ProfileEntryCard'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
 import { ProfileSectionNav } from './ProfileSectionNav'
 import { SkillsField } from './SkillsField'
@@ -76,10 +83,27 @@ function canonicalDates(profile: Profile): Profile {
     }
   }
 
+  function fixCertification(entry: Certification): Certification {
+    return {
+      ...entry,
+      issueDate: formatMonthYearValue(entry.issueDate),
+      expirationDate: formatMonthYearValue(entry.expirationDate),
+    }
+  }
+
+  function fixAward(entry: Award): Award {
+    return {
+      ...entry,
+      issueDate: formatMonthYearValue(entry.issueDate),
+    }
+  }
+
   return {
     ...profile,
     experience: profile.experience.map(fix),
     education: profile.education.map(fix),
+    certifications: profile.certifications.map(fixCertification),
+    awards: profile.awards.map(fixAward),
     projects: profile.projects.map(fix),
   }
 }
@@ -116,6 +140,8 @@ export function ProfilePage() {
 
   const experience = useFieldArray({ control, name: 'experience' })
   const education = useFieldArray({ control, name: 'education' })
+  const certifications = useFieldArray({ control, name: 'certifications' })
+  const awards = useFieldArray({ control, name: 'awards' })
   const projects = useFieldArray({ control, name: 'projects' })
 
   const skillsDirty =
@@ -391,31 +417,14 @@ export function ProfilePage() {
         ) : (
           <div className="space-y-4">
             {experience.fields.map((entry, index) => (
-              <div
+              <ProfileEntryCard
                 key={entry.id}
-                id={entryAnchorId('experience', index)}
-                aria-labelledby={`${entryAnchorId('experience', index)}-title`}
-                tabIndex={-1}
-                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+                section="experience"
+                index={index}
+                heading={`Experience ${index + 1}`}
+                removeLabel={`Remove experience ${index + 1}`}
+                onRemove={() => experience.remove(index)}
               >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3
-                    id={`${entryAnchorId('experience', index)}-title`}
-                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
-                  >
-                    Experience {index + 1}
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => experience.remove(index)}
-                    aria-label={`Remove experience ${index + 1}`}
-                  >
-                    <Trash2 aria-hidden="true" size={16} />
-                    Remove
-                  </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     label="Company"
                     htmlFor={`experience-${index}-company`}
@@ -468,8 +477,7 @@ export function ProfilePage() {
                       />
                     )}
                   />
-                </div>
-              </div>
+              </ProfileEntryCard>
             ))}
           </div>
         )}
@@ -478,7 +486,7 @@ export function ProfilePage() {
       <Section
         id="profile-education"
         title="Education"
-        description="Degrees, certifications, and relevant coursework."
+        description="Degrees and relevant coursework."
         action={
           <Button
             variant="outline"
@@ -506,31 +514,14 @@ export function ProfilePage() {
         ) : (
           <div className="space-y-4">
             {education.fields.map((entry, index) => (
-              <div
+              <ProfileEntryCard
                 key={entry.id}
-                id={entryAnchorId('education', index)}
-                aria-labelledby={`${entryAnchorId('education', index)}-title`}
-                tabIndex={-1}
-                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+                section="education"
+                index={index}
+                heading={`Education ${index + 1}`}
+                removeLabel={`Remove education ${index + 1}`}
+                onRemove={() => education.remove(index)}
               >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3
-                    id={`${entryAnchorId('education', index)}-title`}
-                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
-                  >
-                    Education {index + 1}
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => education.remove(index)}
-                    aria-label={`Remove education ${index + 1}`}
-                  >
-                    <Trash2 aria-hidden="true" size={16} />
-                    Remove
-                  </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     label="School"
                     htmlFor={`education-${index}-school`}
@@ -590,8 +581,219 @@ export function ProfilePage() {
                     error={errors.education?.[index]?.endDate?.message}
                     allowPresent
                   />
-                </div>
-              </div>
+              </ProfileEntryCard>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section
+        id="profile-certifications"
+        title="Licenses & certifications"
+        description="Credentials that back up your expertise."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              certifications.append({
+                id: crypto.randomUUID(),
+                name: '',
+                issuingOrganization: '',
+                issueDate: '',
+                expirationDate: '',
+                credentialId: '',
+                credentialUrl: '',
+              })
+            }
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add certification
+          </Button>
+        }
+        subNav={<CertificationEntryNav control={control} />}
+      >
+        {certifications.fields.length === 0 ? (
+          <p className="text-[0.85rem] italic text-muted">
+            No certifications added yet.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {certifications.fields.map((entry, index) => (
+              <ProfileEntryCard
+                key={entry.id}
+                section="certifications"
+                index={index}
+                heading={`Certification ${index + 1}`}
+                removeLabel={`Remove certification ${index + 1}`}
+                onRemove={() => certifications.remove(index)}
+              >
+                <Field
+                  label="Name"
+                  htmlFor={`certification-${index}-name`}
+                  error={errors.certifications?.[index]?.name?.message}
+                >
+                  <Input
+                    id={`certification-${index}-name`}
+                    {...register(`certifications.${index}.name`)}
+                  />
+                </Field>
+                <Field
+                  label="Issuing organization"
+                  htmlFor={`certification-${index}-issuer`}
+                  error={
+                    errors.certifications?.[index]?.issuingOrganization?.message
+                  }
+                >
+                  <Input
+                    id={`certification-${index}-issuer`}
+                    {...register(`certifications.${index}.issuingOrganization`)}
+                  />
+                </Field>
+                <MonthYearField
+                  control={control}
+                  name={`certifications.${index}.issueDate`}
+                  id={`certification-${index}-issue`}
+                  label="Issue date"
+                  pickerLabel={`Certification ${index + 1} issue date`}
+                  error={errors.certifications?.[index]?.issueDate?.message}
+                />
+                <MonthYearField
+                  control={control}
+                  name={`certifications.${index}.expirationDate`}
+                  id={`certification-${index}-expiration`}
+                  label="Expiration date (optional)"
+                  pickerLabel={`Certification ${index + 1} expiration date`}
+                  error={errors.certifications?.[index]?.expirationDate?.message}
+                />
+                <Field
+                  label="Credential ID"
+                  htmlFor={`certification-${index}-credential-id`}
+                  error={errors.certifications?.[index]?.credentialId?.message}
+                >
+                  <Input
+                    id={`certification-${index}-credential-id`}
+                    {...register(`certifications.${index}.credentialId`)}
+                  />
+                </Field>
+                <Field
+                  label="Credential URL"
+                  htmlFor={`certification-${index}-credential-url`}
+                  error={errors.certifications?.[index]?.credentialUrl?.message}
+                >
+                  <Input
+                    id={`certification-${index}-credential-url`}
+                    placeholder="https://..."
+                    {...register(`certifications.${index}.credentialUrl`)}
+                  />
+                </Field>
+              </ProfileEntryCard>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section
+        id="profile-awards"
+        title="Honors & awards"
+        description="Recognition that sets you apart."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              awards.append({
+                id: crypto.randomUUID(),
+                title: '',
+                associatedWith: '',
+                issuer: '',
+                issueDate: '',
+                description: '',
+              })
+            }
+          >
+            <Plus aria-hidden="true" size={16} />
+            Add award
+          </Button>
+        }
+        subNav={<AwardEntryNav control={control} />}
+      >
+        {awards.fields.length === 0 ? (
+          <p className="text-[0.85rem] italic text-muted">
+            No awards added yet.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {awards.fields.map((entry, index) => (
+              <ProfileEntryCard
+                key={entry.id}
+                section="awards"
+                index={index}
+                heading={`Award ${index + 1}`}
+                removeLabel={`Remove award ${index + 1}`}
+                onRemove={() => awards.remove(index)}
+              >
+                <Field
+                  label="Title"
+                  htmlFor={`award-${index}-title`}
+                  error={errors.awards?.[index]?.title?.message}
+                >
+                  <Input
+                    id={`award-${index}-title`}
+                    {...register(`awards.${index}.title`)}
+                  />
+                </Field>
+                <Field
+                  label="Associated with"
+                  htmlFor={`award-${index}-associated`}
+                  hint="Where the award came from, such as a company or school."
+                  error={errors.awards?.[index]?.associatedWith?.message}
+                >
+                  <Input
+                    id={`award-${index}-associated`}
+                    {...register(`awards.${index}.associatedWith`)}
+                  />
+                </Field>
+                <Field
+                  label="Issuer"
+                  htmlFor={`award-${index}-issuer`}
+                  error={errors.awards?.[index]?.issuer?.message}
+                >
+                  <Input
+                    id={`award-${index}-issuer`}
+                    {...register(`awards.${index}.issuer`)}
+                  />
+                </Field>
+                <MonthYearField
+                  control={control}
+                  name={`awards.${index}.issueDate`}
+                  id={`award-${index}-issue`}
+                  label="Issue date"
+                  pickerLabel={`Award ${index + 1} issue date`}
+                  error={errors.awards?.[index]?.issueDate?.message}
+                />
+                <Field
+                  label="Description"
+                  htmlFor={`award-${index}-description`}
+                  error={errors.awards?.[index]?.description?.message}
+                  className="sm:col-span-2"
+                >
+                  <Controller
+                    control={control}
+                    name={`awards.${index}.description`}
+                    render={({ field }) => (
+                      <Textarea
+                        id={`award-${index}-description`}
+                        rows={3}
+                        autoGrow
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                </Field>
+              </ProfileEntryCard>
             ))}
           </div>
         )}
@@ -641,31 +843,14 @@ export function ProfilePage() {
         ) : (
           <div className="space-y-4">
             {projects.fields.map((entry, index) => (
-              <div
+              <ProfileEntryCard
                 key={entry.id}
-                id={entryAnchorId('projects', index)}
-                aria-labelledby={`${entryAnchorId('projects', index)}-title`}
-                tabIndex={-1}
-                className="scroll-mt-[8rem] border-t border-border pt-5 first:border-t-0 first:pt-0"
+                section="projects"
+                index={index}
+                heading={`Project ${index + 1}`}
+                removeLabel={`Remove project ${index + 1}`}
+                onRemove={() => projects.remove(index)}
               >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3
-                    id={`${entryAnchorId('projects', index)}-title`}
-                    className="font-sans text-[0.78rem] font-medium tracking-[0.01em] text-muted"
-                  >
-                    Project {index + 1}
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => projects.remove(index)}
-                    aria-label={`Remove project ${index + 1}`}
-                  >
-                    <Trash2 aria-hidden="true" size={16} />
-                    Remove
-                  </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     label="Name"
                     htmlFor={`project-${index}-name`}
@@ -724,8 +909,7 @@ export function ProfilePage() {
                       />
                     )}
                   />
-                </div>
-              </div>
+              </ProfileEntryCard>
             ))}
           </div>
         )}

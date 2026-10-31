@@ -7,6 +7,8 @@ const PROFILE_SECTIONS = [
   { id: 'profile-summary', label: 'Summary' },
   { id: 'profile-experience', label: 'Experience' },
   { id: 'profile-education', label: 'Education' },
+  { id: 'profile-certifications', label: 'Certifications' },
+  { id: 'profile-awards', label: 'Awards' },
   { id: 'profile-skills', label: 'Skills' },
   { id: 'profile-projects', label: 'Projects' },
 ] as const

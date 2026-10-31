@@ -20,9 +20,11 @@ interface ProfileReviewPanelProps {
 const SECTION_ORDER: ReviewSection[] = [
   'summary',
   'experience',
-  'projects',
-  'skills',
   'education',
+  'certifications',
+  'awards',
+  'skills',
+  'projects',
   'personal',
 ]
 
@@ -31,6 +33,8 @@ const SECTION_LABELS: Record<ReviewSection, string> = {
   summary: 'Summary',
   experience: 'Experience',
   education: 'Education',
+  certifications: 'Licenses & certifications',
+  awards: 'Honors & awards',
   skills: 'Skills',
   projects: 'Projects',
 }
@@ -88,7 +92,7 @@ export function ProfileReviewPanel({
       aria-label="Profile review"
       aria-busy={reviewing}
       tabIndex={-1}
-      className="min-w-0 scroll-mt-[7.75rem] outline-none lg:sticky lg:top-[7.75rem] lg:z-10 lg:max-h-[calc(100vh-9.25rem)] lg:overflow-y-auto lg:border-l lg:border-border lg:pl-6"
+      className="min-w-0 scroll-mt-[7.75rem] lg:sticky lg:top-[7.75rem] lg:z-10 lg:max-h-[calc(100vh-9.25rem)] lg:overflow-y-auto lg:border-l lg:border-border lg:pl-6"
     >
       <div>
         <h2 className="text-[1.3rem] font-medium leading-tight">Profile review</h2>
@@ -122,8 +126,8 @@ export function ProfileReviewPanel({
 
         {!review && !reviewing && !error ? (
           <p className="mt-4 text-[0.85rem] leading-6 text-muted">
-            The review looks at your summary, experience, projects, skills,
-            education, and personal details. Run it as often as you like.
+            The review looks at every section of your profile. Run it as often
+            as you like.
           </p>
         ) : null}
 

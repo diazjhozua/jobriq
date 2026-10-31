@@ -412,6 +412,8 @@ describe('ProfilePage', () => {
       '#profile-summary',
       '#profile-experience',
       '#profile-education',
+      '#profile-certifications',
+      '#profile-awards',
       '#profile-skills',
       '#profile-projects',
     ])
@@ -486,6 +488,128 @@ describe('ProfilePage', () => {
     expect(screen.queryByLabelText('School')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Project 1' })).not.toBeInTheDocument()
   })
+
+  it('adds and removes certifications and awards', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    expect(screen.getByText('No certifications added yet.')).toBeInTheDocument()
+    expect(screen.getByText('No awards added yet.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Add certification' }))
+    await user.click(screen.getByRole('button', { name: 'Add award' }))
+
+    expect(
+      screen.getByRole('heading', { name: 'Certification 1' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Award 1' })).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove certification 1' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Remove award 1' }))
+
+    expect(screen.getByText('No certifications added yet.')).toBeInTheDocument()
+    expect(screen.getByText('No awards added yet.')).toBeInTheDocument()
+  })
+
+  it('requires a certification name and an award title', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add certification' }))
+    await user.click(screen.getByRole('button', { name: 'Add award' }))
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(
+      await screen.findByText('Certification name is required'),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Award title is required')).toBeInTheDocument()
+    expect(api.state.profile.certifications).toHaveLength(0)
+  })
+
+  it('saves certifications and awards with month and year dates', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+
+    await user.click(screen.getByRole('button', { name: 'Add certification' }))
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#certification-0-name' }),
+      'AWS Solutions Architect',
+    )
+    await user.type(
+      screen.getByLabelText('Issuing organization'),
+      'Amazon Web Services',
+    )
+    await user.click(
+      screen.getByLabelText('Issue date', { selector: '#certification-0-issue' }),
+    )
+    await user.selectOptions(
+      screen.getByLabelText('Certification 1 issue date year'),
+      '2024',
+    )
+    await user.click(screen.getByRole('button', { name: 'March 2024' }))
+    await user.type(screen.getByLabelText('Credential ID'), 'ABC-123')
+    await user.type(
+      screen.getByLabelText('Credential URL'),
+      'https://example.com/verify/ABC-123',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Add award' }))
+    await user.type(screen.getByLabelText('Title'), 'Engineer of the Year')
+    await user.type(screen.getByLabelText('Associated with'), 'Acme')
+    await user.type(screen.getByLabelText('Issuer'), 'IEEE')
+    await user.click(
+      screen.getByLabelText('Issue date', { selector: '#award-0-issue' }),
+    )
+    await user.selectOptions(
+      screen.getByLabelText('Award 1 issue date year'),
+      '2023',
+    )
+    await user.click(screen.getByRole('button', { name: 'December 2023' }))
+    await user.type(
+      screen.getByLabelText('Description'),
+      'Recognized for reliability work.',
+    )
+
+    const certificationNav = screen.getByRole('navigation', {
+      name: 'Certification entries',
+    })
+    expect(
+      within(certificationNav).getByRole('link', {
+        name: '1 · AWS Solutions Architect — Amazon Web Services',
+      }),
+    ).toHaveAttribute('href', '#profile-certifications-entry-1')
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.profile.certifications[0]).toMatchObject({
+        name: 'AWS Solutions Architect',
+        issuingOrganization: 'Amazon Web Services',
+        issueDate: 'Mar 2024',
+        expirationDate: '',
+        credentialId: 'ABC-123',
+        credentialUrl: 'https://example.com/verify/ABC-123',
+      })
+      expect(api.state.profile.awards[0]).toMatchObject({
+        title: 'Engineer of the Year',
+        associatedWith: 'Acme',
+        issuer: 'IEEE',
+        issueDate: 'Dec 2023',
+        description: 'Recognized for reliability work.',
+      })
+    })
+  }, 15000)
 
   it('links to each experience entry and labels it with live values', async () => {
     const user = userEvent.setup()

@@ -70,7 +70,7 @@ export function TemplateImportDialog({
         <Field
           label="Template text"
           htmlFor="template-text"
-          hint="Sections [PERSONAL], [SUMMARY], [EXPERIENCE], [EDUCATION], [SKILLS], and [PROJECT] are imported."
+          hint="Sections [PERSONAL], [SUMMARY], [EXPERIENCE], [EDUCATION], [SKILLS], and [PROJECT] are imported. Licenses, certifications, honors, and awards are not part of the template and will be cleared."
           error={error ?? undefined}
         >
           <Textarea

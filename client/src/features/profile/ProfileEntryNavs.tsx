@@ -2,6 +2,8 @@ import { useWatch, type Control } from 'react-hook-form'
 import type { Profile } from '../../lib/types'
 import { EntryNav } from './EntryNav'
 import {
+  awardNavItems,
+  certificationNavItems,
   educationNavItems,
   experienceNavItems,
   projectNavItems,
@@ -28,6 +30,23 @@ export function EducationEntryNav({ control }: EntryNavControlProps) {
   return (
     <EntryNav ariaLabel="Education entries" items={educationNavItems(entries)} />
   )
+}
+
+export function CertificationEntryNav({ control }: EntryNavControlProps) {
+  const entries = useWatch({ control, name: 'certifications' }) ?? []
+
+  return (
+    <EntryNav
+      ariaLabel="Certification entries"
+      items={certificationNavItems(entries)}
+    />
+  )
+}
+
+export function AwardEntryNav({ control }: EntryNavControlProps) {
+  const entries = useWatch({ control, name: 'awards' }) ?? []
+
+  return <EntryNav ariaLabel="Award entries" items={awardNavItems(entries)} />
 }
 
 export function ProjectEntryNav({ control }: EntryNavControlProps) {
