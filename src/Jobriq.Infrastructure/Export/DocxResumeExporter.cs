@@ -33,6 +33,8 @@ public sealed class DocxResumeExporter : IResumeExporter
             AddSummary(body, resume);
             AddExperience(body, resume);
             AddEducation(body, resume);
+            AddCertifications(body, resume);
+            AddAwards(body, resume);
             AddSkills(body, resume);
             AddProjects(body, resume);
 
@@ -146,6 +148,67 @@ public sealed class DocxResumeExporter : IResumeExporter
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
                     CreateRun($"GPA: {education.Gpa}", BodySize, MutedColor)));
+            }
+        }
+    }
+
+    private static void AddCertifications(Body body, GeneratedResume resume)
+    {
+        List<Certification> active = [.. resume.Certifications.Where(
+            certification => ResumeExportText.HasContent(certification))];
+        if (active.Count == 0)
+        {
+            return;
+        }
+
+        AddSectionHeading(body, "Licenses & Certifications");
+
+        foreach (Certification certification in active)
+        {
+            body.Append(new Paragraph(
+                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
+                CreateRun(ResumeExportText.CertificationHeader(certification), BodySize, TextColor, bold: true)));
+
+            string meta = ResumeExportText.CertificationMeta(certification);
+            if (meta.Length > 0)
+            {
+                body.Append(new Paragraph(
+                    new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
+                    CreateRun(meta, SmallSize, MutedColor)));
+            }
+        }
+    }
+
+    private static void AddAwards(Body body, GeneratedResume resume)
+    {
+        List<Award> active = [.. resume.Awards.Where(
+            award => ResumeExportText.HasContent(award))];
+        if (active.Count == 0)
+        {
+            return;
+        }
+
+        AddSectionHeading(body, "Honors & Awards");
+
+        foreach (Award award in active)
+        {
+            body.Append(new Paragraph(
+                new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
+                CreateRun(ResumeExportText.AwardHeader(award), BodySize, TextColor, bold: true)));
+
+            string meta = ResumeExportText.AwardMeta(award);
+            if (meta.Length > 0)
+            {
+                body.Append(new Paragraph(
+                    new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
+                    CreateRun(meta, SmallSize, MutedColor)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(award.Description))
+            {
+                body.Append(new Paragraph(
+                    new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
+                    CreateRun(award.Description.Trim(), BodySize, TextColor)));
             }
         }
     }

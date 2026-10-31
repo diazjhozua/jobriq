@@ -48,6 +48,22 @@ public sealed class MarkdownResumeExporterTests
 
             ---
 
+            ## Licenses & Certifications
+
+            ### AWS Solutions Architect — Amazon Web Services
+            *Mar 2024 – Mar 2027 · Credential ID: ABC-123 · https://example.com/verify/ABC-123*
+
+            ---
+
+            ## Honors & Awards
+
+            ### Engineer of the Year — IEEE
+            *Dec 2023 · Acme*
+
+            Recognized for reliability work.
+
+            ---
+
             ## Skills
 
             C#, React
@@ -131,6 +147,31 @@ public sealed class MarkdownResumeExporterTests
                 StartDate = "2018",
                 EndDate = "2022",
                 Gpa = "3.9"
+            }
+        ],
+        Certifications =
+        [
+            new Certification
+            {
+                Id = Guid.NewGuid(),
+                Name = "AWS Solutions Architect",
+                IssuingOrganization = "Amazon Web Services",
+                IssueDate = "Mar 2024",
+                ExpirationDate = "Mar 2027",
+                CredentialId = "ABC-123",
+                CredentialUrl = "https://example.com/verify/ABC-123"
+            }
+        ],
+        Awards =
+        [
+            new Award
+            {
+                Id = Guid.NewGuid(),
+                Title = "Engineer of the Year",
+                AssociatedWith = "Acme",
+                Issuer = "IEEE",
+                IssueDate = "Dec 2023",
+                Description = "Recognized for reliability work."
             }
         ],
         Skills = ["C#", "React"],

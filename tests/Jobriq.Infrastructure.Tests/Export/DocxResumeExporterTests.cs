@@ -22,6 +22,11 @@ public sealed class DocxResumeExporterTests
         text.ShouldContain("Enhanced: Built a thing");
         text.ShouldContain("BSc in Computer Science — State University");
         text.ShouldContain("GPA: 3.9");
+        text.ShouldContain("AWS Solutions Architect — Amazon Web Services");
+        text.ShouldContain("Mar 2024 – Mar 2027 · Credential ID: ABC-123 · https://example.com/verify/ABC-123");
+        text.ShouldContain("Engineer of the Year — IEEE");
+        text.ShouldContain("Dec 2023 · Acme");
+        text.ShouldContain("Recognized for reliability work.");
         text.ShouldContain("C#, React");
         text.ShouldContain("Tool — https://example.com/tool");
         text.ShouldContain("Aug 2022 – Present · Acme");
@@ -32,6 +37,10 @@ public sealed class DocxResumeExporterTests
         text.IndexOf("Work Experience", StringComparison.Ordinal)
             .ShouldBeLessThan(text.IndexOf("Education", StringComparison.Ordinal));
         text.IndexOf("Education", StringComparison.Ordinal)
+            .ShouldBeLessThan(text.IndexOf("Licenses & Certifications", StringComparison.Ordinal));
+        text.IndexOf("Licenses & Certifications", StringComparison.Ordinal)
+            .ShouldBeLessThan(text.IndexOf("Honors & Awards", StringComparison.Ordinal));
+        text.IndexOf("Honors & Awards", StringComparison.Ordinal)
             .ShouldBeLessThan(text.IndexOf("Skills", StringComparison.Ordinal));
         text.IndexOf("Skills", StringComparison.Ordinal)
             .ShouldBeLessThan(text.IndexOf("Projects", StringComparison.Ordinal));
@@ -107,6 +116,31 @@ public sealed class DocxResumeExporterTests
                 StartDate = "2018",
                 EndDate = "2022",
                 Gpa = "3.9"
+            }
+        ],
+        Certifications =
+        [
+            new Certification
+            {
+                Id = Guid.NewGuid(),
+                Name = "AWS Solutions Architect",
+                IssuingOrganization = "Amazon Web Services",
+                IssueDate = "Mar 2024",
+                ExpirationDate = "Mar 2027",
+                CredentialId = "ABC-123",
+                CredentialUrl = "https://example.com/verify/ABC-123"
+            }
+        ],
+        Awards =
+        [
+            new Award
+            {
+                Id = Guid.NewGuid(),
+                Title = "Engineer of the Year",
+                AssociatedWith = "Acme",
+                Issuer = "IEEE",
+                IssueDate = "Dec 2023",
+                Description = "Recognized for reliability work."
             }
         ],
         Skills = ["C#", "React"],

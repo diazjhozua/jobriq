@@ -99,6 +99,56 @@ public sealed class MarkdownResumeExporter : IResumeExporter
             }
         }
 
+        List<Certification> activeCertifications = [.. resume.Certifications.Where(
+            certification => ResumeExportText.HasContent(certification))];
+        if (activeCertifications.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add("---");
+            lines.Add(string.Empty);
+            lines.Add("## Licenses & Certifications");
+
+            foreach (Certification certification in activeCertifications)
+            {
+                lines.Add(string.Empty);
+                lines.Add($"### {ResumeExportText.CertificationHeader(certification)}");
+
+                string meta = ResumeExportText.CertificationMeta(certification);
+                if (meta.Length > 0)
+                {
+                    lines.Add($"*{meta}*");
+                }
+            }
+        }
+
+        List<Award> activeAwards = [.. resume.Awards.Where(
+            award => ResumeExportText.HasContent(award))];
+        if (activeAwards.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add("---");
+            lines.Add(string.Empty);
+            lines.Add("## Honors & Awards");
+
+            foreach (Award award in activeAwards)
+            {
+                lines.Add(string.Empty);
+                lines.Add($"### {ResumeExportText.AwardHeader(award)}");
+
+                string meta = ResumeExportText.AwardMeta(award);
+                if (meta.Length > 0)
+                {
+                    lines.Add($"*{meta}*");
+                }
+
+                if (!string.IsNullOrWhiteSpace(award.Description))
+                {
+                    lines.Add(string.Empty);
+                    lines.Add(award.Description.Trim());
+                }
+            }
+        }
+
         if (resume.Skills.Count > 0)
         {
             lines.Add(string.Empty);
