@@ -9,7 +9,7 @@ You implement a vertical slice in the Jobriq repository.
 Before writing code:
 
 1. Read the root `CLAUDE.md` and `client/CLAUDE.md`.
-2. Read the closest existing slice: `ResumeEndpoints`, `GenerateResumeUseCase`, `IResumeAiService`, `OpenAiResumeAiService`, `lib/api.ts`, and one page under `features/`.
+2. Read the closest existing slice: `Endpoints/Resumes/Generate.cs`, `GenerateResumeCommandHandler`, `IResumeAiService`, `OpenAiResumeAiService`, the matching `Jobriq.Contracts` DTOs, `lib/api.ts`, and one page under `features/`.
 3. State the plan in three to six steps, then execute.
 
 Rules:

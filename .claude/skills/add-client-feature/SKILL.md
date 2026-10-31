@@ -16,7 +16,7 @@ Match the Profile and Applications screens; read `client/CLAUDE.md` first.
 5. **Route** — add the route in `client/src/App.tsx` and the nav entry in `AppShell`.
 6. **Styling** — Tailwind tokens from `src/index.css` only. No hex colors, no arbitrary color values. Status colors only in `StatusBadge`.
 7. **Forms** — React Hook Form with the Zod resolver, explicit Save, inline errors, labels associated with inputs, focus ring preserved.
-8. **API** — if the feature calls the backend, add it to `lib/api.ts` and surface `ProblemDetails.code` messages.
+8. **API** — if the feature calls the backend, update `src/Jobriq.Contracts` first, then `lib/api.ts`, `lib/types.ts`, and both schema profiles. Surface `ProblemDetails.code` messages. A backend structural refactor must not require a client change; fix the DTO/mapping instead.
 9. **Tests** — colocated `*.test.tsx` next to the component, using React Testing Library. Cover validation, the happy path, and the empty/error state.
 10. **Check** — run `npm --prefix client run typecheck`, `npm --prefix client run lint`, `npm --prefix client test`, and confirm no horizontal scroll at 375px.
 
@@ -24,4 +24,5 @@ Match the Profile and Applications screens; read `client/CLAUDE.md` first.
 
 - Data lives in PostgreSQL behind `/api/state` and the granular mutation endpoints; the client persists nothing locally.
 - Keep the strict/lenient schema split when adding fields.
+- `client/src/lib/schemas.ts` is the consumer contract for `src/Jobriq.Contracts`; run `src/lib/schemas.test.ts` and `src/lib/api.test.ts` after any backend DTO change.
 - Do not introduce a new styling system, state library, or fetch wrapper.

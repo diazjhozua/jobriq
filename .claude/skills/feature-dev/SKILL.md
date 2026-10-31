@@ -38,7 +38,7 @@ Initial request: $ARGUMENTS
 ## Phase 2: Codebase exploration
 
 1. Launch 2-3 `code-explorer` agents in parallel, each on a different aspect, for example:
-   - the closest existing slice (e.g. cover letter: `ApplicationEndpoints` -> `GenerateCoverLetterUseCase` -> `CoverLetterNormalizer` -> `CoverLetterDialog`)
+   - the closest existing slice (e.g. cover letter: `Endpoints/Applications/GenerateCoverLetter.cs` -> `GenerateCoverLetterCommandHandler` -> `CoverLetterNormalizer` -> `CoverLetterDialog`)
    - the persistence and state path (`IJobriqRepository`, `PostgresJobriqRepository`, `/api/state`, `JobriqProvider`, `stored*` schemas)
    - UI patterns, components in `components/ui`, and test approach for the affected screen
 2. Read every key file they return.

@@ -17,8 +17,8 @@ Trace through these layers, skipping any the feature does not touch:
 1. **Client screen** — `client/src/features/<area>/`, `components/ui` primitives, forms (React Hook Form + Zod).
 2. **Client state** — `providers/JobriqProvider.tsx` mutations, `lib/schemas.ts` (strict form vs lenient `stored*`), `lib/types.ts`, `lib/defaults.ts`.
 3. **HTTP client** — `lib/api.ts`, including `ProblemDetails.code` handling and blob downloads.
-4. **Endpoint** — `src/Jobriq.Web/Endpoints/*Endpoints.cs`, nested request DTOs, `GlobalExceptionHandler` codes.
-5. **Use case** — `src/Jobriq.Application/<Area>/`, its abstractions, `TimeProvider`, `IClientContext`.
+4. **Endpoint** — `src/Jobriq.Web/Endpoints/<Model>/*.cs` (`IEndpoint`), `src/Jobriq.Contracts` request/response DTOs, `CustomResults`/`GlobalExceptionHandler` codes.
+5. **Handler** — `src/Jobriq.Application/<Area>/<Action>/` command or query, handler, validator, mapping, abstractions, `TimeProvider`, `IClientContext`.
 6. **Infrastructure** — AI service (`OpenAi*` and `Fake*`), exporters, `JsonResponseParser`, `PostgresJobriqRepository`, JSONB vs relational storage, migrations.
 7. **Tests** — Application, Infrastructure, Web (`WebApplicationFactory<Program>`), colocated Vitest, Playwright in `tests/e2e`.
 
