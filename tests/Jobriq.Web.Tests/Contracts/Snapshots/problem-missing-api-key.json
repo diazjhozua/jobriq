@@ -1,0 +1,13 @@
+{
+  "status": 503,
+  "contentType": "application/problem+json",
+  "location": null,
+  "body": {
+    "code": "missing_api_key",
+    "detail": "Set OpenAI:ApiKey with 'dotnet user-secrets set \"OpenAI:ApiKey\" \"<key>\" --project src/Jobriq.Web' or the OpenAI__ApiKey environment variable.",
+    "status": 503,
+    "title": "OpenAI API key missing",
+    "traceId": "<trace-id>",
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4"
+  }
+}

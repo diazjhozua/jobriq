@@ -1,0 +1,13 @@
+{
+  "status": 503,
+  "contentType": "application/problem+json",
+  "location": null,
+  "body": {
+    "code": "database_unavailable",
+    "detail": "The jobriq database is unavailable. Try again later.",
+    "status": 503,
+    "title": "Database unavailable",
+    "traceId": "<trace-id>",
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4"
+  }
+}

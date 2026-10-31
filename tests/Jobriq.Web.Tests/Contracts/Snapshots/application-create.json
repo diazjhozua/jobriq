@@ -1,0 +1,18 @@
+{
+  "status": 201,
+  "contentType": "application/json; charset=utf-8",
+  "location": "/api/applications/<guid>",
+  "body": {
+    "application": {
+      "appliedDate": "2022-08-01",
+      "company": "Acme",
+      "coverLetter": null,
+      "createdAt": "<timestamp>",
+      "generatedResume": null,
+      "id": "<guid>",
+      "jobDescription": "Build reliable systems.",
+      "role": "Engineer",
+      "status": "applied"
+    }
+  }
+}

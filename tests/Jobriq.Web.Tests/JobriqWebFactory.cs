@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Jobriq.Web.Tests;
 
-internal sealed class JobriqWebFactory : WebApplicationFactory<Program>
+internal class JobriqWebFactory : WebApplicationFactory<Program>
 {
     private static readonly string WebRootPath = CreateWebRoot();
 

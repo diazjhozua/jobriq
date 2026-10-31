@@ -1,0 +1,28 @@
+{
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "location": null,
+  "body": {
+    "applications": [],
+    "profile": {
+      "awards": [],
+      "certifications": [],
+      "education": [],
+      "experience": [],
+      "personal": {
+        "email": "",
+        "github": null,
+        "linkedin": null,
+        "location": "",
+        "name": "",
+        "phone": "",
+        "website": null
+      },
+      "projects": [],
+      "skills": [],
+      "summary": "",
+      "summaryType": "professional"
+    },
+    "standaloneResume": null
+  }
+}

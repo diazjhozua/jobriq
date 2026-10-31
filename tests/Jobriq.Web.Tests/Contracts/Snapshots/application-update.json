@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "location": null,
+  "body": {
+    "application": {
+      "appliedDate": "2022-09-01",
+      "company": "Acme Labs",
+      "coverLetter": null,
+      "createdAt": "<timestamp>",
+      "generatedResume": null,
+      "id": "<guid>",
+      "jobDescription": "Build reliable systems.",
+      "role": "Senior Engineer",
+      "status": "saved"
+    }
+  }
+}

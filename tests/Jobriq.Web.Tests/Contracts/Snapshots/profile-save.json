@@ -1,0 +1,84 @@
+{
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "location": null,
+  "body": {
+    "profile": {
+      "awards": [
+        {
+          "associatedWith": "Acme",
+          "description": "For reliability work.",
+          "id": "<guid>",
+          "issueDate": "2023",
+          "issuer": "Acme",
+          "title": "Engineer of the Year"
+        }
+      ],
+      "certifications": [
+        {
+          "credentialId": "ABC-123",
+          "credentialUrl": "https://example.com/verify/ABC-123",
+          "expirationDate": "Mar 2027",
+          "id": "<guid>",
+          "issueDate": "Mar 2024",
+          "issuingOrganization": "Amazon Web Services",
+          "name": "AWS Solutions Architect"
+        }
+      ],
+      "education": [
+        {
+          "degree": "BS",
+          "endDate": "2019",
+          "field": "Computer Science",
+          "gpa": "3.8",
+          "id": "<guid>",
+          "school": "State University",
+          "startDate": "2015"
+        }
+      ],
+      "experience": [
+        {
+          "bullets": [
+            "Built a thing",
+            "Fixed a thing"
+          ],
+          "company": "Acme",
+          "endDate": "Present",
+          "enhancedBullets": null,
+          "id": "<guid>",
+          "startDate": "Jan 2020",
+          "title": "Engineer"
+        }
+      ],
+      "personal": {
+        "email": "jane@example.com",
+        "github": "https://github.com/janedoe",
+        "linkedin": "https://linkedin.com/in/janedoe",
+        "location": "Remote",
+        "name": "Jane Doe",
+        "phone": "555-0100",
+        "website": "https://janedoe.dev"
+      },
+      "projects": [
+        {
+          "associatedWith": "Personal Project",
+          "bullets": [
+            "Made it"
+          ],
+          "endDate": "2022",
+          "enhancedBullets": null,
+          "id": "<guid>",
+          "name": "Tool",
+          "startDate": "2021",
+          "url": "https://example.com/tool"
+        }
+      ],
+      "skills": [
+        "C#",
+        "React"
+      ],
+      "summary": "",
+      "summaryType": "professional"
+    }
+  }
+}

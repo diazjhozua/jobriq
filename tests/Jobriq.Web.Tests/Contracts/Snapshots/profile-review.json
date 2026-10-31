@@ -1,0 +1,42 @@
+{
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "location": null,
+  "body": {
+    "suggestions": [
+      {
+        "bulletIndex": null,
+        "category": "completeness",
+        "detail": "Summarize your experience in two or three lines.",
+        "id": "<guid>",
+        "itemId": null,
+        "originalText": null,
+        "proposedText": "Deterministic reviewed summary.",
+        "section": "summary",
+        "title": "Add a professional summary"
+      },
+      {
+        "bulletIndex": 0,
+        "category": "impact",
+        "detail": "Add a measurable result to this bullet.",
+        "id": "<guid>",
+        "itemId": "<guid>",
+        "originalText": "Built a thing",
+        "proposedText": "Reviewed: Built a thing",
+        "section": "experience",
+        "title": "Quantify your impact"
+      },
+      {
+        "bulletIndex": null,
+        "category": "clarity",
+        "detail": "Order skills by relevance and group related tools.",
+        "id": "<guid>",
+        "itemId": null,
+        "originalText": null,
+        "proposedText": null,
+        "section": "skills",
+        "title": "Group related skills"
+      }
+    ]
+  }
+}

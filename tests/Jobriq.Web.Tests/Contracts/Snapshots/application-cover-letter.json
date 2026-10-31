@@ -1,0 +1,41 @@
+{
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "location": null,
+  "body": {
+    "application": {
+      "appliedDate": null,
+      "company": "Acme",
+      "coverLetter": {
+        "closing": "Sincerely,",
+        "company": "Acme",
+        "generatedAt": "<timestamp>",
+        "paragraphs": [
+          "The Engineer role at Acme stood out to me because the job description puts real weight on dependable delivery and clear communication. I like working in that kind of environment: understand the problem properly, make the reliable path the easy path, and leave the next person with less to untangle than I found.",
+          "In my recent work I focused on the parts of the product customers touch every day. I worked closely with product and engineering to turn vague complaints into testable fixes, then followed through until the changes held up under real use. The payoff showed up in a calmer support queue and a team that could ship with more confidence.",
+          "I also care about the quiet work that makes teams stronger. I write down decisions, keep handoffs small, and raise problems while they are still cheap to solve. That habit has helped me earn trust across disciplines and keep projects moving when priorities shifted.",
+          "What draws me to Acme is the emphasis on measurable outcomes in the job description. I want to work somewhere that values both craft and evidence, and where improving reliability is shared work rather than a cleanup task that lands on one team.",
+          "Thank you for your time and for considering my application. I would welcome the chance to discuss how my experience could help Acme keep delivering dependable results, and I would be glad to talk through where I could contribute first."
+        ],
+        "personal": {
+          "email": "jane@example.com",
+          "github": "https://github.com/janedoe",
+          "linkedin": "https://linkedin.com/in/janedoe",
+          "location": "Remote",
+          "name": "Jane Doe",
+          "phone": "555-0100",
+          "website": "https://janedoe.dev"
+        },
+        "role": "Engineer",
+        "salutation": "Dear Acme Hiring Team,",
+        "signature": "Jane Doe"
+      },
+      "createdAt": "<timestamp>",
+      "generatedResume": null,
+      "id": "<guid>",
+      "jobDescription": "Build reliable systems.",
+      "role": "Engineer",
+      "status": "saved"
+    }
+  }
+}

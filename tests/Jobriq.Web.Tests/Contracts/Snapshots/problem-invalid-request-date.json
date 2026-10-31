@@ -1,0 +1,13 @@
+{
+  "status": 400,
+  "contentType": "application/problem+json",
+  "location": null,
+  "body": {
+    "code": "invalid_request",
+    "detail": "Date applied must be a valid date.",
+    "status": 400,
+    "title": "Invalid request",
+    "traceId": "<trace-id>",
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1"
+  }
+}

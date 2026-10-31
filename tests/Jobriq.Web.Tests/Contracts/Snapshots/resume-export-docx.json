@@ -1,0 +1,6 @@
+{
+  "status": 200,
+  "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "contentDisposition": "attachment; filename=jane-doe-resume-<timestamp>.docx; filename*=UTF-8''jane-doe-resume-<timestamp>.docx",
+  "hasContent": true
+}
