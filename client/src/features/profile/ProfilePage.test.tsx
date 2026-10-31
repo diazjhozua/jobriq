@@ -49,6 +49,67 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('button', { name: 'Remove skill React' })).toBeInTheDocument()
   })
 
+  it('shows the save bar only while there are unsaved changes', async () => {
+    const user = userEvent.setup()
+    installMockApi({ state: stateWithProfile() })
+    await renderPage()
+
+    expect(
+      screen.queryByRole('button', { name: 'Save profile' }),
+    ).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Name'), ' Jr')
+
+    const save = screen.getByRole('button', { name: 'Save profile' })
+    expect(save).toBeEnabled()
+    expect(save.closest('header')).toBeNull()
+  })
+
+  it('disables the save bar while the profile is saving', async () => {
+    const user = userEvent.setup()
+    let release: () => void = () => {}
+    const profileGate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    installMockApi({ profileGate })
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saving…')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled()
+
+    release()
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+  })
+
+  it('keeps the save bar open when saving fails', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi({
+      fail: {
+        profile: {
+          status: 500,
+          detail: 'Save failed.',
+          code: 'request_failed',
+        },
+      },
+    })
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    await waitFor(() => {
+      expect(api.calls.some((call) => call.method === 'PUT')).toBe(true)
+    })
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeEnabled()
+  })
+
   it('blocks invalid input with inline errors', async () => {
     const user = userEvent.setup()
     const api = installMockApi()
@@ -431,10 +492,16 @@ describe('ProfilePage', () => {
     expect(
       screen.getByRole('button', { name: 'Remove skill TypeScript' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Save profile' }),
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Remove skill TypeScript' }))
     expect(
       screen.queryByRole('button', { name: 'Remove skill TypeScript' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Save profile' }),
     ).not.toBeInTheDocument()
   })
 

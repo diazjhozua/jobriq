@@ -38,6 +38,7 @@ interface MockApiOptions {
   coverLetter?: CoverLetter
   review?: ProfileReview
   reviewGate?: Promise<unknown>
+  profileGate?: Promise<unknown>
   fail?: MockFailures
 }
 
@@ -53,6 +54,7 @@ export function installMockApi({
   coverLetter,
   review,
   reviewGate,
+  profileGate,
   fail = {},
 }: MockApiOptions = {}) {
   const current = structuredClone(state)
@@ -89,6 +91,10 @@ export function installMockApi({
     }
 
     if (path === '/api/profile' && method === 'PUT') {
+      if (profileGate) {
+        await profileGate
+      }
+
       current.profile = body?.profile as JobriqState['profile']
       return json({ profile: current.profile })
     }
