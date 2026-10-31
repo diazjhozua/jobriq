@@ -1,3 +1,4 @@
+using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Infrastructure.Ai;
 using Shouldly;
@@ -84,6 +85,18 @@ public sealed class PromptsTests
                     ]
                 }
             ],
+            Certifications =
+            [
+                new Certification
+                {
+                    Name = "AWS Solutions Architect",
+                    IssuingOrganization = "Amazon Web Services"
+                }
+            ],
+            Awards =
+            [
+                new Award { Title = "Engineer of the Year", Issuer = "Acme" }
+            ],
             Projects =
             [
                 new Project
@@ -103,6 +116,9 @@ public sealed class PromptsTests
         prompt.ShouldContain("Enhanced experience bullet");
         prompt.ShouldContain("Original project bullet");
         prompt.ShouldNotContain("Enhanced project bullet");
+        prompt.ShouldContain("AWS Solutions Architect");
+        prompt.ShouldContain("Amazon Web Services");
+        prompt.ShouldNotContain("Engineer of the Year");
         prompt.ShouldContain("Total keywords (matched + missing) must be exactly 20");
     }
 
@@ -149,6 +165,29 @@ public sealed class PromptsTests
                     Gpa = "3.8"
                 }
             ],
+            Certifications =
+            [
+                new Certification
+                {
+                    Name = "AWS Solutions Architect",
+                    IssuingOrganization = "Amazon Web Services",
+                    IssueDate = "Mar 2024",
+                    ExpirationDate = "Mar 2027",
+                    CredentialId = "ABC-123",
+                    CredentialUrl = "https://example.com/verify/ABC-123"
+                }
+            ],
+            Awards =
+            [
+                new Award
+                {
+                    Title = "Engineer of the Year",
+                    AssociatedWith = "Acme",
+                    Issuer = "IEEE",
+                    IssueDate = "Dec 2023",
+                    Description = "Recognized for reliability work."
+                }
+            ],
             Skills = ["C#", "React"],
             Projects =
             [
@@ -176,6 +215,18 @@ public sealed class PromptsTests
         prompt.ShouldContain("Acme");
         prompt.ShouldContain("0. Built a thing\n1. Fixed a bug");
         prompt.ShouldContain("State University");
+        prompt.ShouldContain("LICENSES & CERTIFICATIONS");
+        prompt.ShouldContain("Name: AWS Solutions Architect");
+        prompt.ShouldContain("Issuing organization: Amazon Web Services");
+        prompt.ShouldContain("Issue date: Mar 2024");
+        prompt.ShouldContain("Expiration date: Mar 2027");
+        prompt.ShouldContain("Credential ID: ABC-123");
+        prompt.ShouldContain("Credential URL: https://example.com/verify/ABC-123");
+        prompt.ShouldContain("HONORS & AWARDS");
+        prompt.ShouldContain("Title: Engineer of the Year");
+        prompt.ShouldContain("Issuer: IEEE");
+        prompt.ShouldContain("Description: Recognized for reliability work.");
+        prompt.ShouldContain("certifications, awards");
         prompt.ShouldContain("C#, React");
         prompt.ShouldContain($"id: {projectId}");
         prompt.ShouldContain("Jobriq");
@@ -213,6 +264,18 @@ public sealed class PromptsTests
                     Title = "Developer",
                     Bullets = ["Shipped a tool"]
                 }
+            ],
+            Certifications =
+            [
+                new Certification
+                {
+                    Name = "AWS Solutions Architect",
+                    IssuingOrganization = "Amazon Web Services"
+                }
+            ],
+            Awards =
+            [
+                new Award { Title = "Engineer of the Year", Issuer = "IEEE" }
             ]
         };
 
@@ -224,6 +287,9 @@ public sealed class PromptsTests
         prompt.ShouldContain("Title: Developer");
         prompt.ShouldContain("Company: Globex");
         prompt.ShouldContain("Build reliable systems.");
+        prompt.ShouldContain("AWS Solutions Architect");
+        prompt.ShouldContain("Engineer of the Year");
+        prompt.ShouldContain("Certifications and awards are supporting evidence.");
         prompt.ShouldContain("The closing must be \"Sincerely,\".");
         prompt.ShouldContain("\"paragraphs\"");
         prompt.ShouldContain("4-5 paragraphs, 200-400 words total.");
@@ -246,7 +312,20 @@ public sealed class PromptsTests
 
         prompt.ShouldContain("EXPERIENCE\n(none)");
         prompt.ShouldContain("EDUCATION\n(none)");
+        prompt.ShouldContain("LICENSES & CERTIFICATIONS\n(none)");
+        prompt.ShouldContain("HONORS & AWARDS\n(none)");
         prompt.ShouldContain("SKILLS\n(none)");
         prompt.ShouldContain("PROJECTS\n(none)");
+    }
+
+    [Fact]
+    public void ReviewProfile_SectionListMatchesReviewSectionEnum()
+    {
+        string prompt = Prompts.ReviewProfile(new ResumeProfile());
+
+        foreach (ReviewSection section in Enum.GetValues<ReviewSection>())
+        {
+            prompt.ShouldContain(section.ToString().ToLowerInvariant());
+        }
     }
 }

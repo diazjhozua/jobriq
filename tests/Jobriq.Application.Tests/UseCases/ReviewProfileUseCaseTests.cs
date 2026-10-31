@@ -170,6 +170,8 @@ public sealed class ReviewProfileUseCaseTests
     [Theory]
     [InlineData(ReviewSection.Personal)]
     [InlineData(ReviewSection.Education)]
+    [InlineData(ReviewSection.Certifications)]
+    [InlineData(ReviewSection.Awards)]
     [InlineData(ReviewSection.Skills)]
     public async Task Execute_StripsProposedTextFromAdvisorySections(ReviewSection section)
     {

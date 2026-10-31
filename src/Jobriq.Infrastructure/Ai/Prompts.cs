@@ -125,6 +125,11 @@ internal static class Prompts
             }.Concat(job.EnhancedBullets is not null
                 ? job.EnhancedBullets.Select(bullet => bullet.Enhanced)
                 : job.Bullets)))
+            .Concat(profile.Certifications.SelectMany(certification => new[]
+            {
+                certification.Name,
+                certification.IssuingOrganization
+            }))
             .Concat(profile.Projects.SelectMany(project => project.Bullets))
             .Where(line => !string.IsNullOrEmpty(line));
 
@@ -161,9 +166,10 @@ internal static class Prompts
             Rules:
             - Return at most 8 suggestions.
             - Only suggest changes supported by the profile. Never fabricate employers, dates, metrics, or accomplishments.
-            - "section" must be one of: personal, summary, experience, education, skills, projects.
+            - "section" must be one of: personal, summary, experience, education, certifications, awards, skills, projects.
             - For experience and projects, "itemId" must be the exact id shown in the profile and "bulletIndex" is zero-based.
-            - "proposedText" may be provided only for summary and for experience/project bullets. Set it to null for personal, education, and skills.
+            - "proposedText" may be provided only for summary and for experience/project bullets. Set it to null for personal, education, certifications, awards, and skills.
+            - For certifications and awards, do not provide itemId or bulletIndex.
             - "category" must be one of: completeness, impact, clarity.
             - "title" is a short imperative phrase. "detail" explains why the change matters.
             - When a section is missing entirely, suggest what to add instead of rewriting.
@@ -211,6 +217,7 @@ internal static class Prompts
             - Mention the company and role naturally. Do not repeat them in every paragraph.
             - Use only facts present in the profile or job description. Never invent a number, employer, date, or accomplishment.
             - If the job description is empty, focus on the role title, company, and the strongest evidence in the profile.
+            - Certifications and awards are supporting evidence. Mention one only when it strengthens the fit; do not list them.
             - Do not include a date, address block, salutation, signature, markdown, or a subject line.
             - The closing must be "Sincerely,".
 
@@ -280,6 +287,45 @@ internal static class Prompts
                 lines.Add($"Field: {Value(education.Field)}");
                 lines.Add($"Dates: {Value(education.StartDate)} - {Value(education.EndDate)}");
                 lines.Add($"GPA: {Value(education.Gpa)}");
+                lines.Add(string.Empty);
+            }
+        }
+
+        lines.Add("LICENSES & CERTIFICATIONS");
+
+        if (profile.Certifications.Count == 0)
+        {
+            lines.Add("(none)");
+        }
+        else
+        {
+            foreach (Certification certification in profile.Certifications)
+            {
+                lines.Add($"Name: {Value(certification.Name)}");
+                lines.Add($"Issuing organization: {Value(certification.IssuingOrganization)}");
+                lines.Add($"Issue date: {Value(certification.IssueDate)}");
+                lines.Add($"Expiration date: {Value(certification.ExpirationDate)}");
+                lines.Add($"Credential ID: {Value(certification.CredentialId)}");
+                lines.Add($"Credential URL: {Value(certification.CredentialUrl)}");
+                lines.Add(string.Empty);
+            }
+        }
+
+        lines.Add("HONORS & AWARDS");
+
+        if (profile.Awards.Count == 0)
+        {
+            lines.Add("(none)");
+        }
+        else
+        {
+            foreach (Award award in profile.Awards)
+            {
+                lines.Add($"Title: {Value(award.Title)}");
+                lines.Add($"Associated with: {Value(award.AssociatedWith)}");
+                lines.Add($"Issuer: {Value(award.Issuer)}");
+                lines.Add($"Issue date: {Value(award.IssueDate)}");
+                lines.Add($"Description: {Value(award.Description)}");
                 lines.Add(string.Empty);
             }
         }
