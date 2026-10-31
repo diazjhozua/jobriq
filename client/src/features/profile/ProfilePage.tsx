@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, FileText, Plus, Upload } from 'lucide-react'
+import { FileText, Plus, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
@@ -30,6 +30,7 @@ import {
 } from './ProfileEntryNavs'
 import { ProfileEntryCard } from './ProfileEntryCard'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
+import { ProfileSaveBar } from './ProfileSaveBar'
 import { ProfileSectionNav } from './ProfileSectionNav'
 import { SkillsField } from './SkillsField'
 import { StandaloneResumeDialog } from './StandaloneResumeDialog'
@@ -121,6 +122,7 @@ export function ProfilePage() {
   const [skills, setSkills] = useState<string[]>(() => profile.skills)
   const [skillDraft, setSkillDraft] = useState('')
   const [saved, setSaved] = useState(false)
+  const [saveCount, setSaveCount] = useState(0)
   const location = useLocation()
   const [importOpen, setImportOpen] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
@@ -147,6 +149,7 @@ export function ProfilePage() {
   const skillsDirty =
     JSON.stringify(skills) !== JSON.stringify(profile.skills) ||
     skillDraft.trim() !== ''
+  const dirty = isDirty || skillsDirty
 
   useEffect(() => {
     if (!location.hash) {
@@ -163,9 +166,19 @@ export function ProfilePage() {
       return
     }
 
-    const timer = window.setTimeout(() => setSaved(false), 3000)
+    const timer = window.setTimeout(() => {
+      const bar = document.getElementById('profile-save-bar')
+      if (bar?.contains(document.activeElement)) {
+        document
+          .getElementById('profile-personal')
+          ?.focus({ preventScroll: true })
+      }
+
+      setSaved(false)
+    }, 3000)
+
     return () => window.clearTimeout(timer)
-  }, [saved])
+  }, [saved, saveCount])
 
   const cleanBullets = (bullets: string[]) =>
     bullets.map((bullet) => bullet.trim()).filter(Boolean)
@@ -187,6 +200,11 @@ export function ProfilePage() {
     }
   }
 
+  const markSaved = () => {
+    setSaved(true)
+    setSaveCount((count) => count + 1)
+  }
+
   const onSubmit = async (values: Profile) => {
     const next = normalize(values)
 
@@ -194,7 +212,7 @@ export function ProfilePage() {
       await saveProfile(next)
       reset(next)
       setSkills(next.skills)
-      setSaved(true)
+      markSaved()
     } catch {
       // The provider surfaces the failure in the sync banner.
     }
@@ -206,7 +224,7 @@ export function ProfilePage() {
     await saveProfile(next)
     reset(next)
     setSkills(next.skills)
-    setSaved(true)
+    markSaved()
   }
 
   const getProfile = (): Profile => normalize(getValues())
@@ -283,14 +301,6 @@ export function ProfilePage() {
         description="Everything here feeds your resumes, whether you tailor one to an application or generate one on its own."
         actions={
           <>
-            <span role="status" className="mr-1 text-[0.8rem] text-muted">
-              {saved ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Check aria-hidden="true" size={15} className="text-primary" />
-                  Saved
-                </span>
-              ) : null}
-            </span>
             <Button
               variant="outline"
               onClick={() => setImportOpen(true)}
@@ -306,14 +316,6 @@ export function ProfilePage() {
             >
               <FileText aria-hidden="true" size={15} />
               Resume
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full sm:w-auto"
-              disabled={isSubmitting || (!isDirty && !skillsDirty)}
-            >
-              Save profile
             </Button>
           </>
         }
@@ -918,6 +920,14 @@ export function ProfilePage() {
           open={importOpen}
           onOpenChange={setImportOpen}
           onImported={handleImported}
+        />
+        <p role="status" className="sr-only">
+          {isSubmitting ? 'Saving profile…' : saved ? 'Profile saved.' : ''}
+        </p>
+        <ProfileSaveBar
+          dirty={dirty}
+          saved={saved}
+          submitting={isSubmitting}
         />
       </form>
       <StandaloneResumeDialog

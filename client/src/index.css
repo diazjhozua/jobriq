@@ -109,9 +109,24 @@
   }
 }
 
+@keyframes save-bar-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .page-enter {
     animation: page-enter 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .save-bar-enter {
+    animation: save-bar-enter 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 }
 
