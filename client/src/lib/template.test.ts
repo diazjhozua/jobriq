@@ -77,6 +77,8 @@ describe('parseResumeTemplate', () => {
     expect(profile.experience[0]?.bullets).toEqual(['Built a thing', 'Shipped a tool'])
     expect(profile.education[0]?.gpa).toBe('3.9')
     expect(profile.skills).toEqual(['C#', 'React', '.NET'])
+    expect(profile.certifications).toEqual([])
+    expect(profile.awards).toEqual([])
     expect(profile.projects[0]).toMatchObject({
       name: 'Tool',
       url: 'https://example.com/tool',

@@ -37,6 +37,61 @@ describe('profileSchema', () => {
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]?.message).toBe('Enter a valid website URL')
   })
+
+  it('requires a certification name and an award title', () => {
+    const profile = createEmptyProfile()
+    profile.personal.name = 'Jane Doe'
+    profile.personal.email = 'jane@example.com'
+    profile.certifications.push({
+      id: 'cert-1',
+      name: '  ',
+      issuingOrganization: '',
+      issueDate: '',
+      expirationDate: '',
+      credentialId: '',
+      credentialUrl: '',
+    })
+    profile.awards.push({
+      id: 'award-1',
+      title: '',
+      associatedWith: '',
+      issuer: '',
+      issueDate: '',
+      description: '',
+    })
+
+    const result = profileSchema.safeParse(profile)
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual(
+      expect.arrayContaining([
+        'Certification name is required',
+        'Award title is required',
+      ]),
+    )
+  })
+
+  it('rejects a malformed credential URL', () => {
+    const profile = createEmptyProfile()
+    profile.personal.name = 'Jane Doe'
+    profile.personal.email = 'jane@example.com'
+    profile.certifications.push({
+      id: 'cert-1',
+      name: 'AWS Solutions Architect',
+      issuingOrganization: 'Amazon Web Services',
+      issueDate: 'Mar 2024',
+      expirationDate: '',
+      credentialId: '',
+      credentialUrl: 'not a url',
+    })
+
+    const result = profileSchema.safeParse(profile)
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.message).toBe(
+      'Enter a valid credential URL',
+    )
+  })
 })
 
 describe('applicationFormSchema', () => {
@@ -113,6 +168,64 @@ describe('apiStateSchema', () => {
     expect(parsed.profile.projects[0]?.associatedWith).toBe('')
   })
 
+  it('defaults missing or null certifications and awards to empty arrays', () => {
+    const {
+      certifications: _certifications,
+      awards: _awards,
+      ...profile
+    } = createEmptyProfile()
+
+    const missing = apiStateSchema.parse({ profile, applications: [] })
+    const explicitNull = apiStateSchema.parse({
+      profile: { ...profile, certifications: null, awards: null },
+      applications: [],
+    })
+
+    expect(missing.profile.certifications).toEqual([])
+    expect(missing.profile.awards).toEqual([])
+    expect(explicitNull.profile.certifications).toEqual([])
+    expect(explicitNull.profile.awards).toEqual([])
+  })
+
+  it('normalizes stored certification and award fields', () => {
+    const parsed = generatedResumeSchema.parse({
+      personal: createEmptyProfile().personal,
+      summary: '',
+      experience: [],
+      education: [],
+      certifications: [
+        {
+          id: 'cert-1',
+          name: 'AWS Solutions Architect',
+          issuingOrganization: null,
+          issueDate: null,
+          expirationDate: null,
+          credentialId: null,
+          credentialUrl: null,
+        },
+      ],
+      awards: [
+        {
+          id: 'award-1',
+          title: 'Engineer of the Year',
+          associatedWith: null,
+          issuer: null,
+          issueDate: null,
+          description: null,
+        },
+      ],
+      skills: [],
+      projects: [],
+      keywords: null,
+      generatedAt: '2026-10-24T12:00:00.000Z',
+    })
+
+    expect(parsed.certifications[0]?.issuingOrganization).toBe('')
+    expect(parsed.certifications[0]?.credentialUrl).toBe('')
+    expect(parsed.awards[0]?.issuer).toBe('')
+    expect(parsed.awards[0]?.description).toBe('')
+  })
+
   it('defaults a missing standalone resume to null', () => {
     const { standaloneResume: _omitted, ...state } = createEmptyState()
 
@@ -128,6 +241,8 @@ describe('apiStateSchema', () => {
       summary: 'Standalone summary.',
       experience: [],
       education: [],
+      certifications: [],
+      awards: [],
       skills: [],
       projects: [],
       keywords: null,
@@ -218,6 +333,8 @@ describe('apiStateSchema', () => {
         summary: 'Summary.',
         experience: [],
         education: [],
+        certifications: [],
+        awards: [],
         skills: [],
         projects: [],
         keywords: null,
@@ -312,6 +429,8 @@ describe('generatedResumeSchema', () => {
       summary: 'Summary.',
       experience: [],
       education: [],
+      certifications: [],
+      awards: [],
       skills: ['C#'],
       projects: [],
       keywords: { matched: ['C#'], missing: ['Kubernetes'] },

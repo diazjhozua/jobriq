@@ -15,6 +15,8 @@ export function createEmptyProfile(): Profile {
     summary: '',
     experience: [],
     education: [],
+    certifications: [],
+    awards: [],
     skills: [],
     projects: [],
   }

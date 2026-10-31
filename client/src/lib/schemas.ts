@@ -47,12 +47,33 @@ export const projectSchema = z.object({
   bullets: z.array(z.string()),
 })
 
+export const certificationSchema = z.object({
+  id: z.string(),
+  name: z.string().trim().min(1, 'Certification name is required'),
+  issuingOrganization: z.string(),
+  issueDate: z.string(),
+  expirationDate: z.string(),
+  credentialId: z.string(),
+  credentialUrl: urlOrEmpty('Enter a valid credential URL'),
+})
+
+export const awardSchema = z.object({
+  id: z.string(),
+  title: z.string().trim().min(1, 'Award title is required'),
+  associatedWith: z.string(),
+  issuer: z.string(),
+  issueDate: z.string(),
+  description: z.string(),
+})
+
 export const profileSchema = z.object({
   personal: personalInfoSchema,
   summaryType: z.enum(['objective', 'professional']),
   summary: z.string(),
   experience: z.array(workExperienceSchema),
   education: z.array(educationSchema),
+  certifications: z.array(certificationSchema),
+  awards: z.array(awardSchema),
   skills: z.array(z.string()),
   projects: z.array(projectSchema),
 })
@@ -86,6 +107,23 @@ const storedEducationSchema = educationSchema.extend({
   endDate: nullableString,
 })
 
+const storedCertificationSchema = certificationSchema.extend({
+  name: z.string(),
+  issuingOrganization: nullableString,
+  issueDate: nullableString,
+  expirationDate: nullableString,
+  credentialId: nullableString,
+  credentialUrl: nullableString,
+})
+
+const storedAwardSchema = awardSchema.extend({
+  title: z.string(),
+  associatedWith: nullableString,
+  issuer: nullableString,
+  issueDate: nullableString,
+  description: nullableString,
+})
+
 const storedProjectSchema = projectSchema.extend({
   name: z.string(),
   url: nullableString,
@@ -100,6 +138,14 @@ const storedProfileSchema = z.object({
   summary: z.string(),
   experience: z.array(storedWorkExperienceSchema),
   education: z.array(storedEducationSchema),
+  certifications: z
+    .array(storedCertificationSchema)
+    .nullish()
+    .transform((value) => value ?? []),
+  awards: z
+    .array(storedAwardSchema)
+    .nullish()
+    .transform((value) => value ?? []),
   skills: z.array(z.string()),
   projects: z.array(storedProjectSchema),
 })
@@ -138,6 +184,14 @@ export const generatedResumeSchema = z.object({
   summary: z.string(),
   experience: z.array(generatedExperienceSchema),
   education: z.array(storedEducationSchema),
+  certifications: z
+    .array(storedCertificationSchema)
+    .nullish()
+    .transform((value) => value ?? []),
+  awards: z
+    .array(storedAwardSchema)
+    .nullish()
+    .transform((value) => value ?? []),
   skills: z.array(z.string()),
   projects: z.array(generatedProjectSchema),
   keywords: keywordMatchSchema.nullable(),
@@ -185,6 +239,8 @@ export const reviewSectionSchema = z.enum([
   'summary',
   'experience',
   'education',
+  'certifications',
+  'awards',
   'skills',
   'projects',
 ])

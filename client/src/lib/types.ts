@@ -36,6 +36,25 @@ export interface Education {
   gpa: string
 }
 
+export interface Certification {
+  id: string
+  name: string
+  issuingOrganization: string
+  issueDate: string
+  expirationDate: string
+  credentialId: string
+  credentialUrl: string
+}
+
+export interface Award {
+  id: string
+  title: string
+  associatedWith: string
+  issuer: string
+  issueDate: string
+  description: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -52,6 +71,8 @@ export interface Profile {
   summary: string
   experience: WorkExperience[]
   education: Education[]
+  certifications: Certification[]
+  awards: Award[]
   skills: string[]
   projects: Project[]
 }
@@ -61,6 +82,8 @@ export type ReviewSection =
   | 'summary'
   | 'experience'
   | 'education'
+  | 'certifications'
+  | 'awards'
   | 'skills'
   | 'projects'
 
@@ -116,6 +139,8 @@ export interface GeneratedResume {
   summary: string
   experience: GeneratedExperience[]
   education: Education[]
+  certifications: Certification[]
+  awards: Award[]
   skills: string[]
   projects: GeneratedProject[]
   keywords: KeywordMatch | null

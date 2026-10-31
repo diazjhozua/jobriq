@@ -21,6 +21,8 @@ const generated: GeneratedResume = {
   summary: 'Tailored summary.',
   experience: [],
   education: [],
+  certifications: [],
+  awards: [],
   skills: ['C#'],
   projects: [],
   keywords: null,

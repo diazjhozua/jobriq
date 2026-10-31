@@ -149,6 +149,8 @@ export function parseResumeTemplate(raw: string): Profile {
     summary: field(summaryLines, 'Content'),
     experience: parseExperience(sections),
     education: parseEducation(sections),
+    certifications: [],
+    awards: [],
     skills: parseSkills(sections),
     projects: parseProjects(sections),
   }

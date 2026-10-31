@@ -45,6 +45,8 @@ function Harness() {
     summary: 'Generated.',
     experience: [],
     education: [],
+    certifications: [],
+    awards: [],
     skills: [],
     projects: [],
     keywords: null,
