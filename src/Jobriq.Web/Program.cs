@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jobriq.Application;
@@ -23,6 +24,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<CookieClientContext>();
 builder.Services.AddScoped<IClientContext>(
     services => services.GetRequiredService<CookieClientContext>());
+builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
 WebApplication app = builder.Build();
 
@@ -32,11 +34,7 @@ app.UseMiddleware<ClientContextMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapResumeEndpoints();
-app.MapStateEndpoints();
-app.MapProfileEndpoints();
-app.MapApplicationEndpoints();
-app.MapCoverLetterEndpoints();
+app.MapEndpoints(app.MapGroup("/api"));
 
 app.MapFallback(async context =>
 {

@@ -1,5 +1,5 @@
 using Jobriq.Application.Abstractions;
-using Jobriq.Application.CoverLetters.GenerateCoverLetter;
+using Jobriq.Application.CoverLetters.Generate;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.Resumes;
 using Shouldly;

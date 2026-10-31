@@ -1,4 +1,3 @@
-using Jobriq.Application.CoverLetters.GenerateCoverLetter;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
