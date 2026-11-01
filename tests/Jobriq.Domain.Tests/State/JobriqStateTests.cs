@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 using Shouldly;
@@ -16,5 +17,14 @@ public sealed class JobriqStateTests
 
         state.Profile.ShouldBeSameAs(profile);
         state.Applications.ShouldHaveSingleItem().ShouldBeSameAs(application);
+    }
+
+    [Fact]
+    public void Constructor_DefaultsPromptStylesToEmpty()
+    {
+        JobriqState state = new(new ResumeProfile(), []);
+
+        state.PromptStyles.ShouldBeSameAs(PromptStyleSettings.Empty);
+        state.PromptStyles.ResolveActiveDefinition().ShouldBe(PromptStyleDefinition.BuiltIn);
     }
 }
