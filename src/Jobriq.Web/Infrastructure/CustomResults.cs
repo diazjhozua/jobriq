@@ -40,6 +40,7 @@ internal static class CustomResults
         {
             ErrorType.Validation => "Invalid request",
             ErrorType.NotFound => "Resource not found",
+            ErrorType.Conflict => "Conflict",
             ErrorType.Unavailable => "Service unavailable",
             ErrorType.TooManyRequests or ErrorType.BadGateway => "AI request failed",
             _ => "Unexpected error"
