@@ -1,3 +1,4 @@
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
@@ -12,6 +13,7 @@ public interface IResumeAiService
         string company,
         string role,
         string jobDescription,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
@@ -20,15 +22,18 @@ public interface IResumeAiService
 
     Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
         WorkExperience experience,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
         Project project,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken);
 
     Task<string> GenerateSummaryAsync(
         IReadOnlyList<WorkExperience> experience,
         SummaryType summaryType,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken);
 
     Task<KeywordMatch> ExtractKeywordsAsync(

@@ -6,6 +6,7 @@ using Jobriq.Application.Resumes.Export;
 using Jobriq.Application.Resumes.ExportResume;
 using Jobriq.Application.Resumes.Generate;
 using Jobriq.Contracts;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.SharedKernel;
 using NSubstitute;
@@ -22,6 +23,7 @@ public sealed class GenerateResumeCommandHandlerTests
 
         GenerateResumeCommandHandler handler = new(
             aiService,
+            TestData.StyleResolver(),
             new TestTimeProvider(TestData.Now));
 
         Result<GeneratedResumeDto> result = await handler.Handle(
@@ -47,6 +49,7 @@ public sealed class GenerateResumeCommandHandlerTests
 
         GenerateResumeCommandHandler handler = new(
             aiService,
+            TestData.StyleResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<MissingApiKeyException>(async () =>
@@ -59,13 +62,19 @@ public sealed class GenerateResumeCommandHandlerTests
     {
         IResumeAiService aiService = Substitute.For<IResumeAiService>();
         aiService
-            .EnhanceExperienceBulletsAsync(Arg.Any<WorkExperience>(), Arg.Any<CancellationToken>())
+            .EnhanceExperienceBulletsAsync(
+                Arg.Any<WorkExperience>(),
+                Arg.Any<PromptStyleDefinition>(),
+                Arg.Any<CancellationToken>())
             .Returns(new List<EnhancedBullet>
             {
                 new() { Original = "Built a thing", Enhanced = "Enhanced: Built a thing" }
             });
         aiService
-            .EnhanceProjectBulletsAsync(Arg.Any<Project>(), Arg.Any<CancellationToken>())
+            .EnhanceProjectBulletsAsync(
+                Arg.Any<Project>(),
+                Arg.Any<PromptStyleDefinition>(),
+                Arg.Any<CancellationToken>())
             .Returns(new List<EnhancedBullet>
             {
                 new() { Original = "Made it", Enhanced = "Enhanced: Made it" }
@@ -74,6 +83,7 @@ public sealed class GenerateResumeCommandHandlerTests
             .GenerateSummaryAsync(
                 Arg.Any<IReadOnlyList<WorkExperience>>(),
                 Arg.Any<SummaryType>(),
+                Arg.Any<PromptStyleDefinition>(),
                 Arg.Any<CancellationToken>())
             .Returns("Generated summary.");
         aiService

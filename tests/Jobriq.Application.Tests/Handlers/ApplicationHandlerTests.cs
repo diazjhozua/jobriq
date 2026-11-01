@@ -10,6 +10,7 @@ using Jobriq.Application.Common.Mapping;
 using Jobriq.Application.CoverLetters.Generate;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.SharedKernel;
 using NSubstitute;
@@ -339,6 +340,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
                 "Acme",
                 "Engineer",
                 "Build.",
+                Arg.Any<PromptStyleDefinition>(),
                 Arg.Any<CancellationToken>())
             .Returns(new CoverLetterDraft
             {
@@ -376,6 +378,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             aiService,
             repository,
             ClientContext(),
+            TestData.StyleResolver(),
             new TestTimeProvider(TestData.Now));
 
         Result<ApplicationDto> result = await handler.Handle(
@@ -400,6 +403,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             aiService,
             repository,
             ClientContext(),
+            TestData.StyleResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<JobriqResourceNotFoundException>(async () =>
@@ -434,6 +438,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             Substitute.For<IResumeAiService>(),
             repository,
             ClientContext(),
+            TestData.StyleResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<JobriqValidationException>(async () =>

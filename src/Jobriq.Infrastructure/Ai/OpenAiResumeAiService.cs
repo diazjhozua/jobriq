@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Text.Json;
 using Jobriq.Application.Abstractions;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Microsoft.Extensions.Configuration;
@@ -31,13 +32,14 @@ internal sealed class OpenAiResumeAiService(
         string company,
         string role,
         string jobDescription,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken)
     {
         string content = await CompleteAsync(
             Prompts.GenerateCoverLetter(profile, company, role, jobDescription),
             json: true,
             cancellationToken,
-            Prompts.CoverLetterSystem);
+            Prompts.ComposeSystem(Prompts.CoverLetterSystem, style));
 
         return Parse<CoverLetterDraft>(content) ?? new CoverLetterDraft();
     }
@@ -54,9 +56,14 @@ internal sealed class OpenAiResumeAiService(
 
     public async Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
         WorkExperience experience,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.EnhanceExperience(experience), json: true, cancellationToken);
+        string content = await CompleteAsync(
+            Prompts.EnhanceExperience(experience),
+            json: true,
+            cancellationToken,
+            Prompts.ComposeSystem(Prompts.System, style));
         EnhanceResponse? response = Parse<EnhanceResponse>(content);
 
         return response?.Bullets ?? [];
@@ -64,9 +71,14 @@ internal sealed class OpenAiResumeAiService(
 
     public async Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
         Project project,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.EnhanceProject(project), json: true, cancellationToken);
+        string content = await CompleteAsync(
+            Prompts.EnhanceProject(project),
+            json: true,
+            cancellationToken,
+            Prompts.ComposeSystem(Prompts.System, style));
         EnhanceResponse? response = Parse<EnhanceResponse>(content);
 
         return response?.Bullets ?? [];
@@ -75,9 +87,14 @@ internal sealed class OpenAiResumeAiService(
     public async Task<string> GenerateSummaryAsync(
         IReadOnlyList<WorkExperience> experience,
         SummaryType summaryType,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.GenerateSummary(experience, summaryType), json: false, cancellationToken);
+        string content = await CompleteAsync(
+            Prompts.GenerateSummary(experience, summaryType),
+            json: false,
+            cancellationToken,
+            Prompts.ComposeSystem(Prompts.System, style));
 
         return content.Trim();
     }

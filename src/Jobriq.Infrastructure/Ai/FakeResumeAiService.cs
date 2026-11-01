@@ -1,4 +1,5 @@
 using Jobriq.Application.Abstractions;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
@@ -15,6 +16,7 @@ internal sealed class FakeResumeAiService : IResumeAiService
         string company,
         string role,
         string jobDescription,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken) =>
         Task.FromResult(new CoverLetterDraft
         {
@@ -79,19 +81,22 @@ internal sealed class FakeResumeAiService : IResumeAiService
 
     public Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(
         WorkExperience experience,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken) =>
-        Task.FromResult(Enhance(experience.Bullets));
+        Task.FromResult(Enhance(experience.Bullets, style));
 
     public Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
         Project project,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken) =>
-        Task.FromResult(Enhance(project.Bullets));
+        Task.FromResult(Enhance(project.Bullets, style));
 
     public Task<string> GenerateSummaryAsync(
         IReadOnlyList<WorkExperience> experience,
         SummaryType summaryType,
+        PromptStyleDefinition style,
         CancellationToken cancellationToken) =>
-        Task.FromResult("Deterministic professional summary.");
+        Task.FromResult($"Deterministic professional summary.{StyleSuffix(style)}");
 
     public Task<KeywordMatch> ExtractKeywordsAsync(
         string jobDescription,
@@ -103,10 +108,15 @@ internal sealed class FakeResumeAiService : IResumeAiService
             Missing = ["Kubernetes"]
         });
 
-    private static IReadOnlyList<EnhancedBullet> Enhance(IReadOnlyList<string> bullets) =>
+    private static IReadOnlyList<EnhancedBullet> Enhance(
+        IReadOnlyList<string> bullets,
+        PromptStyleDefinition style) =>
         [.. bullets.Select(bullet => new EnhancedBullet
         {
             Original = bullet,
-            Enhanced = $"Enhanced: {bullet}"
+            Enhanced = $"Enhanced: {bullet}{StyleSuffix(style)}"
         })];
+
+    private static string StyleSuffix(PromptStyleDefinition style) =>
+        style.IsBuiltIn ? string.Empty : $" [style: {style.Name}]";
 }

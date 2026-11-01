@@ -1,7 +1,9 @@
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Abstractions.Messaging;
+using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Application.Common.Mapping;
 using Jobriq.Contracts;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.SharedKernel;
 
@@ -9,6 +11,7 @@ namespace Jobriq.Application.Resumes.Generate;
 
 internal sealed class GenerateResumeCommandHandler(
     IResumeAiService aiService,
+    IPromptStyleResolver promptStyleResolver,
     TimeProvider timeProvider)
     : ICommandHandler<GenerateResumeCommand, GeneratedResumeDto>
 {
@@ -20,13 +23,18 @@ internal sealed class GenerateResumeCommandHandler(
 
         aiService.EnsureAvailable();
 
+        PromptStyleDefinition style = await promptStyleResolver.ResolveAsync(cancellationToken);
+
         List<WorkExperience> experiences = [];
         foreach (WorkExperience experience in profile.Experience)
         {
             WorkExperience copy = Clone(experience);
             if (copy.Bullets.Count > 0)
             {
-                copy.EnhancedBullets = [.. await aiService.EnhanceExperienceBulletsAsync(copy, cancellationToken)];
+                copy.EnhancedBullets =
+                [
+                    .. await aiService.EnhanceExperienceBulletsAsync(copy, style, cancellationToken)
+                ];
             }
 
             experiences.Add(copy);
@@ -38,7 +46,10 @@ internal sealed class GenerateResumeCommandHandler(
             Project copy = Clone(project);
             if (copy.Bullets.Count > 0)
             {
-                copy.EnhancedBullets = [.. await aiService.EnhanceProjectBulletsAsync(copy, cancellationToken)];
+                copy.EnhancedBullets =
+                [
+                    .. await aiService.EnhanceProjectBulletsAsync(copy, style, cancellationToken)
+                ];
             }
 
             projects.Add(copy);
@@ -47,7 +58,11 @@ internal sealed class GenerateResumeCommandHandler(
         string summary = profile.Summary;
         if (string.IsNullOrWhiteSpace(summary) && experiences.Count > 0)
         {
-            summary = await aiService.GenerateSummaryAsync(experiences, profile.SummaryType, cancellationToken);
+            summary = await aiService.GenerateSummaryAsync(
+                experiences,
+                profile.SummaryType,
+                style,
+                cancellationToken);
         }
 
         KeywordMatch? keywords = null;

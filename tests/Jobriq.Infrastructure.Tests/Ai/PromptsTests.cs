@@ -1,3 +1,4 @@
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Infrastructure.Ai;
@@ -7,6 +8,37 @@ namespace Jobriq.Infrastructure.Tests.Ai;
 
 public sealed class PromptsTests
 {
+    [Fact]
+    public void ComposeSystem_ReturnsBasePromptForBuiltInStyle()
+    {
+        string composed = Prompts.ComposeSystem(Prompts.System, PromptStyleDefinition.BuiltIn);
+
+        composed.ShouldBe(Prompts.System);
+    }
+
+    [Fact]
+    public void ComposeSystem_AppendsStyleAfterTaskInstructions()
+    {
+        PromptStyleDefinition style = new(Guid.NewGuid(), "Warm voice", "Prefer warm, plain sentences.");
+
+        string composed = Prompts.ComposeSystem(Prompts.System, style);
+
+        composed.ShouldStartWith(Prompts.System);
+        composed.ShouldContain("<<<STYLE");
+        composed.ShouldContain("Prefer warm, plain sentences.");
+        composed.ShouldContain("STYLE");
+        composed.ShouldContain("response JSON schema always take precedence");
+        composed.ShouldNotContain("\r");
+    }
+
+    [Fact]
+    public void ComposeSystem_IgnoresBlankInstructions()
+    {
+        PromptStyleDefinition style = new(Guid.NewGuid(), "Empty", "   ");
+
+        Prompts.ComposeSystem(Prompts.CoverLetterSystem, style).ShouldBe(Prompts.CoverLetterSystem);
+    }
+
     [Fact]
     public void SystemPrompt_MatchesCliWording()
     {

@@ -1,10 +1,12 @@
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Abstractions.Messaging;
 using Jobriq.Application.Abstractions.Persistence;
+using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Application.Common.Mapping;
 using Jobriq.Application.CoverLetters.Generate;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.SharedKernel;
 
@@ -14,6 +16,7 @@ internal sealed class GenerateCoverLetterCommandHandler(
     IResumeAiService aiService,
     IJobriqRepository repository,
     IClientContext clientContext,
+    IPromptStyleResolver promptStyleResolver,
     TimeProvider timeProvider)
     : ICommandHandler<GenerateCoverLetterCommand, ApplicationDto>
 {
@@ -35,11 +38,14 @@ internal sealed class GenerateCoverLetterCommandHandler(
 
         CoverLetterNormalizer.EnsureCanGenerate(profile);
 
+        PromptStyleDefinition style = await promptStyleResolver.ResolveAsync(cancellationToken);
+
         CoverLetterDraft draft = await aiService.GenerateCoverLetterAsync(
             profile,
             application.Company,
             application.Role,
             application.JobDescription,
+            style,
             cancellationToken);
 
         CoverLetter letter = CoverLetterNormalizer.Normalize(
