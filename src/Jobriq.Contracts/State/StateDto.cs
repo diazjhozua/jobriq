@@ -7,4 +7,6 @@ public sealed class StateDto
     public List<ApplicationDto> Applications { get; set; } = [];
 
     public GeneratedResumeDto? StandaloneResume { get; set; }
+
+    public PromptStylesDto PromptStyles { get; set; } = new();
 }
