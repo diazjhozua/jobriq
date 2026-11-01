@@ -4,8 +4,9 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 
 ## State
 
-- Routes: `/profile` and `/applications`; unknown paths redirect to `/profile`.
+- Routes: `/profile`, `/applications`, and `/settings`; unknown paths redirect to `/profile`.
 - `src/providers/JobriqProvider.tsx` hydrates once from `GET /api/state` and exposes async mutations. Add new state there rather than introducing another store or per-component persistence.
+- Prompt styles live on `state.promptStyles` (`styles`, `activeStyleId`, `baseline`). The four mutations (`createPromptStyle`, `updatePromptStyle`, `deletePromptStyle`, `activatePromptStyle`) replace that slice with the server snapshot; the first saved style auto-activates, and the read-only baseline applies whenever `activeStyleId` is null. `SettingsPage` is the only consumer.
 - Hydration failure blocks the workspace with a retry panel; mutation failure rolls back optimistic updates and shows a dismissible sync banner. Do not swallow API errors silently.
 - Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
 - Generated resumes live on the application (`generatedResume`) or on the workspace state as the profile page's standalone resume (`standaloneResume`), not in a separate store.
@@ -17,8 +18,8 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 
 `src/lib/schemas.ts` keeps two profiles on purpose:
 
-- Strict `profileSchema` and friends validate the form.
-- Lenient `stored*` schemas validate API responses, so partially filled profiles still load.
+- Strict `profileSchema` and friends validate the form; `promptStyleFormSchema` validates the Settings dialog.
+- Lenient `stored*` schemas validate API responses, so partially filled profiles still load. `promptStylesSchema` is lenient in the same way: missing `promptStyles` in the state falls back to `createEmptyPromptStyles()`.
 
 When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.ts`.
 
