@@ -12,6 +12,7 @@ import * as api from '../lib/api'
 import type {
   ApplicationDetailsInput,
   NewApplicationInput,
+  PromptStyleInput,
 } from '../lib/api'
 import { createEmptyState } from '../lib/defaults'
 import { monthYearToIso } from '../lib/monthYear'
@@ -22,6 +23,7 @@ import type {
   JobriqState,
   Profile,
   ProfileReview,
+  PromptStyles,
 } from '../lib/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
@@ -30,6 +32,7 @@ interface JobriqContextValue {
   profile: Profile
   applications: JobApplication[]
   standaloneResume: GeneratedResume | null
+  promptStyles: PromptStyles
   status: LoadStatus
   loadError: string | null
   syncError: string | null
@@ -46,6 +49,10 @@ interface JobriqContextValue {
   saveGeneratedResume: (id: string, resume: GeneratedResume) => Promise<void>
   generateCoverLetter: (id: string) => Promise<void>
   generateStandaloneResume: (profile: Profile, jobDescription?: string) => Promise<void>
+  createPromptStyle: (input: PromptStyleInput) => Promise<void>
+  updatePromptStyle: (id: string, input: PromptStyleInput) => Promise<void>
+  deletePromptStyle: (id: string) => Promise<void>
+  activatePromptStyle: (id: string) => Promise<void>
   review: ProfileReview | null
   reviewedAt: string | null
   reviewing: boolean
@@ -328,6 +335,42 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [setJobriqState],
   )
 
+  const replacePromptStyles = useCallback(
+    async (operation: () => Promise<PromptStyles>) => {
+      try {
+        const next = await operation()
+        setJobriqState((current) => ({ ...current, promptStyles: next }))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const createPromptStyle = useCallback(
+    (input: PromptStyleInput) =>
+      replacePromptStyles(() => api.createPromptStyle(input)),
+    [replacePromptStyles],
+  )
+
+  const updatePromptStyle = useCallback(
+    (id: string, input: PromptStyleInput) =>
+      replacePromptStyles(() => api.updatePromptStyle(id, input)),
+    [replacePromptStyles],
+  )
+
+  const deletePromptStyle = useCallback(
+    (id: string) => replacePromptStyles(() => api.deletePromptStyle(id)),
+    [replacePromptStyles],
+  )
+
+  const activatePromptStyle = useCallback(
+    (id: string) => replacePromptStyles(() => api.activatePromptStyle(id)),
+    [replacePromptStyles],
+  )
+
   const reviewProfile = useCallback(async (profile: Profile) => {
     setReviewing(true)
     setReviewError(null)
@@ -350,6 +393,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       profile: state.profile,
       applications: state.applications,
       standaloneResume: state.standaloneResume,
+      promptStyles: state.promptStyles,
       status,
       loadError,
       syncError,
@@ -363,6 +407,10 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       saveGeneratedResume,
       generateCoverLetter,
       generateStandaloneResume,
+      createPromptStyle,
+      updatePromptStyle,
+      deletePromptStyle,
+      activatePromptStyle,
       review,
       reviewedAt,
       reviewing,
@@ -373,6 +421,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       state.profile,
       state.applications,
       state.standaloneResume,
+      state.promptStyles,
       status,
       loadError,
       syncError,
@@ -386,6 +435,10 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       saveGeneratedResume,
       generateCoverLetter,
       generateStandaloneResume,
+      createPromptStyle,
+      updatePromptStyle,
+      deletePromptStyle,
+      activatePromptStyle,
       review,
       reviewedAt,
       reviewing,
