@@ -17,7 +17,8 @@ public static class StateMappings
                 : state.Applications.Select(ApplicationMappings.ToDto).ToList(),
             StandaloneResume = state.StandaloneResume is null
                 ? null
-                : ResumeMappings.ToDto(state.StandaloneResume)
+                : ResumeMappings.ToDto(state.StandaloneResume),
+            PromptStyles = PromptStyleMappings.ToDto(state.PromptStyles)
         };
     }
 }

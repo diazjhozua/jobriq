@@ -1,6 +1,8 @@
 using FluentValidation;
 using Jobriq.Application.Abstractions.Behaviors;
 using Jobriq.Application.Abstractions.Messaging;
+using Jobriq.Application.Abstractions.PromptStyles;
+using Jobriq.Application.PromptStyles;
 using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 
@@ -35,6 +37,8 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly,
             includeInternalTypes: true);
+
+        services.AddScoped<IPromptStyleResolver, PromptStyleResolver>();
 
         return services;
     }

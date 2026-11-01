@@ -10,6 +10,14 @@ public static class ErrorCatalog
     public static Error ApplicationNotFound() =>
         Error.NotFound("application_not_found", "The application was not found.");
 
+    public static Error PromptStyleNotFound() =>
+        Error.NotFound("prompt_style_not_found", "The prompt style was not found.");
+
+    public static Error PromptStyleNameConflict(string name) =>
+        Error.Conflict(
+            "prompt_style_name_conflict",
+            $"A prompt style named \"{name.Trim()}\" already exists.");
+
     public static Error MissingApiKey() =>
         Error.Unavailable(
             "missing_api_key",

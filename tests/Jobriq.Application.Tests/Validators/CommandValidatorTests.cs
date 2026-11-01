@@ -7,6 +7,10 @@ using Jobriq.Application.CoverLetters.Export;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
+using Jobriq.Application.PromptStyles.Activate;
+using Jobriq.Application.PromptStyles.Create;
+using Jobriq.Application.PromptStyles.Delete;
+using Jobriq.Application.PromptStyles.Update;
 using Jobriq.Application.Resumes.Export;
 using Jobriq.Application.Resumes.Generate;
 using Jobriq.Contracts;
@@ -198,6 +202,77 @@ public sealed class CommandValidatorTests
         AssertSingle(
             new ExportCoverLetterQueryValidator().Validate(new ExportCoverLetterQuery(letter)),
             "The cover letter is missing required content.");
+    }
+
+    [Fact]
+    public void CreatePromptStyle_ValidCommand_Passes()
+    {
+        new CreatePromptStyleCommandValidator()
+            .Validate(new CreatePromptStyleCommand("Warm voice", "Be warm."))
+            .IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CreatePromptStyle_WithoutName_Fails()
+    {
+        AssertSingle(
+            new CreatePromptStyleCommandValidator().Validate(
+                new CreatePromptStyleCommand("  ", "Be warm.")),
+            "A style name is required.");
+    }
+
+    [Fact]
+    public void CreatePromptStyle_NameTooLong_Fails()
+    {
+        AssertSingle(
+            new CreatePromptStyleCommandValidator().Validate(
+                new CreatePromptStyleCommand(new string('a', 81), "Be warm.")),
+            "A style name cannot exceed 80 characters.");
+    }
+
+    [Fact]
+    public void CreatePromptStyle_WithoutInstructions_Fails()
+    {
+        AssertSingle(
+            new CreatePromptStyleCommandValidator().Validate(
+                new CreatePromptStyleCommand("Warm voice", "  ")),
+            "Style instructions are required.");
+    }
+
+    [Fact]
+    public void CreatePromptStyle_InstructionsTooLong_Fails()
+    {
+        AssertSingle(
+            new CreatePromptStyleCommandValidator().Validate(
+                new CreatePromptStyleCommand("Warm voice", new string('a', 4001))),
+            "Style instructions cannot exceed 4000 characters.");
+    }
+
+    [Fact]
+    public void UpdatePromptStyle_WithoutId_Fails()
+    {
+        AssertSingle(
+            new UpdatePromptStyleCommandValidator().Validate(
+                new UpdatePromptStyleCommand(Guid.Empty, "Warm voice", "Be warm.")),
+            "A prompt style is required.");
+    }
+
+    [Fact]
+    public void DeletePromptStyle_WithoutId_Fails()
+    {
+        AssertSingle(
+            new DeletePromptStyleCommandValidator().Validate(
+                new DeletePromptStyleCommand(Guid.Empty)),
+            "A prompt style is required.");
+    }
+
+    [Fact]
+    public void ActivatePromptStyle_WithoutId_Fails()
+    {
+        AssertSingle(
+            new ActivatePromptStyleCommandValidator().Validate(
+                new ActivatePromptStyleCommand(Guid.Empty)),
+            "A prompt style is required.");
     }
 
     private static void AssertSingle(ValidationResult result, string message)

@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Jobriq.Application.Common.Mapping;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
@@ -68,7 +69,44 @@ public sealed class JsonParityTests
             [CreateApplication()],
             CreateGeneratedResume());
 
-        AssertParity(state, StateMappings.ToDto(state));
+        JsonNode? expected = JsonSerializer.SerializeToNode(state, WebJson);
+        JsonNode? actual = JsonSerializer.SerializeToNode(StateMappings.ToDto(state), WebJson);
+
+        // Prompt styles carry a display-only baseline in the DTO, asserted separately below.
+        expected!.AsObject().Remove("promptStyles");
+        actual!.AsObject().Remove("promptStyles");
+
+        JsonNode.DeepEquals(expected, actual).ShouldBeTrue(
+            $"DTO drifted from Domain.\nDomain: {expected}\nDTO: {actual}");
+    }
+
+    [Fact]
+    public void PromptStyles_Dto_CarriesSavedStylesAndBaseline()
+    {
+        PromptStyle style = PromptStyle.Restore(
+            Guid.Parse("99999999-9999-9999-9999-999999999999"),
+            "Warm voice",
+            "Be warm.",
+            isActive: true,
+            Timestamp,
+            Timestamp);
+
+        PromptStyleSettings settings = new([style], style.Id);
+
+        PromptStylesDto dto = PromptStyleMappings.ToDto(settings);
+
+        dto.ActiveStyleId.ShouldBe(style.Id);
+        dto.Styles.ShouldHaveSingleItem().IsActive.ShouldBeTrue();
+        dto.Styles[0].Name.ShouldBe("Warm voice");
+        dto.Baseline.Id.ShouldBe(PromptStyleCatalog.BuiltInId);
+        dto.Baseline.Instructions.ShouldBe(PromptStyleCatalog.BuiltInInstructions);
+        dto.Baseline.IsActive.ShouldBeFalse();
+
+        JobriqState state = new(CreateProfile(), [], null, settings);
+        PromptStylesDto mapped = StateMappings.ToDto(state).PromptStyles;
+
+        mapped.ActiveStyleId.ShouldBe(style.Id);
+        mapped.Styles.ShouldHaveSingleItem().Name.ShouldBe("Warm voice");
     }
 
     [Fact]

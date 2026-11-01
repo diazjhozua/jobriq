@@ -9,6 +9,10 @@ using Jobriq.Application.CoverLetters.Export;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
+using Jobriq.Application.PromptStyles.Activate;
+using Jobriq.Application.PromptStyles.Create;
+using Jobriq.Application.PromptStyles.Delete;
+using Jobriq.Application.PromptStyles.Update;
 using Jobriq.Application.Resumes.Export;
 using Jobriq.Application.Resumes.ExportResume;
 using Jobriq.Application.Resumes.Generate;
@@ -41,6 +45,10 @@ public sealed class DependencyInjectionTests
         services.GetRequiredService<ICommandHandler<ReviewProfileCommand, ReviewProfileResponse>>();
         services.GetRequiredService<IQueryHandler<GetStateQuery, StateDto>>();
         services.GetRequiredService<IQueryHandler<ExportCoverLetterQuery, ExportedFile>>();
+        services.GetRequiredService<ICommandHandler<CreatePromptStyleCommand, PromptStylesDto>>();
+        services.GetRequiredService<ICommandHandler<UpdatePromptStyleCommand, PromptStylesDto>>();
+        services.GetRequiredService<ICommandHandler<DeletePromptStyleCommand, PromptStylesDto>>();
+        services.GetRequiredService<ICommandHandler<ActivatePromptStyleCommand, PromptStylesDto>>();
 
         true.ShouldBeTrue();
     }

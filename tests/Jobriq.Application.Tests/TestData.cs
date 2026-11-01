@@ -1,4 +1,7 @@
+using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Contracts;
+using Jobriq.Domain.PromptStyles;
+using NSubstitute;
 
 namespace Jobriq.Application.Tests;
 
@@ -9,6 +12,16 @@ internal static class TestData
     public static readonly Guid ExperienceId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     public static readonly Guid ProjectId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     public static readonly DateTimeOffset Now = new(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+
+    public static IPromptStyleResolver StyleResolver(PromptStyleDefinition? style = null)
+    {
+        IPromptStyleResolver resolver = Substitute.For<IPromptStyleResolver>();
+        resolver
+            .ResolveAsync(Arg.Any<CancellationToken>())
+            .Returns(style ?? PromptStyleDefinition.BuiltIn);
+
+        return resolver;
+    }
 
     public static ProfileDto Profile() => new()
     {
