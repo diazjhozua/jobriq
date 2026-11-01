@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 using Jobriq.Infrastructure.Persistence.Postgres;
@@ -376,6 +377,154 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
             CancellationToken.None);
 
         saved.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task PromptStyles_AreClientScopedAndRoundTrip()
+    {
+        Guid clientId = Guid.NewGuid();
+        Guid otherClientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        PromptStyle style = PromptStyle.Create("Warm voice", "Be warm.", now);
+        style.Activate();
+        await repository.AddPromptStyleAsync(clientId, style, CancellationToken.None);
+
+        JobriqState state = await repository.GetStateAsync(clientId, CancellationToken.None);
+
+        state.PromptStyles.Styles.ShouldHaveSingleItem().Name.ShouldBe("Warm voice");
+        state.PromptStyles.ActiveStyleId.ShouldBe(style.Id);
+        state.PromptStyles.ResolveActiveDefinition().Instructions.ShouldBe("Be warm.");
+
+        JobriqState otherState = await repository.GetStateAsync(otherClientId, CancellationToken.None);
+        otherState.PromptStyles.Styles.ShouldBeEmpty();
+        otherState.PromptStyles.ActiveStyleId.ShouldBeNull();
+
+        PromptStyle? loaded = await repository.GetPromptStyleAsync(
+            clientId,
+            style.Id,
+            CancellationToken.None);
+        loaded.ShouldNotBeNull().IsActive.ShouldBeTrue();
+
+        PromptStyle? otherLoaded = await repository.GetPromptStyleAsync(
+            otherClientId,
+            style.Id,
+            CancellationToken.None);
+        otherLoaded.ShouldBeNull();
+
+        bool deleted = await repository.DeletePromptStyleAsync(
+            clientId,
+            style.Id,
+            CancellationToken.None);
+
+        deleted.ShouldBeTrue();
+        (await repository.GetStateAsync(clientId, CancellationToken.None))
+            .PromptStyles.Styles.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ActivatePromptStyle_KeepsExactlyOneActiveStyle()
+    {
+        Guid clientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        PromptStyle first = PromptStyle.Create("First", "First style.", now);
+        first.Activate();
+        PromptStyle second = PromptStyle.Create("Second", "Second style.", now.AddMinutes(1));
+
+        await repository.AddPromptStyleAsync(clientId, first, CancellationToken.None);
+        await repository.AddPromptStyleAsync(clientId, second, CancellationToken.None);
+
+        PromptStyle? activated = await repository.ActivatePromptStyleAsync(
+            clientId,
+            second.Id,
+            CancellationToken.None);
+
+        activated.ShouldNotBeNull().IsActive.ShouldBeTrue();
+
+        JobriqState state = await repository.GetStateAsync(clientId, CancellationToken.None);
+
+        state.PromptStyles.ActiveStyleId.ShouldBe(second.Id);
+        state.PromptStyles.Styles.Count(style => style.IsActive).ShouldBe(1);
+        state.PromptStyles.Styles.Single(style => style.Id == first.Id).IsActive.ShouldBeFalse();
+
+        PromptStyle? missing = await repository.ActivatePromptStyleAsync(
+            clientId,
+            Guid.NewGuid(),
+            CancellationToken.None);
+
+        missing.ShouldBeNull();
+
+        PromptStyle foreign = PromptStyle.Create("Foreign", "Other client.", now);
+        Guid otherClientId = Guid.NewGuid();
+        await repository.AddPromptStyleAsync(otherClientId, foreign, CancellationToken.None);
+
+        PromptStyle? foreignActivation = await repository.ActivatePromptStyleAsync(
+            clientId,
+            foreign.Id,
+            CancellationToken.None);
+
+        foreignActivation.ShouldBeNull();
+
+        JobriqState afterFailedActivations = await repository.GetStateAsync(
+            clientId,
+            CancellationToken.None);
+
+        afterFailedActivations.PromptStyles.ActiveStyleId.ShouldBe(second.Id);
+        afterFailedActivations.PromptStyles.Styles
+            .Single(style => style.Id == second.Id)
+            .IsActive.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task PromptStyleNameExists_IsCaseInsensitiveAndExcludesSelf()
+    {
+        Guid clientId = Guid.NewGuid();
+        Guid otherClientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        PromptStyle style = PromptStyle.Create("Warm Voice", "Be warm.", now);
+        await repository.AddPromptStyleAsync(clientId, style, CancellationToken.None);
+
+        bool taken = await repository.PromptStyleNameExistsAsync(
+            clientId,
+            "  warm voice ",
+            null,
+            CancellationToken.None);
+        taken.ShouldBeTrue();
+
+        bool excluded = await repository.PromptStyleNameExistsAsync(
+            clientId,
+            "warm voice",
+            style.Id,
+            CancellationToken.None);
+        excluded.ShouldBeFalse();
+
+        bool otherClient = await repository.PromptStyleNameExistsAsync(
+            otherClientId,
+            "warm voice",
+            null,
+            CancellationToken.None);
+        otherClient.ShouldBeFalse();
+
+        style.UpdateDetails("Plain Voice", "Be plain.", now.AddMinutes(1));
+        PromptStyle? saved = await repository.SavePromptStyleAsync(
+            clientId,
+            style,
+            CancellationToken.None);
+
+        saved.ShouldNotBeNull().Name.ShouldBe("Plain Voice");
+        (await repository.GetStateAsync(clientId, CancellationToken.None))
+            .PromptStyles.Styles.Single().Instructions.ShouldBe("Be plain.");
     }
 
     private static CoverLetter CreateCoverLetter() => new()

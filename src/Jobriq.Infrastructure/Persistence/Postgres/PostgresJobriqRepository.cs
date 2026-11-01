@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 using Jobriq.Infrastructure.Persistence.Postgres.Rows;
@@ -35,10 +36,15 @@ internal sealed class PostgresJobriqRepository(
                 ? null
                 : Deserialize<GeneratedResume>(profileRow.StandaloneResumeJson);
 
+            PromptStyleSettings promptStyles = await LoadPromptStyleSettingsAsync(
+                clientId,
+                cancellationToken);
+
             return new JobriqState(
                 profile,
                 [.. applicationRows.Select(ToDomain)],
-                standaloneResume);
+                standaloneResume,
+                promptStyles);
         });
 
     public Task SaveProfileAsync(
@@ -262,6 +268,165 @@ internal sealed class PostgresJobriqRepository(
             return ToDomain(row);
         });
 
+    public Task<PromptStyleSettings> GetPromptStylesAsync(
+        Guid clientId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(() => LoadPromptStyleSettingsAsync(clientId, cancellationToken));
+
+    public Task<PromptStyle?> GetPromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            PromptStyleRow? row = await dbContext.PromptStyles
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    candidate => candidate.Id == promptStyleId && candidate.ClientId == clientId,
+                    cancellationToken);
+
+            return row is null ? null : ToDomain(row);
+        });
+
+    public Task<bool> PromptStyleNameExistsAsync(
+        Guid clientId,
+        string name,
+        Guid? excludedPromptStyleId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            string normalizedName = name.Trim().ToLowerInvariant();
+
+            IQueryable<PromptStyleRow> query = dbContext.PromptStyles
+                .AsNoTracking()
+                .Where(row => row.ClientId == clientId && row.Name.ToLower() == normalizedName);
+
+            if (excludedPromptStyleId is { } excludedId)
+            {
+                query = query.Where(row => row.Id != excludedId);
+            }
+
+            return await query.AnyAsync(cancellationToken);
+        });
+
+    public Task<PromptStyle> AddPromptStyleAsync(
+        Guid clientId,
+        PromptStyle style,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            dbContext.PromptStyles.Add(new PromptStyleRow
+            {
+                Id = style.Id,
+                ClientId = clientId,
+                Name = style.Name,
+                Instructions = style.Instructions,
+                IsActive = style.IsActive,
+                CreatedAt = style.CreatedAt,
+                UpdatedAt = style.UpdatedAt
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return style;
+        });
+
+    public Task<PromptStyle?> SavePromptStyleAsync(
+        Guid clientId,
+        PromptStyle style,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            PromptStyleRow? row = await FindPromptStyleAsync(clientId, style.Id, cancellationToken);
+            if (row is null)
+            {
+                return null;
+            }
+
+            row.Name = style.Name;
+            row.Instructions = style.Instructions;
+            row.IsActive = style.IsActive;
+            row.UpdatedAt = style.UpdatedAt;
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDomain(row);
+        });
+
+    public Task<bool> DeletePromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            PromptStyleRow? row = await FindPromptStyleAsync(clientId, promptStyleId, cancellationToken);
+            if (row is null)
+            {
+                return false;
+            }
+
+            dbContext.PromptStyles.Remove(row);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return true;
+        });
+
+    public Task<PromptStyle?> ActivatePromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            PromptStyleRow? target = await dbContext.PromptStyles
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    candidate => candidate.Id == promptStyleId && candidate.ClientId == clientId,
+                    cancellationToken);
+
+            if (target is null)
+            {
+                return null;
+            }
+
+            await dbContext.PromptStyles
+                .Where(row => row.ClientId == clientId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        row => row.IsActive,
+                        row => row.Id == promptStyleId),
+                    cancellationToken);
+
+            PromptStyleRow? row = await dbContext.PromptStyles
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    candidate => candidate.Id == promptStyleId && candidate.ClientId == clientId,
+                    cancellationToken);
+
+            return row is null ? null : ToDomain(row);
+        });
+
+    private async Task<PromptStyleSettings> LoadPromptStyleSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken)
+    {
+        List<PromptStyleRow> rows = await dbContext.PromptStyles
+            .AsNoTracking()
+            .Where(row => row.ClientId == clientId)
+            .OrderBy(row => row.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        Guid? activeStyleId = rows.FirstOrDefault(row => row.IsActive)?.Id;
+
+        return new PromptStyleSettings([.. rows.Select(ToDomain)], activeStyleId);
+    }
+
+    private Task<PromptStyleRow?> FindPromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken) =>
+        dbContext.PromptStyles.SingleOrDefaultAsync(
+            row => row.Id == promptStyleId && row.ClientId == clientId,
+            cancellationToken);
+
     private Task<ApplicationRow?> FindApplicationAsync(
         Guid clientId,
         Guid applicationId,
@@ -269,6 +434,15 @@ internal sealed class PostgresJobriqRepository(
         dbContext.Applications.SingleOrDefaultAsync(
             row => row.Id == applicationId && row.ClientId == clientId,
             cancellationToken);
+
+    private static PromptStyle ToDomain(PromptStyleRow row) =>
+        PromptStyle.Restore(
+            row.Id,
+            row.Name,
+            row.Instructions,
+            row.IsActive,
+            row.CreatedAt,
+            row.UpdatedAt);
 
     private static JobApplication ToDomain(ApplicationRow row) =>
         JobApplication.Restore(

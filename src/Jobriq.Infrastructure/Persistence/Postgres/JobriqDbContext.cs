@@ -9,10 +9,13 @@ public sealed class JobriqDbContext(DbContextOptions<JobriqDbContext> options) :
 
     internal DbSet<ApplicationRow> Applications => Set<ApplicationRow>();
 
+    internal DbSet<PromptStyleRow> PromptStyles => Set<PromptStyleRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProfileRow>();
         modelBuilder.Entity<ApplicationRow>();
+        modelBuilder.Entity<PromptStyleRow>();
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JobriqDbContext).Assembly);
         modelBuilder.HasDefaultSchema("public");
     }

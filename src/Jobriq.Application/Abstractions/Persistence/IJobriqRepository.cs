@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 
@@ -56,5 +57,38 @@ public interface IJobriqRepository
         Guid clientId,
         Guid applicationId,
         CoverLetter letter,
+        CancellationToken cancellationToken);
+
+    Task<PromptStyleSettings> GetPromptStylesAsync(Guid clientId, CancellationToken cancellationToken);
+
+    Task<PromptStyle?> GetPromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken);
+
+    Task<bool> PromptStyleNameExistsAsync(
+        Guid clientId,
+        string name,
+        Guid? excludedPromptStyleId,
+        CancellationToken cancellationToken);
+
+    Task<PromptStyle> AddPromptStyleAsync(
+        Guid clientId,
+        PromptStyle style,
+        CancellationToken cancellationToken);
+
+    Task<PromptStyle?> SavePromptStyleAsync(
+        Guid clientId,
+        PromptStyle style,
+        CancellationToken cancellationToken);
+
+    Task<bool> DeletePromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
+        CancellationToken cancellationToken);
+
+    Task<PromptStyle?> ActivatePromptStyleAsync(
+        Guid clientId,
+        Guid promptStyleId,
         CancellationToken cancellationToken);
 }

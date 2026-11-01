@@ -111,6 +111,53 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
 
                     b.ToTable("resume_profiles", "public");
                 });
+
+            modelBuilder.Entity("Jobriq.Infrastructure.Persistence.Postgres.Rows.PromptStyleRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Instructions")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("instructions");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_prompt_styles");
+
+                    b.HasIndex("ClientId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_prompt_styles_client_active")
+                        .HasFilter("\"is_active\"");
+
+                    b.HasIndex("ClientId", "CreatedAt")
+                        .HasDatabaseName("ix_prompt_styles_client_created");
+
+                    b.ToTable("prompt_styles", "public");
+                });
 #pragma warning restore 612, 618
         }
     }
