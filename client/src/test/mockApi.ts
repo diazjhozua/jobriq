@@ -23,6 +23,10 @@ type Operation =
   | 'standalone'
   | 'coverLetter'
   | 'coverLetterExport'
+  | 'promptStyleCreate'
+  | 'promptStyleUpdate'
+  | 'promptStyleDelete'
+  | 'promptStyleActivate'
 
 export interface MockFailure {
   status?: number
@@ -87,7 +91,126 @@ export function installMockApi({
         profile: current.profile,
         applications: current.applications,
         standaloneResume: current.standaloneResume,
+        promptStyles: current.promptStyles,
       })
+    }
+
+    if (path === '/api/prompt-styles' && method === 'POST') {
+      const name = String(body?.name ?? '').trim()
+      const instructions = String(body?.instructions ?? '').trim()
+      const taken = current.promptStyles.styles.some(
+        (style) => style.name.toLowerCase() === name.toLowerCase(),
+      )
+
+      if (taken) {
+        return problem({
+          status: 409,
+          detail: `A prompt style named "${name}" already exists.`,
+          code: 'prompt_style_name_conflict',
+        })
+      }
+
+      const now = new Date().toISOString()
+      const isFirst = current.promptStyles.styles.length === 0
+      const style = {
+        id: crypto.randomUUID(),
+        name,
+        instructions,
+        isActive: isFirst,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      current.promptStyles.styles.push(style)
+
+      if (isFirst) {
+        current.promptStyles.activeStyleId = style.id
+      }
+
+      return json(current.promptStyles, 201)
+    }
+
+    const promptStyleActivateMatch =
+      /^\/api\/prompt-styles\/([^/]+)\/activate$/.exec(path)
+    if (promptStyleActivateMatch && method === 'POST') {
+      const id = decodeURIComponent(promptStyleActivateMatch[1])
+      const style = current.promptStyles.styles.find(
+        (candidate) => candidate.id === id,
+      )
+
+      if (!style) {
+        return problem({
+          status: 404,
+          detail: 'The prompt style was not found.',
+          code: 'prompt_style_not_found',
+        })
+      }
+
+      for (const candidate of current.promptStyles.styles) {
+        candidate.isActive = candidate.id === id
+      }
+
+      current.promptStyles.activeStyleId = id
+      return json(current.promptStyles)
+    }
+
+    const promptStyleMatch = /^\/api\/prompt-styles\/([^/]+)$/.exec(path)
+    if (promptStyleMatch && method === 'PUT') {
+      const id = decodeURIComponent(promptStyleMatch[1])
+      const style = current.promptStyles.styles.find(
+        (candidate) => candidate.id === id,
+      )
+
+      if (!style) {
+        return problem({
+          status: 404,
+          detail: 'The prompt style was not found.',
+          code: 'prompt_style_not_found',
+        })
+      }
+
+      const name = String(body?.name ?? style.name).trim()
+      const taken = current.promptStyles.styles.some(
+        (candidate) =>
+          candidate.id !== id &&
+          candidate.name.toLowerCase() === name.toLowerCase(),
+      )
+
+      if (taken) {
+        return problem({
+          status: 409,
+          detail: `A prompt style named "${name}" already exists.`,
+          code: 'prompt_style_name_conflict',
+        })
+      }
+
+      style.name = name
+      style.instructions = String(body?.instructions ?? style.instructions).trim()
+      style.updatedAt = new Date().toISOString()
+      return json(current.promptStyles)
+    }
+
+    if (promptStyleMatch && method === 'DELETE') {
+      const id = decodeURIComponent(promptStyleMatch[1])
+      const index = current.promptStyles.styles.findIndex(
+        (candidate) => candidate.id === id,
+      )
+
+      if (index === -1) {
+        return problem({
+          status: 404,
+          detail: 'The prompt style was not found.',
+          code: 'prompt_style_not_found',
+        })
+      }
+
+      current.promptStyles.styles.splice(index, 1)
+
+      if (current.promptStyles.activeStyleId === id) {
+        current.promptStyles.activeStyleId = null
+      }
+
+      return json(current.promptStyles)
     }
 
     if (path === '/api/profile' && method === 'PUT') {
@@ -302,6 +425,22 @@ function operationFor(path: string, method: string): Operation | null {
 
   if (path === '/api/cover-letter/export') {
     return 'coverLetterExport'
+  }
+
+  if (path === '/api/prompt-styles' && method === 'POST') {
+    return 'promptStyleCreate'
+  }
+
+  if (path.endsWith('/activate')) {
+    return 'promptStyleActivate'
+  }
+
+  if (path.startsWith('/api/prompt-styles/') && method === 'PUT') {
+    return 'promptStyleUpdate'
+  }
+
+  if (path.startsWith('/api/prompt-styles/') && method === 'DELETE') {
+    return 'promptStyleDelete'
   }
 
   if (path.endsWith('/cover-letter')) {

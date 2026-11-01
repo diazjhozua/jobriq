@@ -170,10 +170,26 @@ export interface JobApplication {
   coverLetter?: CoverLetter | null
 }
 
+export interface PromptStyle {
+  id: string
+  name: string
+  instructions: string
+  isActive: boolean
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface PromptStyles {
+  styles: PromptStyle[]
+  activeStyleId: string | null
+  baseline: PromptStyle
+}
+
 export interface JobriqState {
   profile: Profile
   applications: JobApplication[]
   standaloneResume: GeneratedResume | null
+  promptStyles: PromptStyles
 }
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [

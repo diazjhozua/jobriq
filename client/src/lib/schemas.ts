@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { createEmptyPromptStyles } from './defaults'
 import { parseMonthYear } from './monthYear'
 import type { ApplicationStatus, SummaryType } from './types'
 
@@ -224,10 +225,52 @@ export const applicationSchema = z.object({
   coverLetter: storedCoverLetterSchema.nullable().optional(),
 })
 
+export const promptStyleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  instructions: z.string(),
+  isActive: z.boolean(),
+  createdAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+  updatedAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+})
+
+export const promptStylesSchema = z.object({
+  styles: z.array(promptStyleSchema),
+  activeStyleId: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+  baseline: promptStyleSchema,
+})
+
+export const promptStyleFormSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'A style name is required')
+    .max(80, 'Keep the name under 80 characters'),
+  instructions: z
+    .string()
+    .trim()
+    .min(1, 'Style instructions are required')
+    .max(4000, 'Keep the instructions under 4000 characters'),
+})
+
+export type PromptStyleFormValues = z.infer<typeof promptStyleFormSchema>
+
 export const apiStateSchema = z.object({
   profile: storedProfileSchema,
   applications: z.array(applicationSchema),
   standaloneResume: generatedResumeSchema.nullable().default(null),
+  promptStyles: promptStylesSchema
+    .optional()
+    .transform((value) => value ?? createEmptyPromptStyles()),
 })
 
 export const profileResponseSchema = z.object({

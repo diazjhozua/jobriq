@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { installMockApi } from '../test/mockApi'
 import {
+  activatePromptStyle,
   createApplication,
+  createPromptStyle,
   deleteApplication,
+  deletePromptStyle,
   downloadCoverLetter,
   fetchState,
   generateCoverLetter,
@@ -12,6 +15,7 @@ import {
   saveProfile,
   updateApplication,
   updateApplicationStatus,
+  updatePromptStyle,
 } from './api'
 import { createEmptyProfile, createEmptyState } from './defaults'
 import type { GeneratedResume } from './types'
@@ -333,6 +337,55 @@ describe('api', () => {
       status: 503,
       code: 'database_unavailable',
       message: 'The database is unavailable.',
+    })
+  })
+
+  it('creates, updates, activates, and deletes prompt styles', async () => {
+    const api = installMockApi()
+
+    const created = await createPromptStyle({
+      name: 'Warm voice',
+      instructions: 'Be warm.',
+    })
+    const id = created.styles[0]?.id ?? ''
+
+    expect(created.activeStyleId).toBe(id)
+
+    const updated = await updatePromptStyle(id, {
+      name: 'Warmer voice',
+      instructions: 'Be warmer.',
+    })
+    expect(updated.styles[0]?.name).toBe('Warmer voice')
+
+    const activated = await activatePromptStyle(id)
+    expect(activated.activeStyleId).toBe(id)
+
+    const deleted = await deletePromptStyle(id)
+    expect(deleted.styles).toHaveLength(0)
+    expect(deleted.activeStyleId).toBeNull()
+
+    expect(api.calls).toMatchObject([
+      {
+        method: 'POST',
+        path: '/api/prompt-styles',
+        body: { name: 'Warm voice', instructions: 'Be warm.' },
+      },
+      { method: 'PUT', path: `/api/prompt-styles/${id}` },
+      { method: 'POST', path: `/api/prompt-styles/${id}/activate` },
+      { method: 'DELETE', path: `/api/prompt-styles/${id}` },
+    ])
+  })
+
+  it('surfaces a prompt style name conflict', async () => {
+    installMockApi()
+    await createPromptStyle({ name: 'Warm voice', instructions: 'Be warm.' })
+
+    await expect(
+      createPromptStyle({ name: 'warm voice', instructions: 'Again.' }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 409,
+      code: 'prompt_style_name_conflict',
     })
   })
 

@@ -5,6 +5,7 @@ import {
   generatedResumeSchema,
   profileResponseSchema,
   profileReviewSchema,
+  promptStylesSchema,
 } from './schemas'
 import type {
   ApplicationStatus,
@@ -14,6 +15,7 @@ import type {
   JobriqState,
   Profile,
   ProfileReview,
+  PromptStyles,
 } from './types'
 
 export type ExportFormat = 'docx' | 'markdown'
@@ -235,6 +237,52 @@ export async function downloadResume(
   })
 
   await saveResponse(response, `resume.${format === 'docx' ? 'docx' : 'md'}`)
+}
+
+export interface PromptStyleInput {
+  name: string
+  instructions: string
+}
+
+function promptStyleUrl(id: string): string {
+  return `/api/prompt-styles/${encodeURIComponent(id)}`
+}
+
+export async function createPromptStyle(
+  input: PromptStyleInput,
+): Promise<PromptStyles> {
+  return requestJson(
+    '/api/prompt-styles',
+    jsonRequest('POST', input),
+    promptStylesSchema,
+  )
+}
+
+export async function updatePromptStyle(
+  id: string,
+  input: PromptStyleInput,
+): Promise<PromptStyles> {
+  return requestJson(
+    promptStyleUrl(id),
+    jsonRequest('PUT', input),
+    promptStylesSchema,
+  )
+}
+
+export async function deletePromptStyle(id: string): Promise<PromptStyles> {
+  return requestJson(
+    promptStyleUrl(id),
+    { method: 'DELETE' },
+    promptStylesSchema,
+  )
+}
+
+export async function activatePromptStyle(id: string): Promise<PromptStyles> {
+  return requestJson(
+    `${promptStyleUrl(id)}/activate`,
+    { method: 'POST' },
+    promptStylesSchema,
+  )
 }
 
 export async function downloadCoverLetter(letter: CoverLetter): Promise<void> {

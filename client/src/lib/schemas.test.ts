@@ -124,6 +124,51 @@ describe('apiStateSchema', () => {
     expect(apiStateSchema.safeParse(createEmptyState()).success).toBe(true)
   })
 
+  it('defaults missing prompt styles to the built-in baseline', () => {
+    const parsed = apiStateSchema.parse({
+      profile: createEmptyProfile(),
+      applications: [],
+    })
+
+    expect(parsed.promptStyles.styles).toEqual([])
+    expect(parsed.promptStyles.activeStyleId).toBeNull()
+    expect(parsed.promptStyles.baseline.name).toBe('Default voice')
+    expect(parsed.promptStyles.baseline.isActive).toBe(true)
+  })
+
+  it('keeps null prompt style timestamps null', () => {
+    const parsed = apiStateSchema.parse({
+      profile: createEmptyProfile(),
+      applications: [],
+      promptStyles: {
+        styles: [
+          {
+            id: 'style-1',
+            name: 'Warm voice',
+            instructions: 'Be warm.',
+            isActive: false,
+            createdAt: null,
+            updatedAt: '2026-11-01T00:00:00Z',
+          },
+        ],
+        activeStyleId: null,
+        baseline: {
+          id: 'baseline',
+          name: 'Default voice',
+          instructions: 'Be plain.',
+          isActive: true,
+          createdAt: null,
+          updatedAt: null,
+        },
+      },
+    })
+
+    expect(parsed.promptStyles.styles[0]?.createdAt).toBeNull()
+    expect(parsed.promptStyles.styles[0]?.updatedAt).toBe(
+      '2026-11-01T00:00:00Z',
+    )
+  })
+
   it('normalizes null optional values returned by the API', () => {
     const profile = createEmptyProfile()
     const parsed = apiStateSchema.parse({
