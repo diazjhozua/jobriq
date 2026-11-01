@@ -24,7 +24,7 @@ public sealed class GenerateResumeCommandHandlerTests
             aiService,
             new TestTimeProvider(TestData.Now));
 
-        var result = await handler.Handle(
+        Result<GeneratedResumeDto> result = await handler.Handle(
             new GenerateResumeCommand(TestData.Profile(), "Build reliable systems."),
             CancellationToken.None);
 
@@ -96,7 +96,7 @@ public sealed class ExportResumeQueryHandlerTests
             [exporter],
             new TestTimeProvider(TestData.Now));
 
-        var result = await handler.Handle(
+        Result<ExportedFile> result = await handler.Handle(
             new ExportResumeQuery(TestData.GeneratedResume(), ExportFormatDto.Docx),
             CancellationToken.None);
 
@@ -162,7 +162,7 @@ public sealed class GenerateStandaloneResumeCommandHandlerTests
             repository,
             ClientContext());
 
-        var result = await handler.Handle(
+        Result<GeneratedResumeDto> result = await handler.Handle(
             new GenerateStandaloneResumeCommand(TestData.Profile(), "Build."),
             CancellationToken.None);
 
@@ -192,7 +192,7 @@ public sealed class GenerateStandaloneResumeCommandHandlerTests
             repository,
             ClientContext());
 
-        var result = await handler.Handle(
+        Result<GeneratedResumeDto> result = await handler.Handle(
             new GenerateStandaloneResumeCommand(null, null),
             CancellationToken.None);
 

@@ -11,6 +11,7 @@ using Jobriq.Application.CoverLetters.Generate;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.Resumes;
+using Jobriq.SharedKernel;
 using NSubstitute;
 using Shouldly;
 
@@ -31,7 +32,7 @@ public sealed class CreateApplicationCommandHandlerTests
 
         CreateApplicationCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new CreateApplicationCommand(
                 "Acme",
                 "Engineer",
@@ -53,7 +54,7 @@ public sealed class CreateApplicationCommandHandlerTests
             Substitute.For<IJobriqRepository>(),
             ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new CreateApplicationCommand("Acme", "Engineer", "", null, "August 2022"),
             CancellationToken.None);
 
@@ -89,7 +90,7 @@ public sealed class UpdateApplicationDetailsCommandHandlerTests
 
         UpdateApplicationDetailsCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new UpdateApplicationDetailsCommand(
                 TestData.ApplicationId,
                 "Acme Labs",
@@ -117,7 +118,7 @@ public sealed class UpdateApplicationDetailsCommandHandlerTests
 
         UpdateApplicationDetailsCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new UpdateApplicationDetailsCommand(TestData.ApplicationId, "Acme", "Engineer", null),
             CancellationToken.None);
 
@@ -166,7 +167,7 @@ public sealed class UpdateApplicationStatusCommandHandlerTests
 
         UpdateApplicationStatusCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new UpdateApplicationStatusCommand(TestData.ApplicationId, ApplicationStatusDto.Interviewing),
             CancellationToken.None);
 
@@ -188,7 +189,7 @@ public sealed class UpdateApplicationStatusCommandHandlerTests
 
         UpdateApplicationStatusCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new UpdateApplicationStatusCommand(TestData.ApplicationId, ApplicationStatusDto.Applied),
             CancellationToken.None);
 
@@ -219,7 +220,7 @@ public sealed class DeleteApplicationCommandHandlerTests
 
         DeleteApplicationCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result result = await handler.Handle(
             new DeleteApplicationCommand(TestData.ApplicationId),
             CancellationToken.None);
 
@@ -239,7 +240,7 @@ public sealed class DeleteApplicationCommandHandlerTests
 
         DeleteApplicationCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result result = await handler.Handle(
             new DeleteApplicationCommand(TestData.ApplicationId),
             CancellationToken.None);
 
@@ -279,7 +280,7 @@ public sealed class SaveGeneratedResumeCommandHandlerTests
 
         SaveGeneratedResumeCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new SaveGeneratedResumeCommand(TestData.ApplicationId, TestData.GeneratedResume()),
             CancellationToken.None);
 
@@ -301,7 +302,7 @@ public sealed class SaveGeneratedResumeCommandHandlerTests
 
         SaveGeneratedResumeCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new SaveGeneratedResumeCommand(TestData.ApplicationId, TestData.GeneratedResume()),
             CancellationToken.None);
 
@@ -377,7 +378,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             ClientContext(),
             new TestTimeProvider(TestData.Now));
 
-        var result = await handler.Handle(
+        Result<ApplicationDto> result = await handler.Handle(
             new GenerateCoverLetterCommand(TestData.ApplicationId),
             CancellationToken.None);
 

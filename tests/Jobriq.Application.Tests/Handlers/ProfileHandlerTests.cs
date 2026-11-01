@@ -11,6 +11,7 @@ using Jobriq.Domain.Applications;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
+using Jobriq.SharedKernel;
 using NSubstitute;
 using Shouldly;
 
@@ -25,7 +26,7 @@ public sealed class SaveProfileCommandHandlerTests
 
         SaveProfileCommandHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(
+        Result<ProfileDto> result = await handler.Handle(
             new SaveProfileCommand(TestData.Profile()),
             CancellationToken.None);
 
@@ -80,7 +81,7 @@ public sealed class ReviewProfileCommandHandlerTests
 
         ReviewProfileCommandHandler handler = new(aiService);
 
-        var result = await handler.Handle(
+        Result<ReviewProfileResponse> result = await handler.Handle(
             new ReviewProfileCommand(TestData.Profile()),
             CancellationToken.None);
 
@@ -117,7 +118,7 @@ public sealed class GetStateQueryHandlerTests
 
         GetStateQueryHandler handler = new(repository, ClientContext());
 
-        var result = await handler.Handle(new GetStateQuery(), CancellationToken.None);
+        Result<StateDto> result = await handler.Handle(new GetStateQuery(), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Profile.SummaryType.ShouldBe(SummaryTypeDto.Professional);
@@ -147,7 +148,7 @@ public sealed class ExportCoverLetterQueryHandlerTests
             exporter,
             new TestTimeProvider(TestData.Now));
 
-        var result = await handler.Handle(
+        Result<ExportedFile> result = await handler.Handle(
             new ExportCoverLetterQuery(TestData.CoverLetter()),
             CancellationToken.None);
 
