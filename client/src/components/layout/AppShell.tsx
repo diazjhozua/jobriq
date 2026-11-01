@@ -7,9 +7,9 @@ import { Logo } from './Logo'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative inline-flex h-[4.25rem] items-center px-2 text-[0.82rem] font-medium tracking-[0.01em] transition-colors sm:px-3',
+    'relative inline-flex h-[4.25rem] items-center px-1.5 text-[0.82rem] font-medium tracking-[0.01em] transition-colors sm:px-3',
     isActive
-      ? 'text-navy after:absolute after:inset-x-2 after:bottom-0 after:h-[2px] after:bg-accent sm:after:inset-x-3'
+      ? 'text-navy after:absolute after:inset-x-1.5 after:bottom-0 after:h-[2px] after:bg-accent sm:after:inset-x-3'
       : 'text-muted hover:text-navy',
   )
 
@@ -22,19 +22,19 @@ export function AppShell() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-canvas/95 backdrop-blur-sm">
         <div className="h-[3px] bg-primary" aria-hidden="true" />
-        <div className={cn(shellWidth, 'flex h-[4.25rem] items-center justify-between gap-6')}>
+        <div className={cn(shellWidth, 'flex h-[4.25rem] items-center justify-between gap-4 sm:gap-6')}>
           <Link to="/profile" aria-label="Jobriq" className="flex items-center">
             <Logo className="h-9 w-9 shrink-0" />
             <span
               aria-hidden="true"
-              className="font-display text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-navy"
+              className="hidden font-display text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-navy sm:inline"
             >
               obriq
             </span>
           </Link>
 
           <nav aria-label="Main">
-            <ul className="flex items-center gap-1 sm:gap-2">
+            <ul className="flex items-center gap-0.5 sm:gap-2">
               <li>
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
@@ -43,6 +43,11 @@ export function AppShell() {
               <li>
                 <NavLink to="/applications" className={navLinkClass}>
                   Applications
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/settings" className={navLinkClass}>
+                  Settings
                 </NavLink>
               </li>
             </ul>
