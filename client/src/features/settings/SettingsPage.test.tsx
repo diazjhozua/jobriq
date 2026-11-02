@@ -4,6 +4,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
 import { installMockApi } from '../../test/mockApi'
+import {
+  CLASSIC_THEME_ID,
+  MODERN_THEME_ID,
+  stateWithThemes,
+} from '../../test/resumeThemes'
 import { JobriqProvider, useJobriq } from '../../providers/JobriqProvider'
 import { SettingsPage } from './SettingsPage'
 
@@ -40,6 +45,31 @@ async function createStyle(name: string, instructions: string) {
   await user.click(
     within(dialog).getByRole('button', { name: 'Create prompt style' }),
   )
+
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+}
+
+function themeCard(name: string): HTMLElement {
+  const heading = screen.getByRole('heading', { name })
+  const card = heading.closest('li')
+
+  if (!card) {
+    throw new Error(`No theme card found for ${name}.`)
+  }
+
+  return card
+}
+
+async function createTheme(name: string) {
+  const user = userEvent.setup()
+
+  await user.click(screen.getByRole('button', { name: 'New theme' }))
+  const dialog = await screen.findByRole('dialog')
+
+  await user.type(within(dialog).getByLabelText('Name'), name)
+  await user.click(within(dialog).getByRole('button', { name: 'Create theme' }))
 
   await waitFor(() => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -199,5 +229,160 @@ describe('SettingsPage', () => {
         'Jobriq writes in a plain, professional voice and uses only the details you already wrote.',
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('SettingsPage resume themes', () => {
+  it('shows the built-in themes with the active one marked read-only', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    expect(
+      screen.getByRole('heading', { name: 'Built-in themes' }),
+    ).toBeInTheDocument()
+
+    const classic = themeCard('Classic')
+    expect(within(classic).getByText('Active')).toBeInTheDocument()
+    expect(within(classic).getByText('Read-only')).toBeInTheDocument()
+    expect(within(classic).getByText('Jane Doe')).toHaveStyle({
+      fontFamily: 'Calibri',
+    })
+    expect(
+      within(classic).queryByRole('button', { name: 'Edit Classic' }),
+    ).not.toBeInTheDocument()
+
+    const modern = themeCard('Modern')
+    expect(within(modern).queryByText('Active')).not.toBeInTheDocument()
+    expect(
+      within(modern).getByRole('button', { name: 'Set active Modern' }),
+    ).toBeInTheDocument()
+    expect(within(modern).getByText('Jane Doe')).toHaveStyle({
+      fontFamily: 'Segoe UI',
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'No saved themes yet' }),
+    ).toBeInTheDocument()
+  })
+
+  it('activates a built-in theme', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Set active Modern' }))
+
+    await waitFor(() => {
+      expect(api.state.resumeThemes.activeThemeId).toBe(MODERN_THEME_ID)
+    })
+
+    expect(within(themeCard('Modern')).getByText('Active')).toBeInTheDocument()
+    expect(
+      within(themeCard('Classic')).queryByText('Active'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('creates a custom theme without activating it', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await createTheme('Warm serif')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Warm serif' }),
+    ).toBeInTheDocument()
+
+    const card = themeCard('Warm serif')
+    expect(within(card).queryByText('Active')).not.toBeInTheDocument()
+    expect(
+      within(card).getByRole('button', { name: 'Set active Warm serif' }),
+    ).toBeInTheDocument()
+
+    expect(api.state.resumeThemes.themes).toHaveLength(1)
+    expect(api.state.resumeThemes.themes[0]?.name).toBe('Warm serif')
+    expect(api.state.resumeThemes.activeThemeId).toBe(CLASSIC_THEME_ID)
+  })
+
+  it('edits a custom theme', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await createTheme('Warm serif')
+
+    await userEvent
+      .setup()
+      .click(
+        within(themeCard('Warm serif')).getByRole('button', {
+          name: 'Edit Warm serif',
+        }),
+      )
+
+    const dialog = await screen.findByRole('dialog')
+    const name = within(dialog).getByLabelText('Name')
+    await userEvent.setup().clear(name)
+    await userEvent.setup().type(name, 'Warmer serif')
+    await userEvent
+      .setup()
+      .click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Warmer serif' }),
+    ).toBeInTheDocument()
+    expect(api.state.resumeThemes.themes[0]?.name).toBe('Warmer serif')
+  })
+
+  it('falls back to Classic when the active custom theme is deleted', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await createTheme('Warm serif')
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Set active Warm serif' }))
+
+    await waitFor(() => {
+      expect(api.state.resumeThemes.activeThemeId).not.toBe(CLASSIC_THEME_ID)
+    })
+
+    await userEvent
+      .setup()
+      .click(
+        within(themeCard('Warm serif')).getByRole('button', {
+          name: 'Delete Warm serif',
+        }),
+      )
+
+    const confirm = await screen.findByRole('alertdialog')
+    await userEvent
+      .setup()
+      .click(within(confirm).getByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => {
+      expect(api.state.resumeThemes.themes).toHaveLength(0)
+    })
+
+    expect(api.state.resumeThemes.activeThemeId).toBe(CLASSIC_THEME_ID)
+    expect(within(themeCard('Classic')).getByText('Active')).toBeInTheDocument()
+  })
+
+  it('rejects a theme name that collides with a built-in', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'New theme' }))
+    const dialog = await screen.findByRole('dialog')
+
+    await user.type(within(dialog).getByLabelText('Name'), 'modern')
+    await user.click(within(dialog).getByRole('button', { name: 'Create theme' }))
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'A resume theme named "modern" already exists.',
+    )
   })
 })

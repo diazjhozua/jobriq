@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { createEmptyState } from '../lib/defaults'
+import { createEmptyState, DEFAULT_RESUME_THEME_ID } from '../lib/defaults'
 import type {
   ApplicationStatus,
   CoverLetter,
@@ -8,6 +8,8 @@ import type {
   JobriqState,
   Profile,
   ProfileReview,
+  ResumeTheme,
+  ResumeThemeStyles,
   ReviewSuggestion,
 } from '../lib/types'
 
@@ -27,6 +29,10 @@ type Operation =
   | 'promptStyleUpdate'
   | 'promptStyleDelete'
   | 'promptStyleActivate'
+  | 'resumeThemeCreate'
+  | 'resumeThemeUpdate'
+  | 'resumeThemeDelete'
+  | 'resumeThemeActivate'
 
 export interface MockFailure {
   status?: number
@@ -64,6 +70,36 @@ export function installMockApi({
   const current = structuredClone(state)
   const calls: Call[] = []
 
+  const snapshotThemes = () => {
+    const active = current.resumeThemes.activeThemeId
+
+    return {
+      themes: current.resumeThemes.themes.map((theme) => ({
+        ...theme,
+        isActive: theme.id === active,
+      })),
+      builtIns: current.resumeThemes.builtIns.map((theme) => ({
+        ...theme,
+        isActive: theme.id === active,
+      })),
+      activeThemeId: active,
+    }
+  }
+
+  const themeNameTaken = (name: string, exceptId?: string) => {
+    const normalized = name.toLowerCase()
+
+    return (
+      current.resumeThemes.builtIns.some(
+        (theme) => theme.name.toLowerCase() === normalized,
+      ) ||
+      current.resumeThemes.themes.some(
+        (theme) =>
+          theme.id !== exceptId && theme.name.toLowerCase() === normalized,
+      )
+    )
+  }
+
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const rawUrl =
       typeof input === 'string'
@@ -92,6 +128,7 @@ export function installMockApi({
         applications: current.applications,
         standaloneResume: current.standaloneResume,
         promptStyles: current.promptStyles,
+        resumeThemes: current.resumeThemes,
       })
     }
 
@@ -211,6 +248,125 @@ export function installMockApi({
       }
 
       return json(current.promptStyles)
+    }
+
+    if (path === '/api/resume-themes' && method === 'POST') {
+      const name = String(body?.name ?? '').trim()
+
+      if (themeNameTaken(name)) {
+        return problem({
+          status: 409,
+          detail: `A resume theme named "${name}" already exists.`,
+          code: 'resume_theme_name_conflict',
+        })
+      }
+
+      const now = new Date().toISOString()
+      const theme: ResumeTheme = {
+        id: crypto.randomUUID(),
+        name,
+        styles: body?.styles as ResumeThemeStyles,
+        isActive: false,
+        isBuiltIn: false,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      current.resumeThemes.themes.push(theme)
+      return json(snapshotThemes(), 201)
+    }
+
+    const resumeThemeActivateMatch =
+      /^\/api\/resume-themes\/([^/]+)\/activate$/.exec(path)
+    if (resumeThemeActivateMatch && method === 'POST') {
+      const id = decodeURIComponent(resumeThemeActivateMatch[1])
+      const exists =
+        current.resumeThemes.themes.some((theme) => theme.id === id) ||
+        current.resumeThemes.builtIns.some((theme) => theme.id === id)
+
+      if (!exists) {
+        return problem({
+          status: 404,
+          detail: 'The resume theme was not found.',
+          code: 'resume_theme_not_found',
+        })
+      }
+
+      current.resumeThemes.activeThemeId = id
+      return json(snapshotThemes())
+    }
+
+    const resumeThemeMatch = /^\/api\/resume-themes\/([^/]+)$/.exec(path)
+    if (resumeThemeMatch && method === 'PUT') {
+      const id = decodeURIComponent(resumeThemeMatch[1])
+
+      if (current.resumeThemes.builtIns.some((theme) => theme.id === id)) {
+        return problem({
+          status: 409,
+          detail: 'Built-in resume themes cannot be changed.',
+          code: 'resume_theme_read_only',
+        })
+      }
+
+      const theme = current.resumeThemes.themes.find(
+        (candidate) => candidate.id === id,
+      )
+
+      if (!theme) {
+        return problem({
+          status: 404,
+          detail: 'The resume theme was not found.',
+          code: 'resume_theme_not_found',
+        })
+      }
+
+      const name = String(body?.name ?? theme.name).trim()
+
+      if (themeNameTaken(name, id)) {
+        return problem({
+          status: 409,
+          detail: `A resume theme named "${name}" already exists.`,
+          code: 'resume_theme_name_conflict',
+        })
+      }
+
+      theme.name = name
+      theme.styles =
+        (body?.styles as ResumeThemeStyles | undefined) ?? theme.styles
+      theme.updatedAt = new Date().toISOString()
+      return json(snapshotThemes())
+    }
+
+    if (resumeThemeMatch && method === 'DELETE') {
+      const id = decodeURIComponent(resumeThemeMatch[1])
+
+      if (current.resumeThemes.builtIns.some((theme) => theme.id === id)) {
+        return problem({
+          status: 409,
+          detail: 'Built-in resume themes cannot be deleted.',
+          code: 'resume_theme_read_only',
+        })
+      }
+
+      const index = current.resumeThemes.themes.findIndex(
+        (theme) => theme.id === id,
+      )
+
+      if (index === -1) {
+        return problem({
+          status: 404,
+          detail: 'The resume theme was not found.',
+          code: 'resume_theme_not_found',
+        })
+      }
+
+      current.resumeThemes.themes.splice(index, 1)
+
+      if (current.resumeThemes.activeThemeId === id) {
+        current.resumeThemes.activeThemeId = DEFAULT_RESUME_THEME_ID
+      }
+
+      return json(snapshotThemes())
     }
 
     if (path === '/api/profile' && method === 'PUT') {
@@ -425,6 +581,22 @@ function operationFor(path: string, method: string): Operation | null {
 
   if (path === '/api/cover-letter/export') {
     return 'coverLetterExport'
+  }
+
+  if (path === '/api/resume-themes' && method === 'POST') {
+    return 'resumeThemeCreate'
+  }
+
+  if (path.startsWith('/api/resume-themes/') && path.endsWith('/activate')) {
+    return 'resumeThemeActivate'
+  }
+
+  if (path.startsWith('/api/resume-themes/') && method === 'PUT') {
+    return 'resumeThemeUpdate'
+  }
+
+  if (path.startsWith('/api/resume-themes/') && method === 'DELETE') {
+    return 'resumeThemeDelete'
   }
 
   if (path === '/api/prompt-styles' && method === 'POST') {
