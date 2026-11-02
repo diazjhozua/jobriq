@@ -6,6 +6,22 @@ function styleItem(page: Page, name: string) {
   })
 }
 
+function themeItem(page: Page, name: string) {
+  return page.locator('li', {
+    has: page.getByRole('heading', { name, exact: true }),
+  })
+}
+
+async function createTheme(page: Page, name: string) {
+  await page.getByRole('button', { name: 'New theme' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name', { exact: true }).fill(name)
+  await dialog.getByRole('button', { name: 'Create theme' }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
+}
+
 async function createStyle(page: Page, name: string, instructions: string) {
   await page.getByRole('button', { name: 'New prompt style' }).click()
   const dialog = page.getByRole('dialog')
@@ -95,5 +111,81 @@ test('switches the active style and falls back to the baseline on delete', async
     styleItem(page, 'Warm voice').getByRole('button', {
       name: 'Set active Warm voice',
     }),
+  ).toBeVisible()
+})
+
+test('creates a resume theme and keeps the active design across reloads', async ({
+  page,
+}) => {
+  await page.goto('/settings')
+
+  const builtIn = page.getByRole('region', { name: 'Built-in themes' })
+  await expect(builtIn).toBeVisible()
+  for (const name of ['Classic', 'Modern', 'Compact', 'Editorial', 'Monochrome']) {
+    await expect(
+      builtIn.getByRole('heading', { name, exact: true }),
+    ).toBeVisible()
+  }
+
+  const classic = themeItem(page, 'Classic')
+  await expect(classic.getByText('Active', { exact: true })).toBeVisible()
+  await expect(classic.getByText('Read-only', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'No saved themes yet' }),
+  ).toBeVisible()
+
+  await createTheme(page, 'Warm serif')
+
+  const saved = page.getByRole('region', { name: 'Your themes' })
+  await expect(
+    saved.getByRole('heading', { name: 'Warm serif', exact: true }),
+  ).toBeVisible()
+  await expect(themeItem(page, 'Warm serif').getByText('Active', { exact: true })).toHaveCount(0)
+
+  await themeItem(page, 'Warm serif')
+    .getByRole('button', { name: 'Set active Warm serif' })
+    .click()
+  await expect(
+    themeItem(page, 'Warm serif').getByText('Active', { exact: true }),
+  ).toBeVisible()
+  await expect(classic.getByText('Active', { exact: true })).toHaveCount(0)
+
+  await page.reload()
+  await expect(
+    themeItem(page, 'Warm serif').getByText('Active', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    themeItem(page, 'Classic').getByText('Active', { exact: true }),
+  ).toHaveCount(0)
+})
+
+test('falls back to Classic when the active custom theme is deleted', async ({
+  page,
+}) => {
+  await page.goto('/settings')
+
+  await createTheme(page, 'Warm serif')
+  await themeItem(page, 'Warm serif')
+    .getByRole('button', { name: 'Set active Warm serif' })
+    .click()
+  await expect(
+    themeItem(page, 'Warm serif').getByText('Active', { exact: true }),
+  ).toBeVisible()
+
+  await themeItem(page, 'Warm serif')
+    .getByRole('button', { name: 'Delete Warm serif' })
+    .click()
+  const confirm = page.getByRole('alertdialog')
+  await confirm.getByRole('button', { name: 'Delete' }).click()
+
+  await expect(confirm).toBeHidden()
+  await expect(
+    page.getByRole('heading', { name: 'Warm serif', exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    themeItem(page, 'Classic').getByText('Active', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'No saved themes yet' }),
   ).toBeVisible()
 })
