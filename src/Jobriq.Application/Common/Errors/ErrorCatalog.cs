@@ -18,6 +18,19 @@ public static class ErrorCatalog
             "prompt_style_name_conflict",
             $"A prompt style named \"{name.Trim()}\" already exists.");
 
+    public static Error ResumeThemeNotFound() =>
+        Error.NotFound("resume_theme_not_found", "The resume theme was not found.");
+
+    public static Error ResumeThemeNameConflict(string name) =>
+        Error.Conflict(
+            "resume_theme_name_conflict",
+            $"A resume theme named \"{name.Trim()}\" already exists.");
+
+    public static Error ResumeThemeReadOnly() =>
+        Error.Conflict(
+            "resume_theme_read_only",
+            "Built-in resume themes cannot be edited or deleted.");
+
     public static Error MissingApiKey() =>
         Error.Unavailable(
             "missing_api_key",

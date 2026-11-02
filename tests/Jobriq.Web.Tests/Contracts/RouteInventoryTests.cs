@@ -10,6 +10,7 @@ public sealed class RouteInventoryTests
     [
         "DELETE /api/applications/{id:guid}",
         "DELETE /api/prompt-styles/{id:guid}",
+        "DELETE /api/resume-themes/{id:guid}",
         "GET /api/state",
         "PATCH /api/applications/{id:guid}/status",
         "POST /api/applications",
@@ -19,12 +20,15 @@ public sealed class RouteInventoryTests
         "POST /api/profile/review",
         "POST /api/prompt-styles",
         "POST /api/prompt-styles/{id:guid}/activate",
+        "POST /api/resume-themes",
+        "POST /api/resume-themes/{id:guid}/activate",
         "POST /api/resume/export",
         "POST /api/resume/generate",
         "PUT /api/applications/{id:guid}",
         "PUT /api/applications/{id:guid}/generated-resume",
         "PUT /api/profile",
-        "PUT /api/prompt-styles/{id:guid}"
+        "PUT /api/prompt-styles/{id:guid}",
+        "PUT /api/resume-themes/{id:guid}"
     ];
 
     [Fact]

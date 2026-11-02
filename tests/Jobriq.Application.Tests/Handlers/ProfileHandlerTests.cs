@@ -8,6 +8,7 @@ using Jobriq.Application.Resumes.ExportResume;
 using Jobriq.Application.State.GetState;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
@@ -142,10 +143,11 @@ public sealed class ExportCoverLetterQueryHandlerTests
         ICoverLetterExporter exporter = Substitute.For<ICoverLetterExporter>();
         exporter.FileExtension.Returns(".docx");
         exporter.ContentType.Returns("application/octet-stream");
-        exporter.Export(Arg.Any<CoverLetter>()).Returns([1, 2, 3]);
+        exporter.Export(Arg.Any<CoverLetter>(), Arg.Any<ResumeThemeDefinition>()).Returns([1, 2, 3]);
 
         ExportCoverLetterQueryHandler handler = new(
             exporter,
+            TestData.ThemeResolver(),
             new TestTimeProvider(TestData.Now));
 
         Result<ExportedFile> result = await handler.Handle(
@@ -162,11 +164,14 @@ public sealed class ExportCoverLetterQueryHandlerTests
         ICoverLetterExporter exporter = Substitute.For<ICoverLetterExporter>();
         exporter.FileExtension.Returns(".docx");
         exporter
-            .When(candidate => candidate.Export(Arg.Any<CoverLetter>()))
+            .When(candidate => candidate.Export(
+                Arg.Any<CoverLetter>(),
+                Arg.Any<ResumeThemeDefinition>()))
             .Throw(new InvalidOperationException("Boom."));
 
         ExportCoverLetterQueryHandler handler = new(
             exporter,
+            TestData.ThemeResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<ExportFailedException>(async () =>

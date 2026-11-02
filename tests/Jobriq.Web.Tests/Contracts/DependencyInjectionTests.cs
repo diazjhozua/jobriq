@@ -13,6 +13,10 @@ using Jobriq.Application.PromptStyles.Activate;
 using Jobriq.Application.PromptStyles.Create;
 using Jobriq.Application.PromptStyles.Delete;
 using Jobriq.Application.PromptStyles.Update;
+using Jobriq.Application.ResumeThemes.Activate;
+using Jobriq.Application.ResumeThemes.Create;
+using Jobriq.Application.ResumeThemes.Delete;
+using Jobriq.Application.ResumeThemes.Update;
 using Jobriq.Application.Resumes.Export;
 using Jobriq.Application.Resumes.ExportResume;
 using Jobriq.Application.Resumes.Generate;
@@ -49,6 +53,10 @@ public sealed class DependencyInjectionTests
         services.GetRequiredService<ICommandHandler<UpdatePromptStyleCommand, PromptStylesDto>>();
         services.GetRequiredService<ICommandHandler<DeletePromptStyleCommand, PromptStylesDto>>();
         services.GetRequiredService<ICommandHandler<ActivatePromptStyleCommand, PromptStylesDto>>();
+        services.GetRequiredService<ICommandHandler<CreateResumeThemeCommand, ResumeThemesDto>>();
+        services.GetRequiredService<ICommandHandler<UpdateResumeThemeCommand, ResumeThemesDto>>();
+        services.GetRequiredService<ICommandHandler<DeleteResumeThemeCommand, ResumeThemesDto>>();
+        services.GetRequiredService<ICommandHandler<ActivateResumeThemeCommand, ResumeThemesDto>>();
 
         true.ShouldBeTrue();
     }

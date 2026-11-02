@@ -18,7 +18,8 @@ public static class StateMappings
             StandaloneResume = state.StandaloneResume is null
                 ? null
                 : ResumeMappings.ToDto(state.StandaloneResume),
-            PromptStyles = PromptStyleMappings.ToDto(state.PromptStyles)
+            PromptStyles = PromptStyleMappings.ToDto(state.PromptStyles),
+            ResumeThemes = ResumeThemeMappings.ToDto(state.ResumeThemes)
         };
     }
 }

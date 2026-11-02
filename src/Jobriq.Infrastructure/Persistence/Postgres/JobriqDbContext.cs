@@ -11,11 +11,17 @@ public sealed class JobriqDbContext(DbContextOptions<JobriqDbContext> options) :
 
     internal DbSet<PromptStyleRow> PromptStyles => Set<PromptStyleRow>();
 
+    internal DbSet<ResumeThemeRow> ResumeThemes => Set<ResumeThemeRow>();
+
+    internal DbSet<ResumeThemeSettingsRow> ResumeThemeSettings => Set<ResumeThemeSettingsRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProfileRow>();
         modelBuilder.Entity<ApplicationRow>();
         modelBuilder.Entity<PromptStyleRow>();
+        modelBuilder.Entity<ResumeThemeRow>();
+        modelBuilder.Entity<ResumeThemeSettingsRow>();
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JobriqDbContext).Assembly);
         modelBuilder.HasDefaultSchema("public");
     }

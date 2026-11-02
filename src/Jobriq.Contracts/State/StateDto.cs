@@ -9,4 +9,6 @@ public sealed class StateDto
     public GeneratedResumeDto? StandaloneResume { get; set; }
 
     public PromptStylesDto PromptStyles { get; set; } = new();
+
+    public ResumeThemesDto ResumeThemes { get; set; } = new();
 }

@@ -1,5 +1,6 @@
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 using Jobriq.Infrastructure.Persistence.Postgres;
@@ -526,6 +527,159 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         (await repository.GetStateAsync(clientId, CancellationToken.None))
             .PromptStyles.Styles.Single().Instructions.ShouldBe("Be plain.");
     }
+
+    [Fact]
+    public async Task ResumeThemes_AreClientScopedAndRoundTrip()
+    {
+        Guid clientId = Guid.NewGuid();
+        Guid otherClientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        ResumeTheme theme = ResumeTheme.Create("My theme", CreateThemeStyles(), now);
+        await repository.AddResumeThemeAsync(clientId, theme, CancellationToken.None);
+
+        JobriqState state = await repository.GetStateAsync(clientId, CancellationToken.None);
+
+        state.ResumeThemes.Themes.ShouldHaveSingleItem().Name.ShouldBe("My theme");
+        state.ResumeThemes.Themes.Single().Styles.BodyFont.ShouldBe("Georgia");
+        state.ResumeThemes.Themes.Single().Styles.ShowRules.ShouldBeFalse();
+        state.ResumeThemes.ActiveThemeId.ShouldBeNull();
+        state.ResumeThemes.ResolveActiveDefinition().ShouldBe(ResumeThemeCatalog.Classic);
+
+        JobriqState otherState = await repository.GetStateAsync(otherClientId, CancellationToken.None);
+        otherState.ResumeThemes.Themes.ShouldBeEmpty();
+
+        ResumeTheme? loaded = await repository.GetResumeThemeAsync(
+            clientId,
+            theme.Id,
+            CancellationToken.None);
+        loaded.ShouldNotBeNull().CreatedAt.ShouldBe(now);
+
+        (await repository.GetResumeThemeAsync(otherClientId, theme.Id, CancellationToken.None))
+            .ShouldBeNull();
+
+        bool deleted = await repository.DeleteResumeThemeAsync(
+            clientId,
+            theme.Id,
+            CancellationToken.None);
+
+        deleted.ShouldBeTrue();
+        (await repository.GetStateAsync(clientId, CancellationToken.None))
+            .ResumeThemes.Themes.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ActivateResumeTheme_PersistsBuiltInAndCustomThemes()
+    {
+        Guid clientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        bool builtInActivated = await repository.ActivateResumeThemeAsync(
+            clientId,
+            ResumeThemeCatalog.ModernId,
+            CancellationToken.None);
+        builtInActivated.ShouldBeTrue();
+
+        (await repository.GetStateAsync(clientId, CancellationToken.None))
+            .ResumeThemes.ActiveThemeId.ShouldBe(ResumeThemeCatalog.ModernId);
+
+        ResumeTheme theme = ResumeTheme.Create("My theme", CreateThemeStyles(), now);
+        await repository.AddResumeThemeAsync(clientId, theme, CancellationToken.None);
+
+        bool customActivated = await repository.ActivateResumeThemeAsync(
+            clientId,
+            theme.Id,
+            CancellationToken.None);
+        customActivated.ShouldBeTrue();
+
+        JobriqState state = await repository.GetStateAsync(clientId, CancellationToken.None);
+        state.ResumeThemes.ActiveThemeId.ShouldBe(theme.Id);
+        state.ResumeThemes.ResolveActiveDefinition().Name.ShouldBe("My theme");
+
+        bool missing = await repository.ActivateResumeThemeAsync(
+            clientId,
+            Guid.NewGuid(),
+            CancellationToken.None);
+        missing.ShouldBeFalse();
+
+        ResumeTheme foreign = ResumeTheme.Create("Foreign", CreateThemeStyles(), now);
+        Guid otherClientId = Guid.NewGuid();
+        await repository.AddResumeThemeAsync(otherClientId, foreign, CancellationToken.None);
+
+        bool foreignActivation = await repository.ActivateResumeThemeAsync(
+            clientId,
+            foreign.Id,
+            CancellationToken.None);
+        foreignActivation.ShouldBeFalse();
+
+        await repository.DeleteResumeThemeAsync(clientId, theme.Id, CancellationToken.None);
+
+        JobriqState afterDelete = await repository.GetStateAsync(clientId, CancellationToken.None);
+        afterDelete.ResumeThemes.ActiveThemeId.ShouldBeNull();
+        afterDelete.ResumeThemes.ResolveActiveDefinition().ShouldBe(ResumeThemeCatalog.Classic);
+    }
+
+    [Fact]
+    public async Task ResumeThemeNameExists_IsCaseInsensitiveAndExcludesSelf()
+    {
+        Guid clientId = Guid.NewGuid();
+        Guid otherClientId = Guid.NewGuid();
+        DateTimeOffset now = new(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        ResumeTheme theme = ResumeTheme.Create("My Theme", CreateThemeStyles(), now);
+        await repository.AddResumeThemeAsync(clientId, theme, CancellationToken.None);
+
+        (await repository.ResumeThemeNameExistsAsync(
+            clientId,
+            "  my theme ",
+            null,
+            CancellationToken.None)).ShouldBeTrue();
+
+        (await repository.ResumeThemeNameExistsAsync(
+            clientId,
+            "my theme",
+            theme.Id,
+            CancellationToken.None)).ShouldBeFalse();
+
+        (await repository.ResumeThemeNameExistsAsync(
+            otherClientId,
+            "my theme",
+            null,
+            CancellationToken.None)).ShouldBeFalse();
+
+        theme.UpdateDetails("Renamed", CreateThemeStyles(), now.AddMinutes(1));
+        ResumeTheme? saved = await repository.SaveResumeThemeAsync(
+            clientId,
+            theme,
+            CancellationToken.None);
+
+        saved.ShouldNotBeNull().Name.ShouldBe("Renamed");
+        (await repository.GetStateAsync(clientId, CancellationToken.None))
+            .ResumeThemes.Themes.Single().Name.ShouldBe("Renamed");
+    }
+
+    private static ResumeThemeStyles CreateThemeStyles() => new(
+        nameFont: "Cambria",
+        bodyFont: "Georgia",
+        textColor: "#112233",
+        mutedColor: "#445566",
+        headingColor: "#778899",
+        ruleColor: "#AABBCC",
+        bodySize: 11,
+        smallSize: 10,
+        headingSize: 13,
+        nameSize: 20,
+        pageMargin: 54,
+        showRules: false);
 
     private static CoverLetter CreateCoverLetter() => new()
     {

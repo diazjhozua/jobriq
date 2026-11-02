@@ -158,6 +158,65 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
 
                     b.ToTable("prompt_styles", "public");
                 });
+
+            modelBuilder.Entity("Jobriq.Infrastructure.Persistence.Postgres.Rows.ResumeThemeRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("StylesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("styles");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resume_themes");
+
+                    b.HasIndex("ClientId", "CreatedAt")
+                        .HasDatabaseName("ix_resume_themes_client_created");
+
+                    b.ToTable("resume_themes", "public");
+                });
+
+            modelBuilder.Entity("Jobriq.Infrastructure.Persistence.Postgres.Rows.ResumeThemeSettingsRow", b =>
+                {
+                    b.Property<Guid>("ClientId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<Guid?>("ActiveThemeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("active_theme_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("ClientId")
+                        .HasName("pk_resume_theme_settings");
+
+                    b.ToTable("resume_theme_settings", "public");
+                });
 #pragma warning restore 612, 618
         }
     }

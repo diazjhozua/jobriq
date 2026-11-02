@@ -35,6 +35,122 @@
       },
       "styles": []
     },
+    "resumeThemes": {
+      "activeThemeId": "<guid>",
+      "builtIns": [
+        {
+          "createdAt": null,
+          "id": "<guid>",
+          "isActive": true,
+          "isBuiltIn": true,
+          "name": "Classic",
+          "styles": {
+            "bodyFont": "Calibri",
+            "bodySize": 11,
+            "headingColor": "#1A1A1A",
+            "headingSize": 13,
+            "mutedColor": "#666666",
+            "nameFont": "Calibri",
+            "nameSize": 18,
+            "pageMargin": 72,
+            "ruleColor": "#CCCCCC",
+            "showRules": true,
+            "smallSize": 10,
+            "textColor": "#1A1A1A"
+          },
+          "updatedAt": null
+        },
+        {
+          "createdAt": null,
+          "id": "<guid>",
+          "isActive": false,
+          "isBuiltIn": true,
+          "name": "Modern",
+          "styles": {
+            "bodyFont": "Segoe UI",
+            "bodySize": 10,
+            "headingColor": "#102A43",
+            "headingSize": 12,
+            "mutedColor": "#616E7C",
+            "nameFont": "Segoe UI",
+            "nameSize": 20,
+            "pageMargin": 72,
+            "ruleColor": "#BCCCDC",
+            "showRules": true,
+            "smallSize": 9,
+            "textColor": "#1F2933"
+          },
+          "updatedAt": null
+        },
+        {
+          "createdAt": null,
+          "id": "<guid>",
+          "isActive": false,
+          "isBuiltIn": true,
+          "name": "Compact",
+          "styles": {
+            "bodyFont": "Arial",
+            "bodySize": 10,
+            "headingColor": "#202124",
+            "headingSize": 11,
+            "mutedColor": "#5F6368",
+            "nameFont": "Arial",
+            "nameSize": 16,
+            "pageMargin": 54,
+            "ruleColor": "#DADCE0",
+            "showRules": true,
+            "smallSize": 9,
+            "textColor": "#202124"
+          },
+          "updatedAt": null
+        },
+        {
+          "createdAt": null,
+          "id": "<guid>",
+          "isActive": false,
+          "isBuiltIn": true,
+          "name": "Editorial",
+          "styles": {
+            "bodyFont": "Cambria",
+            "bodySize": 11,
+            "headingColor": "#1F3A5F",
+            "headingSize": 13,
+            "mutedColor": "#6B6B6B",
+            "nameFont": "Georgia",
+            "nameSize": 20,
+            "pageMargin": 72,
+            "ruleColor": "#C9B99A",
+            "showRules": true,
+            "smallSize": 10,
+            "textColor": "#2B2B2B"
+          },
+          "updatedAt": null
+        },
+        {
+          "createdAt": null,
+          "id": "<guid>",
+          "isActive": false,
+          "isBuiltIn": true,
+          "name": "Monochrome",
+          "styles": {
+            "bodyFont": "Times New Roman",
+            "bodySize": 11,
+            "headingColor": "#111111",
+            "headingSize": 12,
+            "mutedColor": "#555555",
+            "nameFont": "Times New Roman",
+            "nameSize": 18,
+            "pageMargin": 72,
+            "ruleColor": "#999999",
+            "showRules": false,
+            "smallSize": 10,
+            "textColor": "#111111"
+          },
+          "updatedAt": null
+        }
+      ],
+      "themes": []
+    },
     "standaloneResume": null
   }
 }

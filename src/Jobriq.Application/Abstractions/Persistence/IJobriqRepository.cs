@@ -1,5 +1,6 @@
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 
@@ -90,5 +91,38 @@ public interface IJobriqRepository
     Task<PromptStyle?> ActivatePromptStyleAsync(
         Guid clientId,
         Guid promptStyleId,
+        CancellationToken cancellationToken);
+
+    Task<ResumeThemeSettings> GetResumeThemesAsync(Guid clientId, CancellationToken cancellationToken);
+
+    Task<ResumeTheme?> GetResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken);
+
+    Task<bool> ResumeThemeNameExistsAsync(
+        Guid clientId,
+        string name,
+        Guid? excludedResumeThemeId,
+        CancellationToken cancellationToken);
+
+    Task<ResumeTheme> AddResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken);
+
+    Task<ResumeTheme?> SaveResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken);
+
+    Task<bool> DeleteResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken);
+
+    Task<bool> ActivateResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
         CancellationToken cancellationToken);
 }

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 using Jobriq.Infrastructure.Persistence.Postgres.Rows;
@@ -40,11 +41,16 @@ internal sealed class PostgresJobriqRepository(
                 clientId,
                 cancellationToken);
 
+            ResumeThemeSettings resumeThemes = await LoadResumeThemeSettingsAsync(
+                clientId,
+                cancellationToken);
+
             return new JobriqState(
                 profile,
                 [.. applicationRows.Select(ToDomain)],
                 standaloneResume,
-                promptStyles);
+                promptStyles,
+                resumeThemes);
         });
 
     public Task SaveProfileAsync(
@@ -404,6 +410,181 @@ internal sealed class PostgresJobriqRepository(
             return row is null ? null : ToDomain(row);
         });
 
+    public Task<ResumeThemeSettings> GetResumeThemesAsync(
+        Guid clientId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(() => LoadResumeThemeSettingsAsync(clientId, cancellationToken));
+
+    public Task<ResumeTheme?> GetResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ResumeThemeRow? row = await dbContext.ResumeThemes
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    candidate => candidate.Id == resumeThemeId && candidate.ClientId == clientId,
+                    cancellationToken);
+
+            return row is null ? null : ToDomain(row);
+        });
+
+    public Task<bool> ResumeThemeNameExistsAsync(
+        Guid clientId,
+        string name,
+        Guid? excludedResumeThemeId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            string normalizedName = name.Trim().ToLowerInvariant();
+
+            IQueryable<ResumeThemeRow> query = dbContext.ResumeThemes
+                .AsNoTracking()
+                .Where(row => row.ClientId == clientId && row.Name.ToLower() == normalizedName);
+
+            if (excludedResumeThemeId is { } excludedId)
+            {
+                query = query.Where(row => row.Id != excludedId);
+            }
+
+            return await query.AnyAsync(cancellationToken);
+        });
+
+    public Task<ResumeTheme> AddResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            dbContext.ResumeThemes.Add(new ResumeThemeRow
+            {
+                Id = theme.Id,
+                ClientId = clientId,
+                Name = theme.Name,
+                StylesJson = Serialize(theme.Styles),
+                CreatedAt = theme.CreatedAt,
+                UpdatedAt = theme.UpdatedAt
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return theme;
+        });
+
+    public Task<ResumeTheme?> SaveResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ResumeThemeRow? row = await FindResumeThemeAsync(clientId, theme.Id, cancellationToken);
+            if (row is null)
+            {
+                return null;
+            }
+
+            row.Name = theme.Name;
+            row.StylesJson = Serialize(theme.Styles);
+            row.UpdatedAt = theme.UpdatedAt;
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDomain(row);
+        });
+
+    public Task<bool> DeleteResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            ResumeThemeRow? row = await FindResumeThemeAsync(clientId, resumeThemeId, cancellationToken);
+            if (row is null)
+            {
+                return false;
+            }
+
+            ResumeThemeSettingsRow? settingsRow = await dbContext.ResumeThemeSettings
+                .SingleOrDefaultAsync(
+                    candidate => candidate.ClientId == clientId,
+                    cancellationToken);
+
+            if (settingsRow?.ActiveThemeId == resumeThemeId)
+            {
+                settingsRow.ActiveThemeId = null;
+                settingsRow.UpdatedAt = timeProvider.GetUtcNow();
+            }
+
+            dbContext.ResumeThemes.Remove(row);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return true;
+        });
+
+    public Task<bool> ActivateResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            if (!ResumeThemeCatalog.IsBuiltIn(resumeThemeId))
+            {
+                bool exists = await dbContext.ResumeThemes
+                    .AsNoTracking()
+                    .AnyAsync(
+                        row => row.Id == resumeThemeId && row.ClientId == clientId,
+                        cancellationToken);
+
+                if (!exists)
+                {
+                    return false;
+                }
+            }
+
+            DateTimeOffset now = timeProvider.GetUtcNow();
+
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                INSERT INTO resume_theme_settings (client_id, active_theme_id, updated_at)
+                VALUES ({clientId}, {resumeThemeId}, {now})
+                ON CONFLICT (client_id) DO UPDATE
+                SET active_theme_id = EXCLUDED.active_theme_id,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                cancellationToken);
+
+            return true;
+        });
+
+    private async Task<ResumeThemeSettings> LoadResumeThemeSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken)
+    {
+        List<ResumeThemeRow> rows = await dbContext.ResumeThemes
+            .AsNoTracking()
+            .Where(row => row.ClientId == clientId)
+            .OrderBy(row => row.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        ResumeThemeSettingsRow? settingsRow = await dbContext.ResumeThemeSettings
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                candidate => candidate.ClientId == clientId,
+                cancellationToken);
+
+        return new ResumeThemeSettings(
+            [.. rows.Select(ToDomain)],
+            settingsRow?.ActiveThemeId);
+    }
+
+    private Task<ResumeThemeRow?> FindResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken) =>
+        dbContext.ResumeThemes.SingleOrDefaultAsync(
+            row => row.Id == resumeThemeId && row.ClientId == clientId,
+            cancellationToken);
+
     private async Task<PromptStyleSettings> LoadPromptStyleSettingsAsync(
         Guid clientId,
         CancellationToken cancellationToken)
@@ -434,6 +615,14 @@ internal sealed class PostgresJobriqRepository(
         dbContext.Applications.SingleOrDefaultAsync(
             row => row.Id == applicationId && row.ClientId == clientId,
             cancellationToken);
+
+    private static ResumeTheme ToDomain(ResumeThemeRow row) =>
+        ResumeTheme.Restore(
+            row.Id,
+            row.Name,
+            Deserialize<ResumeThemeStyles>(row.StylesJson),
+            row.CreatedAt,
+            row.UpdatedAt);
 
     private static PromptStyle ToDomain(PromptStyleRow row) =>
         PromptStyle.Restore(

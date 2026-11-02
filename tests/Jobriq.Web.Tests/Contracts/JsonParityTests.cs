@@ -5,6 +5,7 @@ using Jobriq.Application.Common.Mapping;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
@@ -72,9 +73,12 @@ public sealed class JsonParityTests
         JsonNode? expected = JsonSerializer.SerializeToNode(state, WebJson);
         JsonNode? actual = JsonSerializer.SerializeToNode(StateMappings.ToDto(state), WebJson);
 
-        // Prompt styles carry a display-only baseline in the DTO, asserted separately below.
+        // Prompt styles and resume themes carry display-only built-ins in the DTO,
+        // asserted separately below.
         expected!.AsObject().Remove("promptStyles");
         actual!.AsObject().Remove("promptStyles");
+        expected.AsObject().Remove("resumeThemes");
+        actual.AsObject().Remove("resumeThemes");
 
         JsonNode.DeepEquals(expected, actual).ShouldBeTrue(
             $"DTO drifted from Domain.\nDomain: {expected}\nDTO: {actual}");
@@ -107,6 +111,46 @@ public sealed class JsonParityTests
 
         mapped.ActiveStyleId.ShouldBe(style.Id);
         mapped.Styles.ShouldHaveSingleItem().Name.ShouldBe("Warm voice");
+    }
+
+    [Fact]
+    public void ResumeThemes_Dto_CarriesSavedThemesAndBuiltIns()
+    {
+        ResumeTheme theme = ResumeTheme.Restore(
+            Guid.Parse("aaaaaaaa-9999-9999-9999-999999999999"),
+            "My theme",
+            new ResumeThemeStyles(
+                "Georgia",
+                "Georgia",
+                "#222222",
+                "#666666",
+                "#1F3A5F",
+                "#C9B99A",
+                11,
+                10,
+                13,
+                20,
+                72,
+                true),
+            Timestamp,
+            Timestamp);
+
+        ResumeThemeSettings settings = new([theme], theme.Id);
+
+        ResumeThemesDto dto = ResumeThemeMappings.ToDto(settings);
+
+        dto.ActiveThemeId.ShouldBe(theme.Id);
+        dto.Themes.ShouldHaveSingleItem().IsActive.ShouldBeTrue();
+        dto.Themes[0].IsBuiltIn.ShouldBeFalse();
+        dto.Themes[0].Styles.NameFont.ShouldBe("Georgia");
+        dto.BuiltIns.Count.ShouldBe(ResumeThemeCatalog.BuiltIns.Count);
+        dto.BuiltIns.ShouldAllBe(candidate => candidate.IsBuiltIn && !candidate.IsActive);
+
+        JobriqState state = new(CreateProfile(), [], null, PromptStyleSettings.Empty, settings);
+        ResumeThemesDto mapped = StateMappings.ToDto(state).ResumeThemes;
+
+        mapped.ActiveThemeId.ShouldBe(theme.Id);
+        mapped.Themes.ShouldHaveSingleItem().Name.ShouldBe("My theme");
     }
 
     [Fact]

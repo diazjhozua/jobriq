@@ -2,7 +2,9 @@ using FluentValidation;
 using Jobriq.Application.Abstractions.Behaviors;
 using Jobriq.Application.Abstractions.Messaging;
 using Jobriq.Application.Abstractions.PromptStyles;
+using Jobriq.Application.Abstractions.ResumeThemes;
 using Jobriq.Application.PromptStyles;
+using Jobriq.Application.ResumeThemes;
 using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 
@@ -39,6 +41,7 @@ public static class DependencyInjection
             includeInternalTypes: true);
 
         services.AddScoped<IPromptStyleResolver, PromptStyleResolver>();
+        services.AddScoped<IResumeThemeResolver, ResumeThemeResolver>();
 
         return services;
     }

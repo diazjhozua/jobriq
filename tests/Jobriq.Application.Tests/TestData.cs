@@ -1,6 +1,8 @@
 using Jobriq.Application.Abstractions.PromptStyles;
+using Jobriq.Application.Abstractions.ResumeThemes;
 using Jobriq.Contracts;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using NSubstitute;
 
 namespace Jobriq.Application.Tests;
@@ -19,6 +21,16 @@ internal static class TestData
         resolver
             .ResolveAsync(Arg.Any<CancellationToken>())
             .Returns(style ?? PromptStyleDefinition.BuiltIn);
+
+        return resolver;
+    }
+
+    public static IResumeThemeResolver ThemeResolver(ResumeThemeDefinition? theme = null)
+    {
+        IResumeThemeResolver resolver = Substitute.For<IResumeThemeResolver>();
+        resolver
+            .ResolveAsync(Arg.Any<CancellationToken>())
+            .Returns(theme ?? ResumeThemeCatalog.Default);
 
         return resolver;
     }

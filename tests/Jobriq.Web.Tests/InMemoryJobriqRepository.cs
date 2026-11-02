@@ -1,6 +1,7 @@
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.PromptStyles;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Domain.State;
 
@@ -12,6 +13,8 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
     private readonly Dictionary<Guid, GeneratedResume> standaloneResumes = [];
     private readonly Dictionary<Guid, (Guid ClientId, JobApplication Application)> applications = [];
     private readonly Dictionary<Guid, (Guid ClientId, PromptStyle Style)> promptStyles = [];
+    private readonly Dictionary<Guid, (Guid ClientId, ResumeTheme Theme)> resumeThemes = [];
+    private readonly Dictionary<Guid, Guid?> activeResumeThemes = [];
     private readonly object gate = new();
 
     public bool Unavailable { get; set; }
@@ -49,12 +52,25 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
 
             Guid? activeStyleId = clientStyles.FirstOrDefault(style => style.IsActive)?.Id;
 
+            ResumeTheme[] clientThemes =
+            [
+                .. resumeThemes.Values
+                    .Where(entry => entry.ClientId == clientId)
+                    .Select(entry => entry.Theme)
+                    .OrderBy(theme => theme.CreatedAt)
+            ];
+
+            Guid? activeThemeId = activeResumeThemes.TryGetValue(clientId, out Guid? storedThemeId)
+                ? storedThemeId
+                : null;
+
             return Task.FromResult<JobriqState>(
                 new JobriqState(
                     profile,
                     clientApplications,
                     standaloneResume,
-                    new PromptStyleSettings(clientStyles, activeStyleId)));
+                    new PromptStyleSettings(clientStyles, activeStyleId),
+                    new ResumeThemeSettings(clientThemes, activeThemeId)));
         }
     }
 
@@ -361,6 +377,154 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
             return Task.FromResult<PromptStyle?>(target);
         }
     }
+
+    public Task<ResumeThemeSettings> GetResumeThemesAsync(
+        Guid clientId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            ResumeTheme[] themes =
+            [
+                .. resumeThemes.Values
+                    .Where(entry => entry.ClientId == clientId)
+                    .Select(entry => entry.Theme)
+                    .OrderBy(theme => theme.CreatedAt)
+            ];
+
+            Guid? activeThemeId = activeResumeThemes.TryGetValue(clientId, out Guid? storedThemeId)
+                ? storedThemeId
+                : null;
+
+            return Task.FromResult(new ResumeThemeSettings(themes, activeThemeId));
+        }
+    }
+
+    public Task<ResumeTheme?> GetResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            return Task.FromResult(FindResumeTheme(clientId, resumeThemeId));
+        }
+    }
+
+    public Task<bool> ResumeThemeNameExistsAsync(
+        Guid clientId,
+        string name,
+        Guid? excludedResumeThemeId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            string normalizedName = name.Trim();
+
+            return Task.FromResult(
+                resumeThemes.Values.Any(entry =>
+                    entry.ClientId == clientId
+                    && entry.Theme.Id != excludedResumeThemeId
+                    && string.Equals(
+                        entry.Theme.Name,
+                        normalizedName,
+                        StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    public Task<ResumeTheme> AddResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            resumeThemes[theme.Id] = (clientId, theme);
+        }
+
+        return Task.FromResult(theme);
+    }
+
+    public Task<ResumeTheme?> SaveResumeThemeAsync(
+        Guid clientId,
+        ResumeTheme theme,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            if (FindResumeTheme(clientId, theme.Id) is null)
+            {
+                return Task.FromResult<ResumeTheme?>(null);
+            }
+
+            resumeThemes[theme.Id] = (clientId, theme);
+
+            return Task.FromResult<ResumeTheme?>(theme);
+        }
+    }
+
+    public Task<bool> DeleteResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            if (FindResumeTheme(clientId, resumeThemeId) is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            resumeThemes.Remove(resumeThemeId);
+
+            if (activeResumeThemes.TryGetValue(clientId, out Guid? activeThemeId)
+                && activeThemeId == resumeThemeId)
+            {
+                activeResumeThemes[clientId] = null;
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
+    public Task<bool> ActivateResumeThemeAsync(
+        Guid clientId,
+        Guid resumeThemeId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            if (!ResumeThemeCatalog.IsBuiltIn(resumeThemeId)
+                && FindResumeTheme(clientId, resumeThemeId) is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            activeResumeThemes[clientId] = resumeThemeId;
+
+            return Task.FromResult(true);
+        }
+    }
+
+    private ResumeTheme? FindResumeTheme(Guid clientId, Guid resumeThemeId) =>
+        resumeThemes.TryGetValue(resumeThemeId, out (Guid ClientId, ResumeTheme Theme) entry)
+        && entry.ClientId == clientId
+            ? entry.Theme
+            : null;
 
     private PromptStyle? FindPromptStyle(Guid clientId, Guid promptStyleId) =>
         promptStyles.TryGetValue(promptStyleId, out (Guid ClientId, PromptStyle Style) entry)
