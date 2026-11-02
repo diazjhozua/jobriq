@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.ResumeThemes;
 
 namespace Jobriq.Application.Abstractions;
 
@@ -8,5 +9,5 @@ public interface ICoverLetterExporter
 
     string FileExtension { get; }
 
-    byte[] Export(CoverLetter letter);
+    byte[] Export(CoverLetter letter, ResumeThemeDefinition theme);
 }

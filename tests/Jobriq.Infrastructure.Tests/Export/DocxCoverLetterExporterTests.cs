@@ -1,6 +1,7 @@
 using System.Globalization;
 using DocumentFormat.OpenXml.Packaging;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Infrastructure.Export;
 using Shouldly;
@@ -14,7 +15,7 @@ public sealed class DocxCoverLetterExporterTests
     {
         CoverLetter letter = CreateLetter();
 
-        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(letter));
+        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(letter, ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         string text = document.MainDocumentPart!.Document!.Body!.InnerText;
@@ -41,7 +42,7 @@ public sealed class DocxCoverLetterExporterTests
     [Fact]
     public void Export_BoldsSignature()
     {
-        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(CreateLetter()));
+        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(CreateLetter(), ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         DocumentFormat.OpenXml.Wordprocessing.Paragraph last = document.MainDocumentPart!
@@ -61,7 +62,7 @@ public sealed class DocxCoverLetterExporterTests
     [Fact]
     public void Export_SetsCalibriAndLetterPage()
     {
-        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(CreateLetter()));
+        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(CreateLetter(), ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         string documentXml = document.MainDocumentPart!.Document!.OuterXml;
@@ -80,10 +81,55 @@ public sealed class DocxCoverLetterExporterTests
         CoverLetter letter = CreateLetter();
         letter.Salutation = "  ";
 
-        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(letter));
+        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(letter, ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         document.MainDocumentPart!.Document!.Body!.InnerText.ShouldNotContain("Dear");
+    }
+
+    [Fact]
+    public void Export_UsesThemeFontsColorsAndMargins()
+    {
+        ResumeThemeDefinition theme = new(
+            Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+            "Custom",
+            new ResumeThemeStyles(
+                nameFont: "Cambria",
+                bodyFont: "Georgia",
+                textColor: "#112233",
+                mutedColor: "#445566",
+                headingColor: "#778899",
+                ruleColor: "#AABBCC",
+                bodySize: 11,
+                smallSize: 10,
+                headingSize: 13,
+                nameSize: 20,
+                pageMargin: 54,
+                showRules: true));
+
+        using MemoryStream stream = new(new DocxCoverLetterExporter().Export(CreateLetter(), theme));
+        using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
+
+        string documentXml = document.MainDocumentPart!.Document!.OuterXml;
+        string stylesXml = document.MainDocumentPart.StyleDefinitionsPart!.Styles!.OuterXml;
+
+        stylesXml.ShouldContain("Georgia");
+        documentXml.ShouldContain("Cambria");
+        documentXml.ShouldContain("112233");
+        documentXml.ShouldContain("AABBCC");
+        documentXml.ShouldContain("w:top=\"1080\"");
+    }
+
+    [Fact]
+    public void Export_OmitsTopRuleWhenTheThemeDisablesRules()
+    {
+        using MemoryStream stream = new(
+            new DocxCoverLetterExporter().Export(CreateLetter(), ResumeThemeCatalog.Monochrome));
+        using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
+
+        document.MainDocumentPart!.Document!.Body!
+            .Descendants<DocumentFormat.OpenXml.Wordprocessing.ParagraphBorders>()
+            .ShouldBeEmpty();
     }
 
     private static CoverLetter CreateLetter() => new()

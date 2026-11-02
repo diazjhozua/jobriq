@@ -1,4 +1,5 @@
 using System.Text;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Infrastructure.Export;
 using Shouldly;
@@ -13,7 +14,7 @@ public sealed class MarkdownResumeExporterTests
         GeneratedResume resume = CreateResume();
         MarkdownResumeExporter exporter = new();
 
-        byte[] bytes = exporter.Export(resume);
+        byte[] bytes = exporter.Export(resume, ResumeThemeCatalog.Default);
         string markdown = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetString(bytes);
 
         markdown.ShouldBe(
@@ -88,7 +89,7 @@ public sealed class MarkdownResumeExporterTests
             GeneratedAt = DateTimeOffset.UtcNow
         };
 
-        string markdown = Encoding.UTF8.GetString(new MarkdownResumeExporter().Export(resume));
+        string markdown = Encoding.UTF8.GetString(new MarkdownResumeExporter().Export(resume, ResumeThemeCatalog.Default));
 
         markdown.ShouldBe("# Jane Doe\n\njane@example.com\n".ReplaceLineEndings("\n"));
     }
@@ -96,12 +97,38 @@ public sealed class MarkdownResumeExporterTests
     [Fact]
     public void Export_WritesUtf8WithoutBom()
     {
-        byte[] bytes = new MarkdownResumeExporter().Export(new GeneratedResume
-        {
-            Personal = new PersonalInfo { Name = "Jane Doe" }
-        });
+        byte[] bytes = new MarkdownResumeExporter().Export(
+            new GeneratedResume { Personal = new PersonalInfo { Name = "Jane Doe" } },
+            ResumeThemeCatalog.Default);
 
         bytes.Take(3).ShouldNotBe([0xEF, 0xBB, 0xBF]);
+    }
+
+    [Fact]
+    public void Export_IgnoresThemeStyles()
+    {
+        GeneratedResume resume = CreateResume();
+        ResumeThemeDefinition theme = new(
+            Guid.NewGuid(),
+            "Custom",
+            new ResumeThemeStyles(
+                nameFont: "Cambria",
+                bodyFont: "Georgia",
+                textColor: "#112233",
+                mutedColor: "#445566",
+                headingColor: "#778899",
+                ruleColor: "#AABBCC",
+                bodySize: 11,
+                smallSize: 10,
+                headingSize: 13,
+                nameSize: 20,
+                pageMargin: 54,
+                showRules: false));
+
+        byte[] themed = new MarkdownResumeExporter().Export(resume, theme);
+        byte[] unthemed = new MarkdownResumeExporter().Export(resume, ResumeThemeCatalog.Default);
+
+        themed.ShouldBe(unthemed);
     }
 
     private static GeneratedResume CreateResume() => new()

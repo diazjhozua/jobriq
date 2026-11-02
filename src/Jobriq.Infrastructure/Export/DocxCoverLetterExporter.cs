@@ -4,7 +4,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Jobriq.Application.Abstractions;
 using Jobriq.Domain.Applications;
-using static Jobriq.Infrastructure.Export.DocxTheme;
+using Jobriq.Domain.ResumeThemes;
 
 namespace Jobriq.Infrastructure.Export;
 
@@ -14,8 +14,11 @@ public sealed class DocxCoverLetterExporter : ICoverLetterExporter
 
     public string FileExtension => ".docx";
 
-    public byte[] Export(CoverLetter letter)
+    public byte[] Export(CoverLetter letter, ResumeThemeDefinition theme)
     {
+        ArgumentNullException.ThrowIfNull(theme);
+
+        DocxTheme docxTheme = new(theme.Styles);
         using MemoryStream stream = new();
 
         using (WordprocessingDocument document = WordprocessingDocument.Create(
@@ -26,22 +29,25 @@ public sealed class DocxCoverLetterExporter : ICoverLetterExporter
             mainPart.Document = new Document();
             Body body = mainPart.Document.AppendChild(new Body());
 
-            AddStyles(mainPart);
-            AddHeader(body, letter.Personal);
-            AddRule(body, after: "240");
+            docxTheme.AddStyles(mainPart);
+            docxTheme.AddHeader(body, letter.Personal);
+            if (docxTheme.ShowRules)
+            {
+                docxTheme.AddRule(body, after: "240");
+            }
 
             string date = letter.GeneratedAt
                 .ToUniversalTime()
                 .ToString("MMMM d, yyyy", CultureInfo.InvariantCulture);
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { After = "240" }),
-                CreateRun(date, SmallSize, MutedColor)));
+                docxTheme.CreateRun(date, docxTheme.SmallSize, docxTheme.MutedColor)));
 
             if (!string.IsNullOrWhiteSpace(letter.Salutation))
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "160" }),
-                    CreateRun(letter.Salutation, BodySize, TextColor)));
+                    docxTheme.CreateRun(letter.Salutation, docxTheme.BodySize, docxTheme.TextColor)));
             }
 
             foreach (string paragraph in letter.Paragraphs)
@@ -58,18 +64,22 @@ public sealed class DocxCoverLetterExporter : ICoverLetterExporter
                         Line = "276",
                         LineRule = LineSpacingRuleValues.Auto
                     }),
-                    CreateRun(paragraph, BodySize, TextColor)));
+                    docxTheme.CreateRun(paragraph, docxTheme.BodySize, docxTheme.TextColor)));
             }
 
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { Before = "80", After = "40" }),
-                CreateRun(letter.Closing ?? string.Empty, BodySize, TextColor)));
+                docxTheme.CreateRun(letter.Closing ?? string.Empty, docxTheme.BodySize, docxTheme.TextColor)));
 
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { After = "0" }),
-                CreateRun(letter.Signature ?? string.Empty, BodySize, TextColor, bold: true)));
+                docxTheme.CreateRun(
+                    letter.Signature ?? string.Empty,
+                    docxTheme.BodySize,
+                    docxTheme.TextColor,
+                    bold: true)));
 
-            AddPageSettings(body);
+            docxTheme.AddPageSettings(body);
         }
 
         return stream.ToArray();

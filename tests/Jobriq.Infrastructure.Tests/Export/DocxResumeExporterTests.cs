@@ -1,4 +1,5 @@
 using DocumentFormat.OpenXml.Packaging;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 using Jobriq.Infrastructure.Export;
 using Shouldly;
@@ -10,7 +11,7 @@ public sealed class DocxResumeExporterTests
     [Fact]
     public void Export_ContainsEverySectionInCliOrder()
     {
-        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume()));
+        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume(), ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         string text = document.MainDocumentPart!.Document!.Body!.InnerText;
@@ -49,7 +50,7 @@ public sealed class DocxResumeExporterTests
     [Fact]
     public void Export_DefinesWordBulletNumbering()
     {
-        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume()));
+        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume(), ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         NumberingDefinitionsPart numbering = document.MainDocumentPart!.NumberingDefinitionsPart
@@ -64,7 +65,7 @@ public sealed class DocxResumeExporterTests
     [Fact]
     public void Export_SetsCalibriAndLetterPage()
     {
-        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume()));
+        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume(), ResumeThemeCatalog.Default));
         using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
 
         string documentXml = document.MainDocumentPart!.Document!.OuterXml;
@@ -75,6 +76,74 @@ public sealed class DocxResumeExporterTests
         documentXml.ShouldContain("w:h=\"15840\"");
         stylesXml.ShouldContain("Calibri");
     }
+
+    [Fact]
+    public void Export_UsesThemeFontsColorsSizesAndMargins()
+    {
+        ResumeThemeDefinition theme = CustomTheme();
+
+        using MemoryStream stream = new(new DocxResumeExporter().Export(CreateResume(), theme));
+        using WordprocessingDocument document = WordprocessingDocument.Open(stream, false);
+
+        string documentXml = document.MainDocumentPart!.Document!.OuterXml;
+        string stylesXml = document.MainDocumentPart.StyleDefinitionsPart!.Styles!.OuterXml;
+
+        stylesXml.ShouldContain("Georgia");
+        documentXml.ShouldContain("Cambria");
+        documentXml.ShouldContain("112233");
+        documentXml.ShouldContain("445566");
+        documentXml.ShouldContain("778899");
+        documentXml.ShouldContain("AABBCC");
+        documentXml.ShouldContain("w:sz w:val=\"22\"");
+        documentXml.ShouldContain("w:sz w:val=\"20\"");
+        documentXml.ShouldContain("w:sz w:val=\"26\"");
+        documentXml.ShouldContain("w:sz w:val=\"40\"");
+        documentXml.ShouldContain("w:top=\"1080\"");
+        documentXml.ShouldContain("w:left=\"1080\"");
+
+        DocumentFormat.OpenXml.Wordprocessing.Run nameRun = document
+            .MainDocumentPart.Document.Body!
+            .Descendants<DocumentFormat.OpenXml.Wordprocessing.Run>()
+            .Single(run => run.InnerText == "Jane Doe");
+        nameRun.RunProperties!.Color!.Val!.Value.ShouldBe("778899");
+        nameRun.RunProperties.RunFonts!.Ascii!.Value.ShouldBe("Cambria");
+    }
+
+    [Fact]
+    public void Export_OmitsRulesWhenTheThemeDisablesThem()
+    {
+        using MemoryStream classicStream = new(
+            new DocxResumeExporter().Export(CreateResume(), ResumeThemeCatalog.Classic));
+        using WordprocessingDocument classic = WordprocessingDocument.Open(classicStream, false);
+        classic.MainDocumentPart!.Document!.Body!
+            .Descendants<DocumentFormat.OpenXml.Wordprocessing.ParagraphBorders>()
+            .ShouldNotBeEmpty();
+
+        using MemoryStream monochromeStream = new(
+            new DocxResumeExporter().Export(CreateResume(), ResumeThemeCatalog.Monochrome));
+        using WordprocessingDocument monochrome =
+            WordprocessingDocument.Open(monochromeStream, false);
+        monochrome.MainDocumentPart!.Document!.Body!
+            .Descendants<DocumentFormat.OpenXml.Wordprocessing.ParagraphBorders>()
+            .ShouldBeEmpty();
+    }
+
+    private static ResumeThemeDefinition CustomTheme() => new(
+        Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+        "Custom",
+        new ResumeThemeStyles(
+            nameFont: "Cambria",
+            bodyFont: "Georgia",
+            textColor: "#112233",
+            mutedColor: "#445566",
+            headingColor: "#778899",
+            ruleColor: "#AABBCC",
+            bodySize: 11,
+            smallSize: 10,
+            headingSize: 13,
+            nameSize: 20,
+            pageMargin: 54,
+            showRules: true));
 
     private static GeneratedResume CreateResume() => new()
     {

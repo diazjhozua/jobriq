@@ -3,8 +3,8 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Resumes.ExportResume;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
-using static Jobriq.Infrastructure.Export.DocxTheme;
 
 namespace Jobriq.Infrastructure.Export;
 
@@ -14,8 +14,11 @@ public sealed class DocxResumeExporter : IResumeExporter
 
     public string ContentType => "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-    public byte[] Export(GeneratedResume resume)
+    public byte[] Export(GeneratedResume resume, ResumeThemeDefinition theme)
     {
+        ArgumentNullException.ThrowIfNull(theme);
+
+        DocxTheme docxTheme = new(theme.Styles);
         using MemoryStream stream = new();
 
         using (WordprocessingDocument document = WordprocessingDocument.Create(
@@ -26,25 +29,25 @@ public sealed class DocxResumeExporter : IResumeExporter
             mainPart.Document = new Document();
             Body body = mainPart.Document.AppendChild(new Body());
 
-            AddStyles(mainPart);
-            AddNumbering(mainPart);
+            docxTheme.AddStyles(mainPart);
+            AddNumbering(mainPart, docxTheme);
 
-            AddHeader(body, resume.Personal);
-            AddSummary(body, resume);
-            AddExperience(body, resume);
-            AddEducation(body, resume);
-            AddCertifications(body, resume);
-            AddAwards(body, resume);
-            AddSkills(body, resume);
-            AddProjects(body, resume);
+            docxTheme.AddHeader(body, resume.Personal);
+            AddSummary(body, resume, docxTheme);
+            AddExperience(body, resume, docxTheme);
+            AddEducation(body, resume, docxTheme);
+            AddCertifications(body, resume, docxTheme);
+            AddAwards(body, resume, docxTheme);
+            AddSkills(body, resume, docxTheme);
+            AddProjects(body, resume, docxTheme);
 
-            AddPageSettings(body);
+            docxTheme.AddPageSettings(body);
         }
 
         return stream.ToArray();
     }
 
-    private static void AddNumbering(MainDocumentPart mainPart)
+    private static void AddNumbering(MainDocumentPart mainPart, DocxTheme theme)
     {
         NumberingDefinitionsPart numberingPart = mainPart.AddNewPart<NumberingDefinitionsPart>();
         numberingPart.Numbering = new Numbering(
@@ -57,26 +60,26 @@ public sealed class DocxResumeExporter : IResumeExporter
                         new Indentation { Left = "720", Hanging = "360" }),
                     new RunProperties(
                         new RunFonts { Ascii = "Symbol", HighAnsi = "Symbol" },
-                        new FontSize { Val = BodySize }))
+                        new FontSize { Val = theme.BodySize }))
                 { LevelIndex = 0 })
             { AbstractNumberId = 1 },
             new NumberingInstance(new AbstractNumId { Val = 1 }) { NumberID = 1 });
     }
 
-    private static void AddSummary(Body body, GeneratedResume resume)
+    private static void AddSummary(Body body, GeneratedResume resume, DocxTheme theme)
     {
         if (string.IsNullOrEmpty(resume.Summary))
         {
             return;
         }
 
-        AddSectionHeading(body, "Professional Summary");
+        theme.AddSectionHeading(body, "Professional Summary");
         body.Append(new Paragraph(
             new ParagraphProperties(new SpacingBetweenLines { After = "200" }),
-            CreateRun(resume.Summary, BodySize, TextColor)));
+            theme.CreateRun(resume.Summary, theme.BodySize, theme.TextColor)));
     }
 
-    private static void AddExperience(Body body, GeneratedResume resume)
+    private static void AddExperience(Body body, GeneratedResume resume, DocxTheme theme)
     {
         List<GeneratedExperience> active = [.. resume.Experience.Where(experience =>
             !string.IsNullOrEmpty(experience.Company)
@@ -87,19 +90,23 @@ public sealed class DocxResumeExporter : IResumeExporter
             return;
         }
 
-        AddSectionHeading(body, "Work Experience");
+        theme.AddSectionHeading(body, "Work Experience");
 
         foreach (GeneratedExperience experience in active)
         {
             List<OpenXmlElement> runs =
             [
-                CreateRun($"{experience.Title} — {experience.Company}", BodySize, TextColor, bold: true)
+                theme.CreateRun(
+                    $"{experience.Title} — {experience.Company}",
+                    theme.BodySize,
+                    theme.TextColor,
+                    bold: true)
             ];
 
             string dates = ResumeExportText.DateRange(experience.StartDate, experience.EndDate);
             if (dates.Length > 0)
             {
-                runs.Add(CreateRun($"   {dates}", SmallSize, MutedColor));
+                runs.Add(theme.CreateRun($"   {dates}", theme.SmallSize, theme.MutedColor));
             }
 
             Paragraph experienceHeader = new(
@@ -109,12 +116,12 @@ public sealed class DocxResumeExporter : IResumeExporter
 
             foreach (EnhancedBullet bullet in experience.Bullets)
             {
-                body.Append(BulletParagraph(bullet.Enhanced));
+                body.Append(BulletParagraph(bullet.Enhanced, theme));
             }
         }
     }
 
-    private static void AddEducation(Body body, GeneratedResume resume)
+    private static void AddEducation(Body body, GeneratedResume resume, DocxTheme theme)
     {
         List<Education> active = [.. resume.Education.Where(education =>
             !string.IsNullOrEmpty(education.School) || !string.IsNullOrEmpty(education.Degree))];
@@ -123,19 +130,23 @@ public sealed class DocxResumeExporter : IResumeExporter
             return;
         }
 
-        AddSectionHeading(body, "Education");
+        theme.AddSectionHeading(body, "Education");
 
         foreach (Education education in active)
         {
             List<OpenXmlElement> runs =
             [
-                CreateRun($"{education.Degree} in {education.Field} — {education.School}", BodySize, TextColor, bold: true)
+                theme.CreateRun(
+                    $"{education.Degree} in {education.Field} — {education.School}",
+                    theme.BodySize,
+                    theme.TextColor,
+                    bold: true)
             ];
 
             string dates = ResumeExportText.DateRange(education.StartDate, education.EndDate);
             if (dates.Length > 0)
             {
-                runs.Add(CreateRun($"   {dates}", SmallSize, MutedColor));
+                runs.Add(theme.CreateRun($"   {dates}", theme.SmallSize, theme.MutedColor));
             }
 
             Paragraph educationHeader = new(
@@ -147,12 +158,12 @@ public sealed class DocxResumeExporter : IResumeExporter
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
-                    CreateRun($"GPA: {education.Gpa}", BodySize, MutedColor)));
+                    theme.CreateRun($"GPA: {education.Gpa}", theme.BodySize, theme.MutedColor)));
             }
         }
     }
 
-    private static void AddCertifications(Body body, GeneratedResume resume)
+    private static void AddCertifications(Body body, GeneratedResume resume, DocxTheme theme)
     {
         List<Certification> active = [.. resume.Certifications.Where(
             certification => ResumeExportText.HasContent(certification))];
@@ -161,25 +172,29 @@ public sealed class DocxResumeExporter : IResumeExporter
             return;
         }
 
-        AddSectionHeading(body, "Licenses & Certifications");
+        theme.AddSectionHeading(body, "Licenses & Certifications");
 
         foreach (Certification certification in active)
         {
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
-                CreateRun(ResumeExportText.CertificationHeader(certification), BodySize, TextColor, bold: true)));
+                theme.CreateRun(
+                    ResumeExportText.CertificationHeader(certification),
+                    theme.BodySize,
+                    theme.TextColor,
+                    bold: true)));
 
             string meta = ResumeExportText.CertificationMeta(certification);
             if (meta.Length > 0)
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
-                    CreateRun(meta, SmallSize, MutedColor)));
+                    theme.CreateRun(meta, theme.SmallSize, theme.MutedColor)));
             }
         }
     }
 
-    private static void AddAwards(Body body, GeneratedResume resume)
+    private static void AddAwards(Body body, GeneratedResume resume, DocxTheme theme)
     {
         List<Award> active = [.. resume.Awards.Where(
             award => ResumeExportText.HasContent(award))];
@@ -188,45 +203,49 @@ public sealed class DocxResumeExporter : IResumeExporter
             return;
         }
 
-        AddSectionHeading(body, "Honors & Awards");
+        theme.AddSectionHeading(body, "Honors & Awards");
 
         foreach (Award award in active)
         {
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
-                CreateRun(ResumeExportText.AwardHeader(award), BodySize, TextColor, bold: true)));
+                theme.CreateRun(
+                    ResumeExportText.AwardHeader(award),
+                    theme.BodySize,
+                    theme.TextColor,
+                    bold: true)));
 
             string meta = ResumeExportText.AwardMeta(award);
             if (meta.Length > 0)
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
-                    CreateRun(meta, SmallSize, MutedColor)));
+                    theme.CreateRun(meta, theme.SmallSize, theme.MutedColor)));
             }
 
             if (!string.IsNullOrWhiteSpace(award.Description))
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "60" }),
-                    CreateRun(award.Description.Trim(), BodySize, TextColor)));
+                    theme.CreateRun(award.Description.Trim(), theme.BodySize, theme.TextColor)));
             }
         }
     }
 
-    private static void AddSkills(Body body, GeneratedResume resume)
+    private static void AddSkills(Body body, GeneratedResume resume, DocxTheme theme)
     {
         if (resume.Skills.Count == 0)
         {
             return;
         }
 
-        AddSectionHeading(body, "Skills");
+        theme.AddSectionHeading(body, "Skills");
         body.Append(new Paragraph(
             new ParagraphProperties(new SpacingBetweenLines { After = "200" }),
-            CreateRun(string.Join(", ", resume.Skills), BodySize, TextColor)));
+            theme.CreateRun(string.Join(", ", resume.Skills), theme.BodySize, theme.TextColor)));
     }
 
-    private static void AddProjects(Body body, GeneratedResume resume)
+    private static void AddProjects(Body body, GeneratedResume resume, DocxTheme theme)
     {
         List<GeneratedProject> active = [.. resume.Projects.Where(project =>
             !string.IsNullOrEmpty(project.Name)
@@ -236,7 +255,7 @@ public sealed class DocxResumeExporter : IResumeExporter
             return;
         }
 
-        AddSectionHeading(body, "Projects");
+        theme.AddSectionHeading(body, "Projects");
 
         foreach (GeneratedProject project in active)
         {
@@ -246,38 +265,29 @@ public sealed class DocxResumeExporter : IResumeExporter
 
             body.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { Before = "160", After = "60" }),
-                CreateRun(header, BodySize, TextColor, bold: true)));
+                theme.CreateRun(header, theme.BodySize, theme.TextColor, bold: true)));
 
             string meta = ResumeExportText.ProjectMeta(project);
             if (meta.Length > 0)
             {
                 body.Append(new Paragraph(
                     new ParagraphProperties(new SpacingBetweenLines { After = "40" }),
-                    CreateRun(meta, SmallSize, MutedColor)));
+                    theme.CreateRun(meta, theme.SmallSize, theme.MutedColor)));
             }
 
             foreach (EnhancedBullet bullet in project.Bullets)
             {
-                body.Append(BulletParagraph(bullet.Enhanced));
+                body.Append(BulletParagraph(bullet.Enhanced, theme));
             }
         }
     }
 
-    private static void AddSectionHeading(Body body, string text)
-    {
-        body.Append(new Paragraph(
-            new ParagraphProperties(new SpacingBetweenLines { Before = "240", After = "60" }),
-            CreateRun(text, HeadingSize, TextColor, bold: true)));
-
-        AddRule(body);
-    }
-
-    private static Paragraph BulletParagraph(string text) =>
+    private static Paragraph BulletParagraph(string text, DocxTheme theme) =>
         new(
             new ParagraphProperties(
                 new NumberingProperties(
                     new NumberingLevelReference { Val = 0 },
                     new NumberingId { Val = 1 }),
                 new SpacingBetweenLines { After = "40" }),
-            CreateRun(text, BodySize, TextColor));
+            theme.CreateRun(text, theme.BodySize, theme.TextColor));
 }

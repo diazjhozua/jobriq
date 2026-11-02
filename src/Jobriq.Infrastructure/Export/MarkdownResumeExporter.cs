@@ -1,6 +1,7 @@
 using System.Text;
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Resumes.ExportResume;
+using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
 
 namespace Jobriq.Infrastructure.Export;
@@ -11,7 +12,7 @@ public sealed class MarkdownResumeExporter : IResumeExporter
 
     public string ContentType => "text/markdown; charset=utf-8";
 
-    public byte[] Export(GeneratedResume resume)
+    public byte[] Export(GeneratedResume resume, ResumeThemeDefinition theme)
     {
         List<string> lines = [];
 
