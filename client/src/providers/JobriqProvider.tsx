@@ -13,6 +13,7 @@ import type {
   ApplicationDetailsInput,
   NewApplicationInput,
   PromptStyleInput,
+  ResumeThemeInput,
 } from '../lib/api'
 import { createEmptyState } from '../lib/defaults'
 import { monthYearToIso } from '../lib/monthYear'
@@ -24,6 +25,7 @@ import type {
   Profile,
   ProfileReview,
   PromptStyles,
+  ResumeThemes,
 } from '../lib/types'
 
 type LoadStatus = 'loading' | 'ready' | 'error'
@@ -33,6 +35,7 @@ interface JobriqContextValue {
   applications: JobApplication[]
   standaloneResume: GeneratedResume | null
   promptStyles: PromptStyles
+  resumeThemes: ResumeThemes
   status: LoadStatus
   loadError: string | null
   syncError: string | null
@@ -53,6 +56,10 @@ interface JobriqContextValue {
   updatePromptStyle: (id: string, input: PromptStyleInput) => Promise<void>
   deletePromptStyle: (id: string) => Promise<void>
   activatePromptStyle: (id: string) => Promise<void>
+  createResumeTheme: (input: ResumeThemeInput) => Promise<void>
+  updateResumeTheme: (id: string, input: ResumeThemeInput) => Promise<void>
+  deleteResumeTheme: (id: string) => Promise<void>
+  activateResumeTheme: (id: string) => Promise<void>
   review: ProfileReview | null
   reviewedAt: string | null
   reviewing: boolean
@@ -371,6 +378,42 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [replacePromptStyles],
   )
 
+  const replaceResumeThemes = useCallback(
+    async (operation: () => Promise<ResumeThemes>) => {
+      try {
+        const next = await operation()
+        setJobriqState((current) => ({ ...current, resumeThemes: next }))
+        setSyncError(null)
+      } catch (error) {
+        setSyncError(errorMessage(error))
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
+  const createResumeTheme = useCallback(
+    (input: ResumeThemeInput) =>
+      replaceResumeThemes(() => api.createResumeTheme(input)),
+    [replaceResumeThemes],
+  )
+
+  const updateResumeTheme = useCallback(
+    (id: string, input: ResumeThemeInput) =>
+      replaceResumeThemes(() => api.updateResumeTheme(id, input)),
+    [replaceResumeThemes],
+  )
+
+  const deleteResumeTheme = useCallback(
+    (id: string) => replaceResumeThemes(() => api.deleteResumeTheme(id)),
+    [replaceResumeThemes],
+  )
+
+  const activateResumeTheme = useCallback(
+    (id: string) => replaceResumeThemes(() => api.activateResumeTheme(id)),
+    [replaceResumeThemes],
+  )
+
   const reviewProfile = useCallback(async (profile: Profile) => {
     setReviewing(true)
     setReviewError(null)
@@ -394,6 +437,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       applications: state.applications,
       standaloneResume: state.standaloneResume,
       promptStyles: state.promptStyles,
+      resumeThemes: state.resumeThemes,
       status,
       loadError,
       syncError,
@@ -411,6 +455,10 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updatePromptStyle,
       deletePromptStyle,
       activatePromptStyle,
+      createResumeTheme,
+      updateResumeTheme,
+      deleteResumeTheme,
+      activateResumeTheme,
       review,
       reviewedAt,
       reviewing,
@@ -422,6 +470,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       state.applications,
       state.standaloneResume,
       state.promptStyles,
+      state.resumeThemes,
       status,
       loadError,
       syncError,
@@ -439,6 +488,10 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updatePromptStyle,
       deletePromptStyle,
       activatePromptStyle,
+      createResumeTheme,
+      updateResumeTheme,
+      deleteResumeTheme,
+      activateResumeTheme,
       review,
       reviewedAt,
       reviewing,
