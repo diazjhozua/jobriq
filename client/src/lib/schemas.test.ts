@@ -5,8 +5,14 @@ import {
   generatedResumeSchema,
   profileReviewSchema,
   profileSchema,
+  resumeThemeFormSchema,
 } from './schemas'
-import { createEmptyProfile, createEmptyState } from './defaults'
+import {
+  createEmptyProfile,
+  createEmptyState,
+  DEFAULT_RESUME_THEME_ID,
+} from './defaults'
+import { stateWithThemes } from '../test/resumeThemes'
 
 describe('profileSchema', () => {
   it('requires a name and a valid email', () => {
@@ -388,6 +394,78 @@ describe('apiStateSchema', () => {
     })
 
     expect(apiStateSchema.safeParse(state).success).toBe(true)
+  })
+})
+
+describe('resume theme schemas', () => {
+  it('defaults missing resume themes to the Classic theme', () => {
+    const parsed = apiStateSchema.parse({
+      profile: createEmptyProfile(),
+      applications: [],
+    })
+
+    expect(parsed.resumeThemes.themes).toEqual([])
+    expect(parsed.resumeThemes.builtIns).toEqual([])
+    expect(parsed.resumeThemes.activeThemeId).toBe(DEFAULT_RESUME_THEME_ID)
+  })
+
+  it('accepts built-in and saved themes and keeps null timestamps null', () => {
+    const parsed = apiStateSchema.parse(stateWithThemes())
+
+    expect(parsed.resumeThemes.builtIns.map((theme) => theme.name)).toEqual([
+      'Classic',
+      'Modern',
+    ])
+    expect(parsed.resumeThemes.builtIns[0]?.createdAt).toBeNull()
+    expect(parsed.resumeThemes.builtIns[0]?.isBuiltIn).toBe(true)
+    expect(parsed.resumeThemes.activeThemeId).toBe(DEFAULT_RESUME_THEME_ID)
+  })
+
+  it('accepts a valid theme form', () => {
+    const result = resumeThemeFormSchema.safeParse({
+      name: 'Warm serif',
+      nameFont: 'Georgia',
+      bodyFont: 'Georgia',
+      textColor: '#222222',
+      mutedColor: '#666666',
+      headingColor: '#1F3A5F',
+      ruleColor: '#C9B99A',
+      bodySize: 11,
+      smallSize: 10,
+      headingSize: 13,
+      nameSize: 20,
+      pageMargin: 72,
+      showRules: true,
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects out-of-range sizes and a malformed color', () => {
+    const result = resumeThemeFormSchema.safeParse({
+      name: 'Warm serif',
+      nameFont: 'Georgia',
+      bodyFont: 'Georgia',
+      textColor: 'not-a-color',
+      mutedColor: '#666666',
+      headingColor: '#1F3A5F',
+      ruleColor: '#C9B99A',
+      bodySize: 20,
+      smallSize: 10,
+      headingSize: 13,
+      nameSize: 20,
+      pageMargin: 120,
+      showRules: true,
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues.map((issue) => issue.message)).toEqual(
+      expect.arrayContaining([
+        'Enter a hex color such as #1A1A1A',
+        'Body size is at most 14pt',
+        'Margin is at most 90pt',
+      ]),
+    )
   })
 })
 

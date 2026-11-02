@@ -6,6 +6,7 @@ import {
   profileResponseSchema,
   profileReviewSchema,
   promptStylesSchema,
+  resumeThemesSchema,
 } from './schemas'
 import type {
   ApplicationStatus,
@@ -16,6 +17,8 @@ import type {
   Profile,
   ProfileReview,
   PromptStyles,
+  ResumeThemeStyles,
+  ResumeThemes,
 } from './types'
 
 export type ExportFormat = 'docx' | 'markdown'
@@ -282,6 +285,52 @@ export async function activatePromptStyle(id: string): Promise<PromptStyles> {
     `${promptStyleUrl(id)}/activate`,
     { method: 'POST' },
     promptStylesSchema,
+  )
+}
+
+export interface ResumeThemeInput {
+  name: string
+  styles: ResumeThemeStyles
+}
+
+function resumeThemeUrl(id: string): string {
+  return `/api/resume-themes/${encodeURIComponent(id)}`
+}
+
+export async function createResumeTheme(
+  input: ResumeThemeInput,
+): Promise<ResumeThemes> {
+  return requestJson(
+    '/api/resume-themes',
+    jsonRequest('POST', input),
+    resumeThemesSchema,
+  )
+}
+
+export async function updateResumeTheme(
+  id: string,
+  input: ResumeThemeInput,
+): Promise<ResumeThemes> {
+  return requestJson(
+    resumeThemeUrl(id),
+    jsonRequest('PUT', input),
+    resumeThemesSchema,
+  )
+}
+
+export async function deleteResumeTheme(id: string): Promise<ResumeThemes> {
+  return requestJson(
+    resumeThemeUrl(id),
+    { method: 'DELETE' },
+    resumeThemesSchema,
+  )
+}
+
+export async function activateResumeTheme(id: string): Promise<ResumeThemes> {
+  return requestJson(
+    `${resumeThemeUrl(id)}/activate`,
+    { method: 'POST' },
+    resumeThemesSchema,
   )
 }
 

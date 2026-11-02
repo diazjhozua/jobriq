@@ -2,10 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { installMockApi } from '../test/mockApi'
 import {
   activatePromptStyle,
+  activateResumeTheme,
   createApplication,
   createPromptStyle,
+  createResumeTheme,
   deleteApplication,
   deletePromptStyle,
+  deleteResumeTheme,
   downloadCoverLetter,
   fetchState,
   generateCoverLetter,
@@ -16,8 +19,14 @@ import {
   updateApplication,
   updateApplicationStatus,
   updatePromptStyle,
+  updateResumeTheme,
 } from './api'
 import { createEmptyProfile, createEmptyState } from './defaults'
+import {
+  CLASSIC_THEME_ID,
+  stateWithThemes,
+  themeStyles,
+} from '../test/resumeThemes'
 import type { GeneratedResume } from './types'
 
 const generated: GeneratedResume = {
@@ -386,6 +395,72 @@ describe('api', () => {
       name: 'ApiError',
       status: 409,
       code: 'prompt_style_name_conflict',
+    })
+  })
+
+  it('creates, updates, activates, and deletes resume themes', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+
+    const created = await createResumeTheme({
+      name: 'Warm serif',
+      styles: themeStyles({ bodyFont: 'Georgia' }),
+    })
+    const id = created.themes[0]?.id ?? ''
+
+    expect(created.themes[0]?.isActive).toBe(false)
+    expect(created.activeThemeId).toBe(CLASSIC_THEME_ID)
+
+    const updated = await updateResumeTheme(id, {
+      name: 'Warmer serif',
+      styles: themeStyles({ bodyFont: 'Cambria' }),
+    })
+    expect(updated.themes[0]?.name).toBe('Warmer serif')
+    expect(updated.themes[0]?.styles.bodyFont).toBe('Cambria')
+
+    const activated = await activateResumeTheme(id)
+    expect(activated.activeThemeId).toBe(id)
+    expect(activated.themes[0]?.isActive).toBe(true)
+
+    const deleted = await deleteResumeTheme(id)
+    expect(deleted.themes).toHaveLength(0)
+    expect(deleted.activeThemeId).toBe(CLASSIC_THEME_ID)
+
+    expect(api.calls).toMatchObject([
+      {
+        method: 'POST',
+        path: '/api/resume-themes',
+        body: { name: 'Warm serif' },
+      },
+      { method: 'PUT', path: `/api/resume-themes/${id}` },
+      { method: 'POST', path: `/api/resume-themes/${id}/activate` },
+      { method: 'DELETE', path: `/api/resume-themes/${id}` },
+    ])
+  })
+
+  it('surfaces a resume theme name conflict', async () => {
+    installMockApi({ state: stateWithThemes() })
+
+    await expect(
+      createResumeTheme({ name: 'modern', styles: themeStyles() }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 409,
+      code: 'resume_theme_name_conflict',
+    })
+  })
+
+  it('rejects editing a built-in resume theme', async () => {
+    installMockApi({ state: stateWithThemes() })
+
+    await expect(
+      updateResumeTheme(CLASSIC_THEME_ID, {
+        name: 'Classic',
+        styles: themeStyles(),
+      }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 409,
+      code: 'resume_theme_read_only',
     })
   })
 

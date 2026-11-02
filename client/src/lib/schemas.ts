@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { createEmptyPromptStyles } from './defaults'
+import {
+  createEmptyPromptStyles,
+  createEmptyResumeThemes,
+  DEFAULT_RESUME_THEME_ID,
+  RESUME_THEME_FONTS,
+} from './defaults'
 import { parseMonthYear } from './monthYear'
 import type { ApplicationStatus, SummaryType } from './types'
 
@@ -264,6 +269,103 @@ export const promptStyleFormSchema = z.object({
 
 export type PromptStyleFormValues = z.infer<typeof promptStyleFormSchema>
 
+export const resumeThemeStylesSchema = z.object({
+  nameFont: z.string(),
+  bodyFont: z.string(),
+  textColor: z.string(),
+  mutedColor: z.string(),
+  headingColor: z.string(),
+  ruleColor: z.string(),
+  bodySize: z.number().int(),
+  smallSize: z.number().int(),
+  headingSize: z.number().int(),
+  nameSize: z.number().int(),
+  pageMargin: z.number().int(),
+  showRules: z.boolean(),
+})
+
+export const resumeThemeSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  styles: resumeThemeStylesSchema,
+  isActive: z.boolean(),
+  isBuiltIn: z.boolean(),
+  createdAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+  updatedAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+})
+
+export const resumeThemesSchema = z.object({
+  themes: z.array(resumeThemeSchema),
+  builtIns: z
+    .array(resumeThemeSchema)
+    .nullish()
+    .transform((value) => value ?? []),
+  activeThemeId: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? DEFAULT_RESUME_THEME_ID),
+})
+
+const hexColor = z
+  .string()
+  .trim()
+  .regex(/^#?[0-9A-Fa-f]{6}$/, 'Enter a hex color such as #1A1A1A')
+
+const themeFont = z
+  .string()
+  .refine(
+    (font) => (RESUME_THEME_FONTS as readonly string[]).includes(font),
+    'Choose a supported font',
+  )
+
+export const resumeThemeFormSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'A theme name is required')
+    .max(80, 'Keep the name under 80 characters'),
+  nameFont: themeFont,
+  bodyFont: themeFont,
+  textColor: hexColor,
+  mutedColor: hexColor,
+  headingColor: hexColor,
+  ruleColor: hexColor,
+  bodySize: z
+    .number({ error: 'Enter a body size' })
+    .int()
+    .min(8, 'Body size is at least 8pt')
+    .max(14, 'Body size is at most 14pt'),
+  smallSize: z
+    .number({ error: 'Enter a small size' })
+    .int()
+    .min(7, 'Small size is at least 7pt')
+    .max(12, 'Small size is at most 12pt'),
+  headingSize: z
+    .number({ error: 'Enter a heading size' })
+    .int()
+    .min(10, 'Heading size is at least 10pt')
+    .max(20, 'Heading size is at most 20pt'),
+  nameSize: z
+    .number({ error: 'Enter a name size' })
+    .int()
+    .min(14, 'Name size is at least 14pt')
+    .max(28, 'Name size is at most 28pt'),
+  pageMargin: z
+    .number({ error: 'Enter a page margin' })
+    .int()
+    .min(36, 'Margin is at least 36pt')
+    .max(90, 'Margin is at most 90pt'),
+  showRules: z.boolean(),
+})
+
+export type ResumeThemeFormValues = z.infer<typeof resumeThemeFormSchema>
+
 export const apiStateSchema = z.object({
   profile: storedProfileSchema,
   applications: z.array(applicationSchema),
@@ -271,6 +373,9 @@ export const apiStateSchema = z.object({
   promptStyles: promptStylesSchema
     .optional()
     .transform((value) => value ?? createEmptyPromptStyles()),
+  resumeThemes: resumeThemesSchema
+    .optional()
+    .transform((value) => value ?? createEmptyResumeThemes()),
 })
 
 export const profileResponseSchema = z.object({

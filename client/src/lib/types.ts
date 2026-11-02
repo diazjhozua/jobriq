@@ -185,11 +185,43 @@ export interface PromptStyles {
   baseline: PromptStyle
 }
 
+export interface ResumeThemeStyles {
+  nameFont: string
+  bodyFont: string
+  textColor: string
+  mutedColor: string
+  headingColor: string
+  ruleColor: string
+  bodySize: number
+  smallSize: number
+  headingSize: number
+  nameSize: number
+  pageMargin: number
+  showRules: boolean
+}
+
+export interface ResumeTheme {
+  id: string
+  name: string
+  styles: ResumeThemeStyles
+  isActive: boolean
+  isBuiltIn: boolean
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface ResumeThemes {
+  themes: ResumeTheme[]
+  builtIns: ResumeTheme[]
+  activeThemeId: string
+}
+
 export interface JobriqState {
   profile: Profile
   applications: JobApplication[]
   standaloneResume: GeneratedResume | null
   promptStyles: PromptStyles
+  resumeThemes: ResumeThemes
 }
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
