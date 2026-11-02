@@ -34,7 +34,7 @@ export function ConfirmDialog({
           <AlertDialogPrimitive.Title className="font-display text-[1.3rem] font-medium leading-tight text-navy">
             {title}
           </AlertDialogPrimitive.Title>
-          <AlertDialogPrimitive.Description className="mt-2 text-[0.85rem] leading-6 text-body">
+          <AlertDialogPrimitive.Description className="mt-2 break-words text-[0.85rem] leading-6 text-body">
             {description}
           </AlertDialogPrimitive.Description>
           {children}
