@@ -15,4 +15,6 @@ public sealed class Certification
     public string? CredentialId { get; set; }
 
     public string? CredentialUrl { get; set; }
+
+    public List<string> SkillsGained { get; set; } = [];
 }

@@ -319,7 +319,8 @@ public sealed class ContractSnapshotTests
                 title = "Engineer",
                 startDate = "Jan 2020",
                 endDate = "Present",
-                bullets = new[] { "Built a thing", "Fixed a thing" }
+                bullets = new[] { "Built a thing", "Fixed a thing" },
+                skillsGained = new[] { "Docker", "Kubernetes" }
             }
         },
         education = new[]
@@ -332,7 +333,8 @@ public sealed class ContractSnapshotTests
                 field = "Computer Science",
                 startDate = "2015",
                 endDate = "2019",
-                gpa = "3.8"
+                gpa = "3.8",
+                skillsGained = new[] { "Algorithms" }
             }
         },
         certifications = new[]
@@ -345,7 +347,8 @@ public sealed class ContractSnapshotTests
                 issueDate = "Mar 2024",
                 expirationDate = "Mar 2027",
                 credentialId = "ABC-123",
-                credentialUrl = "https://example.com/verify/ABC-123"
+                credentialUrl = "https://example.com/verify/ABC-123",
+                skillsGained = new[] { "Cloud architecture" }
             }
         },
         awards = new[]
@@ -371,7 +374,8 @@ public sealed class ContractSnapshotTests
                 startDate = "2021",
                 endDate = "2022",
                 associatedWith = "Personal Project",
-                bullets = new[] { "Made it" }
+                bullets = new[] { "Made it" },
+                skillsGained = new[] { "TypeScript" }
             }
         }
     };
@@ -415,7 +419,8 @@ public sealed class ContractSnapshotTests
                 field = "Computer Science",
                 startDate = "2015",
                 endDate = "2019",
-                gpa = "3.8"
+                gpa = "3.8",
+                skillsGained = new[] { "Algorithms" }
             }
         },
         certifications = new[]
@@ -428,7 +433,8 @@ public sealed class ContractSnapshotTests
                 issueDate = "Mar 2024",
                 expirationDate = "Mar 2027",
                 credentialId = "ABC-123",
-                credentialUrl = "https://example.com/verify/ABC-123"
+                credentialUrl = "https://example.com/verify/ABC-123",
+                skillsGained = new[] { "Cloud architecture" }
             }
         },
         awards = new[]

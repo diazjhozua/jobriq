@@ -35,6 +35,8 @@ public sealed class WorkExperienceDto
 
     public List<string>? Bullets { get; set; } = [];
 
+    public List<string>? SkillsGained { get; set; } = [];
+
     public List<EnhancedBulletDto>? EnhancedBullets { get; set; }
 }
 
@@ -53,6 +55,8 @@ public sealed class EducationDto
     public string EndDate { get; set; } = string.Empty;
 
     public string? Gpa { get; set; }
+
+    public List<string>? SkillsGained { get; set; } = [];
 }
 
 public sealed class CertificationDto
@@ -70,6 +74,8 @@ public sealed class CertificationDto
     public string? CredentialId { get; set; }
 
     public string? CredentialUrl { get; set; }
+
+    public List<string>? SkillsGained { get; set; } = [];
 }
 
 public sealed class AwardDto
@@ -102,6 +108,8 @@ public sealed class ProjectDto
     public string AssociatedWith { get; set; } = string.Empty;
 
     public List<string>? Bullets { get; set; } = [];
+
+    public List<string>? SkillsGained { get; set; } = [];
 
     public List<EnhancedBulletDto>? EnhancedBullets { get; set; }
 }

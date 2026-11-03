@@ -15,4 +15,6 @@ public sealed class Education
     public string EndDate { get; set; } = string.Empty;
 
     public string? Gpa { get; set; }
+
+    public List<string> SkillsGained { get; set; } = [];
 }

@@ -21,7 +21,10 @@
         "id": "<guid>",
         "issueDate": "Mar 2024",
         "issuingOrganization": "Amazon Web Services",
-        "name": "AWS Solutions Architect"
+        "name": "AWS Solutions Architect",
+        "skillsGained": [
+          "Cloud architecture"
+        ]
       }
     ],
     "education": [
@@ -32,6 +35,9 @@
         "gpa": "3.8",
         "id": "<guid>",
         "school": "State University",
+        "skillsGained": [
+          "Algorithms"
+        ],
         "startDate": "2015"
       }
     ],

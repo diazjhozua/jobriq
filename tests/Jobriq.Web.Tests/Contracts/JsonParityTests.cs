@@ -199,6 +199,15 @@ public sealed class JsonParityTests
     }
 
     [Fact]
+    public void Profile_SerializesSkillsGainedAsCamelCase()
+    {
+        string json = JsonSerializer.Serialize(ProfileMappings.ToDto(CreateProfile()), WebJson);
+
+        json.ShouldContain("\"skillsGained\"");
+        json.Contains("\"skills_gained\"", StringComparison.Ordinal).ShouldBeFalse();
+    }
+
+    [Fact]
     public void GeneratedResume_KeepsNullKeywords()
     {
         GeneratedResume resume = CreateGeneratedResume();
@@ -233,6 +242,7 @@ public sealed class JsonParityTests
                 StartDate = "Jan 2020",
                 EndDate = "Present",
                 Bullets = ["Built a thing", "Fixed a thing"],
+                SkillsGained = ["Docker", "Kubernetes"],
                 EnhancedBullets =
                 [
                     new EnhancedBullet { Original = "Built a thing", Enhanced = "Enhanced: Built a thing" }
@@ -249,7 +259,8 @@ public sealed class JsonParityTests
                 Field = "Computer Science",
                 StartDate = "2015",
                 EndDate = "2019",
-                Gpa = "3.8"
+                Gpa = "3.8",
+                SkillsGained = ["Algorithms"]
             }
         ],
         Certifications =
@@ -262,7 +273,8 @@ public sealed class JsonParityTests
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["Cloud architecture"]
             }
         ],
         Awards =

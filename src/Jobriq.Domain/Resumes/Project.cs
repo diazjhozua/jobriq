@@ -16,5 +16,7 @@ public sealed class Project
 
     public List<string> Bullets { get; set; } = [];
 
+    public List<string> SkillsGained { get; set; } = [];
+
     public List<EnhancedBullet>? EnhancedBullets { get; set; }
 }

@@ -111,7 +111,8 @@ internal sealed class GenerateResumeCommandHandler(
         Title = experience.Title,
         StartDate = experience.StartDate,
         EndDate = experience.EndDate,
-        Bullets = [.. experience.Bullets]
+        Bullets = [.. experience.Bullets],
+        SkillsGained = experience.SkillsGained is null ? [] : [.. experience.SkillsGained]
     };
 
     private static Project Clone(Project project) => new()
@@ -122,7 +123,8 @@ internal sealed class GenerateResumeCommandHandler(
         StartDate = project.StartDate,
         EndDate = project.EndDate,
         AssociatedWith = project.AssociatedWith,
-        Bullets = [.. project.Bullets]
+        Bullets = [.. project.Bullets],
+        SkillsGained = project.SkillsGained is null ? [] : [.. project.SkillsGained]
     };
 
     private static Education Clone(Education education) => new()
@@ -133,7 +135,8 @@ internal sealed class GenerateResumeCommandHandler(
         Field = education.Field,
         StartDate = education.StartDate,
         EndDate = education.EndDate,
-        Gpa = education.Gpa
+        Gpa = education.Gpa,
+        SkillsGained = education.SkillsGained is null ? [] : [.. education.SkillsGained]
     };
 
     private static Certification Clone(Certification certification) => new()
@@ -144,7 +147,8 @@ internal sealed class GenerateResumeCommandHandler(
         IssueDate = certification.IssueDate,
         ExpirationDate = certification.ExpirationDate,
         CredentialId = certification.CredentialId,
-        CredentialUrl = certification.CredentialUrl
+        CredentialUrl = certification.CredentialUrl,
+        SkillsGained = certification.SkillsGained is null ? [] : [.. certification.SkillsGained]
     };
 
     private static Award Clone(Award award) => new()

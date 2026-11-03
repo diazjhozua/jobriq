@@ -91,6 +91,7 @@ public static class ProfileMappings
         StartDate = dto.StartDate,
         EndDate = dto.EndDate,
         Bullets = dto.Bullets is null ? null! : [.. dto.Bullets],
+        SkillsGained = dto.SkillsGained is null ? [] : [.. dto.SkillsGained],
         EnhancedBullets = dto.EnhancedBullets?.Select(ToDomain).ToList()
     };
 
@@ -102,6 +103,7 @@ public static class ProfileMappings
         StartDate = experience.StartDate,
         EndDate = experience.EndDate,
         Bullets = experience.Bullets is null ? null : [.. experience.Bullets],
+        SkillsGained = experience.SkillsGained is null ? [] : [.. experience.SkillsGained],
         EnhancedBullets = experience.EnhancedBullets?.Select(ToDto).ToList()
     };
 
@@ -113,7 +115,8 @@ public static class ProfileMappings
         Field = dto.Field,
         StartDate = dto.StartDate,
         EndDate = dto.EndDate,
-        Gpa = dto.Gpa
+        Gpa = dto.Gpa,
+        SkillsGained = dto.SkillsGained is null ? [] : [.. dto.SkillsGained]
     };
 
     public static EducationDto ToDto(Education education) => new()
@@ -124,7 +127,8 @@ public static class ProfileMappings
         Field = education.Field,
         StartDate = education.StartDate,
         EndDate = education.EndDate,
-        Gpa = education.Gpa
+        Gpa = education.Gpa,
+        SkillsGained = education.SkillsGained is null ? [] : [.. education.SkillsGained]
     };
 
     public static Certification ToDomain(CertificationDto dto) => new()
@@ -135,7 +139,8 @@ public static class ProfileMappings
         IssueDate = dto.IssueDate,
         ExpirationDate = dto.ExpirationDate,
         CredentialId = dto.CredentialId,
-        CredentialUrl = dto.CredentialUrl
+        CredentialUrl = dto.CredentialUrl,
+        SkillsGained = dto.SkillsGained is null ? [] : [.. dto.SkillsGained]
     };
 
     public static CertificationDto ToDto(Certification certification) => new()
@@ -146,7 +151,8 @@ public static class ProfileMappings
         IssueDate = certification.IssueDate,
         ExpirationDate = certification.ExpirationDate,
         CredentialId = certification.CredentialId,
-        CredentialUrl = certification.CredentialUrl
+        CredentialUrl = certification.CredentialUrl,
+        SkillsGained = certification.SkillsGained is null ? [] : [.. certification.SkillsGained]
     };
 
     public static Award ToDomain(AwardDto dto) => new()
@@ -178,6 +184,7 @@ public static class ProfileMappings
         EndDate = dto.EndDate,
         AssociatedWith = dto.AssociatedWith,
         Bullets = dto.Bullets is null ? null! : [.. dto.Bullets],
+        SkillsGained = dto.SkillsGained is null ? [] : [.. dto.SkillsGained],
         EnhancedBullets = dto.EnhancedBullets?.Select(ToDomain).ToList()
     };
 
@@ -190,6 +197,7 @@ public static class ProfileMappings
         EndDate = project.EndDate,
         AssociatedWith = project.AssociatedWith,
         Bullets = project.Bullets is null ? null : [.. project.Bullets],
+        SkillsGained = project.SkillsGained is null ? [] : [.. project.SkillsGained],
         EnhancedBullets = project.EnhancedBullets?.Select(ToDto).ToList()
     };
 
