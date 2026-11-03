@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ui/alert-dialog'
 import { Button } from '../../components/ui/button'
 import { Card } from '../../components/ui/card'
 import type { PromptStyle, ResumeTheme } from '../../lib/types'
+import { cn } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { PromptStyleDialog } from './PromptStyleDialog'
 import { ResumeThemeDialog } from './ResumeThemeDialog'
@@ -20,32 +21,58 @@ function focusById(id: string) {
 interface ThemeCardProps {
   theme: ResumeTheme
   titleId?: string
+  isSelected: boolean
+  onSelect: () => void
   onActivate?: () => void
   onEdit?: () => void
   onDelete?: () => void
 }
 
-function ThemeCard({ theme, titleId, onActivate, onEdit, onDelete }: ThemeCardProps) {
+function ThemeCard({
+  theme,
+  titleId,
+  isSelected,
+  onSelect,
+  onActivate,
+  onEdit,
+  onDelete,
+}: ThemeCardProps) {
   return (
-    <li className="flex flex-col">
-      <ResumeThemePreview styles={theme.styles} />
+    <li
+      className={cn(
+        'flex gap-4 border border-border bg-surface p-3',
+        isSelected && 'border-primary ring-1 ring-primary',
+      )}
+    >
+      <div className="h-[6.5rem] w-20 shrink-0 overflow-hidden">
+        <ResumeThemePreview styles={theme.styles} className="w-full" />
+      </div>
 
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <h3
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h4
             id={titleId}
             tabIndex={titleId ? -1 : undefined}
-            className="break-words text-[0.95rem] font-medium"
+            className="min-w-0 break-words text-[0.95rem] font-medium"
           >
             {theme.name}
-          </h3>
+          </h4>
           {theme.isActive ? <ActiveBadge /> : null}
           {theme.isBuiltIn ? (
             <span className="text-[0.75rem] text-muted">Read-only</span>
           ) : null}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            variant={isSelected ? 'outline' : 'ghost'}
+            size="sm"
+            aria-pressed={isSelected}
+            aria-label={`Preview ${theme.name}`}
+            onClick={onSelect}
+          >
+            Preview
+          </Button>
           {onActivate && !theme.isActive ? (
             <Button
               variant="ghost"
@@ -99,6 +126,7 @@ export function SettingsPage() {
   const [themeDialogOpen, setThemeDialogOpen] = useState(false)
   const [editingTheme, setEditingTheme] = useState<ResumeTheme | null>(null)
   const [deletingTheme, setDeletingTheme] = useState<ResumeTheme | null>(null)
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null)
 
   const openCreate = () => {
     setEditing(null)
@@ -177,11 +205,13 @@ export function SettingsPage() {
   const baseline = promptStyles.baseline
   const styles = promptStyles.styles
   const { themes, builtIns } = resumeThemes
+  const allThemes = [...builtIns, ...themes]
   const activeTheme =
-    themes.find((theme) => theme.id === resumeThemes.activeThemeId) ??
-    builtIns.find((theme) => theme.id === resumeThemes.activeThemeId) ??
+    allThemes.find((theme) => theme.id === resumeThemes.activeThemeId) ??
     builtIns[0] ??
     themes[0]
+  const selectedTheme =
+    allThemes.find((theme) => theme.id === selectedThemeId) ?? activeTheme ?? null
   const baseStyles = activeTheme?.styles
 
   return (
@@ -335,89 +365,131 @@ export function SettingsPage() {
       </section>
 
       <section
-        aria-labelledby="built-in-themes-title"
-        className="grid gap-5 border-t border-border pt-8 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10"
+        aria-labelledby="resume-themes-title"
+        className="border-t border-border pt-8"
       >
-        <div>
-          <h2
-            id="built-in-themes-title"
-            className="text-[1.3rem] font-medium leading-tight"
-          >
-            Built-in themes
-          </h2>
-          <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
-            Built-in designs ship with Jobriq. Pick one to style every DOCX
-            export.
-          </p>
-        </div>
+        <h2
+          id="resume-themes-title"
+          className="text-[1.3rem] font-medium leading-tight"
+        >
+          Resume themes
+        </h2>
+        <p className="mt-2 max-w-[52ch] text-[0.8rem] leading-5 text-muted">
+          Preview a design with a sample resume. Previewing does not change the
+          active theme.
+        </p>
 
-        <div>
-          {builtIns.length === 0 ? (
-            <p className="border-y border-border py-8 text-[0.88rem] leading-6 text-muted">
-              Built-in themes are unavailable.
-            </p>
-          ) : (
-            <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
-              {builtIns.map((theme) => (
-                <ThemeCard
-                  key={theme.id}
-                  theme={theme}
-                  titleId={`resume-theme-title-${theme.id}`}
-                  onActivate={() => handleActivateTheme(theme.id)}
+        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-10">
+          <section
+            aria-labelledby="theme-preview-title"
+            className="min-w-0 border border-border bg-canvas p-3 sm:p-5 lg:col-start-2 lg:row-start-1"
+          >
+            <h3
+              id="theme-preview-title"
+              className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted"
+            >
+              Theme preview
+            </h3>
+
+            {selectedTheme ? (
+              <>
+                <p
+                  aria-live="polite"
+                  className="mt-1 break-words text-[0.95rem] font-medium [overflow-wrap:anywhere]"
+                >
+                  <span aria-hidden="true">{selectedTheme.name}</span>
+                  <span className="sr-only">Previewing {selectedTheme.name}</span>
+                </p>
+                <ResumeThemePreview
+                  styles={selectedTheme.styles}
+                  className="mx-auto mt-4 w-full max-w-[38rem] shadow-sheet"
                 />
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      <section
-        aria-labelledby="saved-themes-title"
-        className="grid gap-5 border-t border-border pt-8 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10"
-      >
-        <div>
-          <h2
-            id="saved-themes-title"
-            tabIndex={-1}
-            className="text-[1.3rem] font-medium leading-tight"
-          >
-            Your themes
-          </h2>
-          <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
-            Custom designs you can edit. The active theme applies to every DOCX
-            export.
-          </p>
-        </div>
-
-        <div>
-          {themes.length === 0 ? (
-            <div className="border-y border-border py-10">
-              <h3 className="text-[1.1rem] font-medium">No saved themes yet</h3>
-              <p className="mt-2 max-w-[48ch] text-[0.88rem] leading-6 text-muted">
-                Build a design from the active theme, then tune its fonts,
-                colors, sizes, and margins.
+                <p className="mt-3 text-[0.75rem] leading-5 text-muted">
+                  Sample resume. Set a theme active to use it for DOCX exports.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-[0.85rem] leading-6 text-muted">
+                No themes are available to preview.
               </p>
-              {baseStyles ? (
-                <Button variant="outline" className="mt-5" onClick={openCreateTheme}>
-                  <Plus aria-hidden="true" size={15} />
-                  Create your first theme
-                </Button>
-              ) : null}
-            </div>
-          ) : (
-            <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
-              {themes.map((theme) => (
-                <ThemeCard
-                  key={theme.id}
-                  theme={theme}
-                  titleId={`resume-theme-title-${theme.id}`}
-                  onActivate={() => handleActivateTheme(theme.id)}
-                  onEdit={() => openEditTheme(theme)}
-                  onDelete={() => setDeletingTheme(theme)}
-                />
-              ))}
-            </ul>
-          )}
+            )}
+          </section>
+
+          <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+            <section aria-labelledby="built-in-themes-title">
+              <h3 id="built-in-themes-title" className="text-[1.1rem] font-medium">
+                Built-in themes
+              </h3>
+              <p className="mt-1 max-w-[40ch] text-[0.8rem] leading-5 text-muted">
+                Built-in designs ship with Jobriq. Pick one to style every DOCX
+                export.
+              </p>
+
+              {builtIns.length === 0 ? (
+                <p className="mt-4 border-y border-border py-8 text-[0.88rem] leading-6 text-muted">
+                  Built-in themes are unavailable.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {builtIns.map((theme) => (
+                    <ThemeCard
+                      key={theme.id}
+                      theme={theme}
+                      titleId={`resume-theme-title-${theme.id}`}
+                      isSelected={selectedTheme?.id === theme.id}
+                      onSelect={() => setSelectedThemeId(theme.id)}
+                      onActivate={() => handleActivateTheme(theme.id)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section aria-labelledby="saved-themes-title">
+              <h3
+                id="saved-themes-title"
+                tabIndex={-1}
+                className="text-[1.1rem] font-medium"
+              >
+                Your themes
+              </h3>
+              <p className="mt-1 max-w-[40ch] text-[0.8rem] leading-5 text-muted">
+                Custom designs you can edit. The active theme applies to every
+                DOCX export.
+              </p>
+
+              {themes.length === 0 ? (
+                <div className="mt-4 border-y border-border py-10">
+                  <h4 className="text-[1.1rem] font-medium">No saved themes yet</h4>
+                  <p className="mt-2 max-w-[48ch] text-[0.88rem] leading-6 text-muted">
+                    Build a design from the active theme, then tune its fonts,
+                    colors, sizes, and margins.
+                  </p>
+                  {baseStyles ? (
+                    <Button variant="outline" className="mt-5" onClick={openCreateTheme}>
+                      <Plus aria-hidden="true" size={15} />
+                      Create your first theme
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {themes.map((theme) => (
+                    <ThemeCard
+                      key={theme.id}
+                      theme={theme}
+                      titleId={`resume-theme-title-${theme.id}`}
+                      isSelected={selectedTheme?.id === theme.id}
+                      onSelect={() => setSelectedThemeId(theme.id)}
+                      onActivate={() => handleActivateTheme(theme.id)}
+                      onEdit={() => openEditTheme(theme)}
+                      onDelete={() => setDeletingTheme(theme)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </div>
       </section>
 
