@@ -49,7 +49,8 @@ internal static class TestData
                 Title = "Engineer",
                 StartDate = "Jan 2020",
                 EndDate = "Present",
-                Bullets = ["Built a thing"]
+                Bullets = ["Built a thing"],
+                SkillsGained = ["Docker", "Kubernetes"]
             }
         ],
         Education =
@@ -62,7 +63,8 @@ internal static class TestData
                 Field = "Computer Science",
                 StartDate = "2015",
                 EndDate = "2019",
-                Gpa = "3.8"
+                Gpa = "3.8",
+                SkillsGained = ["Algorithms"]
             }
         ],
         Certifications =
@@ -75,7 +77,8 @@ internal static class TestData
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["Cloud architecture"]
             }
         ],
         Awards =
@@ -101,7 +104,8 @@ internal static class TestData
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
-                Bullets = ["Made it"]
+                Bullets = ["Made it"],
+                SkillsGained = ["TypeScript"]
             }
         ]
     };

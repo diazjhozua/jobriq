@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Abstractions.Messaging;
 using Jobriq.Application.Abstractions.Persistence;
@@ -38,6 +39,21 @@ public sealed class GenerateResumeCommandHandlerTests
             .ShouldBe("Enhanced: Built a thing");
         result.Value.Projects!.Single().Bullets!.Single().Enhanced
             .ShouldBe("Enhanced: Made it");
+        result.Value.Education!.Single().SkillsGained.ShouldBe(["Algorithms"]);
+        result.Value.Certifications!.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
+
+        using JsonDocument document = JsonDocument.Parse(
+            JsonSerializer.Serialize(
+                result.Value,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+        JsonElement root = document.RootElement;
+        root.GetProperty("experience")[0].TryGetProperty("skillsGained", out _).ShouldBeFalse();
+        root.GetProperty("projects")[0].TryGetProperty("skillsGained", out _).ShouldBeFalse();
+        root.GetProperty("education")[0].GetProperty("skillsGained")[0].GetString()
+            .ShouldBe("Algorithms");
+        root.GetProperty("certifications")[0].GetProperty("skillsGained")[0].GetString()
+            .ShouldBe("Cloud architecture");
+
         result.Value.Keywords!.Matched.ShouldBe(["C#", "React"]);
         result.Value.Keywords.Missing.ShouldBe(["Kubernetes"]);
         result.Value.GeneratedAt.ShouldBe(TestData.Now);

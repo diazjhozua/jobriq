@@ -34,13 +34,36 @@ public sealed class MappingTests
         roundTripped.Summary.ShouldBe(profile.Summary);
         roundTripped.Experience.Single().Id.ShouldBe(ExperienceId);
         roundTripped.Experience.Single().Bullets.ShouldBe(profile.Experience.Single().Bullets);
+        roundTripped.Experience.Single().SkillsGained.ShouldBe(["Docker", "Kubernetes"]);
         roundTripped.Experience.Single().EnhancedBullets!.Single().Enhanced
             .ShouldBe("Enhanced: Built a thing");
         roundTripped.Education.Single().Gpa.ShouldBe("3.8");
+        roundTripped.Education.Single().SkillsGained.ShouldBe(["Algorithms"]);
         roundTripped.Certifications.Single().CredentialId.ShouldBe("ABC-123");
+        roundTripped.Certifications.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
         roundTripped.Awards.Single().Issuer.ShouldBe("Acme");
         roundTripped.Skills.ShouldBe(profile.Skills);
         roundTripped.Projects.Single().AssociatedWith.ShouldBe("Personal Project");
+        roundTripped.Projects.Single().SkillsGained.ShouldBe(["TypeScript"]);
+    }
+
+    [Fact]
+    public void Profile_CoercesNullSkillsGainedToEmpty()
+    {
+        ProfileDto dto = new()
+        {
+            Experience = [new WorkExperienceDto { SkillsGained = null }],
+            Education = [new EducationDto { SkillsGained = null }],
+            Certifications = [new CertificationDto { SkillsGained = null }],
+            Projects = [new ProjectDto { SkillsGained = null }]
+        };
+
+        ResumeProfile profile = ProfileMappings.ToDomain(dto);
+
+        profile.Experience.Single().SkillsGained.ShouldBeEmpty();
+        profile.Education.Single().SkillsGained.ShouldBeEmpty();
+        profile.Certifications.Single().SkillsGained.ShouldBeEmpty();
+        profile.Projects.Single().SkillsGained.ShouldBeEmpty();
     }
 
     [Fact]
@@ -72,6 +95,8 @@ public sealed class MappingTests
         roundTripped.Summary.ShouldBe(resume.Summary);
         roundTripped.Experience.Single().Bullets.Single().Enhanced
             .ShouldBe("Enhanced: Built a thing");
+        roundTripped.Education.Single().SkillsGained.ShouldBe(["Algorithms"]);
+        roundTripped.Certifications.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
         roundTripped.Projects.Single().Bullets.Single().Original.ShouldBe("Made it");
         roundTripped.Keywords!.Matched.ShouldBe(["C#", "React"]);
         roundTripped.Keywords.Missing.ShouldBe(["Kubernetes"]);
@@ -199,6 +224,7 @@ public sealed class MappingTests
                 StartDate = "Jan 2020",
                 EndDate = "Present",
                 Bullets = ["Built a thing"],
+                SkillsGained = ["Docker", "Kubernetes"],
                 EnhancedBullets =
                 [
                     new EnhancedBullet { Original = "Built a thing", Enhanced = "Enhanced: Built a thing" }
@@ -215,7 +241,8 @@ public sealed class MappingTests
                 Field = "Computer Science",
                 StartDate = "2015",
                 EndDate = "2019",
-                Gpa = "3.8"
+                Gpa = "3.8",
+                SkillsGained = ["Algorithms"]
             }
         ],
         Certifications =
@@ -228,7 +255,8 @@ public sealed class MappingTests
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["Cloud architecture"]
             }
         ],
         Awards =
@@ -255,6 +283,7 @@ public sealed class MappingTests
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
                 Bullets = ["Made it"],
+                SkillsGained = ["TypeScript"],
                 EnhancedBullets =
                 [
                     new EnhancedBullet { Original = "Made it", Enhanced = "Enhanced: Made it" }
