@@ -213,8 +213,8 @@ test('profile, application, generation, and downloads', async ({ page }) => {
     .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
     .fill('Built a thing')
 
-  await page.getByRole('textbox', { name: 'Skills' }).fill('C#, React')
-  await page.getByRole('textbox', { name: 'Skills' }).press('Enter')
+  await page.getByRole('textbox', { name: 'Skills', exact: true }).fill('C#, React')
+  await page.getByRole('textbox', { name: 'Skills', exact: true }).press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -272,6 +272,45 @@ test('profile, application, generation, and downloads', async ({ page }) => {
   await expect(page.getByRole('dialog').getByText('Enhanced: Built a thing')).toBeVisible()
 })
 
+test('compiles skills gained in entries into the overall Skills list', async ({
+  page,
+}) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+  await page.getByRole('button', { name: 'Add experience' }).click()
+  await page.getByLabel('Company').fill('Acme')
+  await page.getByLabel('Title').fill('Engineer')
+
+  const experience = page.getByRole('group', { name: 'Experience 1' })
+  const skillsGained = experience.getByRole('textbox', { name: 'Experience 1 skills gained' })
+  await skillsGained.fill('Docker, Kubernetes')
+  await skillsGained.press('Enter')
+
+  const panel = page.getByRole('region', {
+    name: 'Skills gained not in your Skills list',
+  })
+  await expect(panel).toBeVisible()
+  await panel.getByRole('button', { name: 'Add Docker to skills' }).click()
+  await panel.getByRole('button', { name: 'Add all missing' }).click()
+
+  await expect(page.getByRole('button', { name: 'Remove skill Docker' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Remove skill Kubernetes' }),
+  ).toBeVisible()
+  await expect(panel).toBeHidden()
+
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(
+    experience.getByRole('button', { name: 'Remove Docker from Experience 1' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Remove skill Docker' })).toBeVisible()
+})
+
 test('generates and keeps a standalone resume without an application', async ({
   page,
 }) => {
@@ -288,8 +327,8 @@ test('generates and keeps a standalone resume without an application', async ({
   await page
     .getByRole('textbox', { name: 'Experience 1 bullet 1', exact: true })
     .fill('Built a thing')
-  await page.getByRole('textbox', { name: 'Skills' }).fill('C#, React')
-  await page.getByRole('textbox', { name: 'Skills' }).press('Enter')
+  await page.getByRole('textbox', { name: 'Skills', exact: true }).fill('C#, React')
+  await page.getByRole('textbox', { name: 'Skills', exact: true }).press('Enter')
   await page.getByRole('button', { name: 'Save profile' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -613,7 +652,7 @@ test('ignores legacy localStorage data', async ({ page }) => {
   ).toBeVisible()
   await expect(page.getByLabel('Name')).toHaveValue('')
   await expect(page.getByLabel('Email')).toHaveValue('')
-  await expect(page.getByRole('textbox', { name: 'Skills' })).toHaveValue('')
+  await expect(page.getByRole('textbox', { name: 'Skills', exact: true })).toHaveValue('')
 
   await page.getByRole('link', { name: 'Applications' }).click()
   await expect(page.getByText('No applications yet')).toBeVisible()
