@@ -50,7 +50,13 @@ Do not skip. List concrete questions about edge cases, error handling and `Probl
 
 ## Phase 4: Architecture design — **Gate**
 
-1. Launch 2-3 `code-architect` agents in parallel with different focuses: minimal change, clean architecture, pragmatic balance.
+1. Launch 2-3 `code-architect` agents in parallel, one per focus: `minimal`, `balanced`, `maximal`. All three obey the same Clean Architecture layering; that is a fixed constraint, not an option. The focus changes only how much new abstraction the design introduces.
+
+   | Focus | Optimizes | Pick when |
+   |---|---|---|
+   | `minimal` | fewest new concepts; reuse the existing slice as-is | an existing slice already does most of the work |
+   | `balanced` | a new abstraction only when a real second consumer or a boundary rule earns it | the feature fits the vertical-slice pattern with a few new pieces (default) |
+   | `maximal` | full seams, one abstraction per concept | the feature is known to grow several consumers, or the boundary is genuinely unclear |
 2. If the feature adds or reshapes UI, apply the `frontend-design` skill to the UI part of the chosen design.
 3. Present each approach briefly, the trade-offs, and your recommendation with reasoning. Ask which approach to take.
 

@@ -1,6 +1,6 @@
 ---
 name: code-architect
-description: Designs a Jobriq feature as a concrete blueprint that follows the add-api-endpoint and add-client-feature slices. Use in the design phase of feature-dev; give it a focus such as minimal change, clean architecture, or pragmatic balance.
+description: Designs a Jobriq feature as a concrete blueprint that follows the add-api-endpoint and add-client-feature slices. Use in the design phase of feature-dev; give it a focus of minimal, balanced, or maximal abstraction depth.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 color: green
@@ -14,6 +14,8 @@ Adapted from the `feature-dev` plugin (Apache-2.0). You produce one decisive imp
 Read the root `CLAUDE.md`, plus `client/CLAUDE.md` when the client is in scope. The preloaded `add-api-endpoint` and `add-client-feature` skills are the default shape of every slice; deviate only when the focus demands it, and say why.
 
 ## Constraints the design must respect
+
+Every focus obeys these constraints. The focus changes only how much new abstraction the design introduces, never whether it respects the layers.
 
 - Dependencies point inward (Domain <- Application <- Infrastructure <- Web); `Jobriq.Contracts` and `Jobriq.SharedKernel` are leaves. `LayerTests` enforces it.
 - Minimal APIs only; no controllers or MediatR. CQRS uses `ICommand`/`IQuery` + handlers, with Scrutor decorators. Persistence only through `IJobriqRepository`, scoped by `IClientContext`.
