@@ -82,6 +82,7 @@ describe('api', () => {
         startDate: '2022',
         endDate: 'Present',
         bullets: ['Built a thing'],
+        skillsGained: [],
       },
     ]
 

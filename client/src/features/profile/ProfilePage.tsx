@@ -12,6 +12,7 @@ import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import { formatMonthYearValue } from '../../lib/monthYear'
 import { profileSchema } from '../../lib/schemas'
+import { mergeSkills, uniqueSkills } from '../../lib/utils'
 import type {
   Award,
   Certification,
@@ -33,6 +34,8 @@ import { ProfileReviewPanel } from './ProfileReviewPanel'
 import { ProfileSaveBar } from './ProfileSaveBar'
 import { ProfileSectionNav } from './ProfileSectionNav'
 import { SkillsField } from './SkillsField'
+import { SkillsGainedField } from './SkillsGainedField'
+import { SkillsGainedSuggestions } from './SkillsGainedSuggestions'
 import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
 
@@ -188,16 +191,35 @@ export function ProfilePage() {
 
     return {
       ...dated,
-      skills,
+      skills: uniqueSkills(skills),
       experience: dated.experience.map((entry) => ({
         ...entry,
         bullets: cleanBullets(entry.bullets),
+        skillsGained: uniqueSkills(entry.skillsGained ?? []),
+      })),
+      education: dated.education.map((entry) => ({
+        ...entry,
+        skillsGained: uniqueSkills(entry.skillsGained ?? []),
+      })),
+      certifications: dated.certifications.map((entry) => ({
+        ...entry,
+        skillsGained: uniqueSkills(entry.skillsGained ?? []),
       })),
       projects: dated.projects.map((entry) => ({
         ...entry,
         bullets: cleanBullets(entry.bullets),
+        skillsGained: uniqueSkills(entry.skillsGained ?? []),
       })),
     }
+  }
+
+  const addSkill = (skill: string) => {
+    setSkills((current) => mergeSkills(current, skill))
+  }
+
+  const addAllMissingSkills = (missing: string[]) => {
+    setSkills((current) => uniqueSkills([...current, ...missing]))
+    document.getElementById('skills')?.focus()
   }
 
   const markSaved = () => {
@@ -405,6 +427,7 @@ export function ProfilePage() {
                 startDate: '',
                 endDate: '',
                 bullets: [''],
+                skillsGained: [],
               })
             }
           >
@@ -479,6 +502,21 @@ export function ProfilePage() {
                       />
                     )}
                   />
+                  <Controller
+                    control={control}
+                    name={`experience.${index}.skillsGained`}
+                    render={({ field, fieldState }) => (
+                      <SkillsGainedField
+                        id={`experience-${index}-skills-gained`}
+                        itemLabel={`Experience ${index + 1}`}
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                        className="sm:col-span-2"
+                      />
+                    )}
+                  />
               </ProfileEntryCard>
             ))}
           </div>
@@ -502,6 +540,7 @@ export function ProfilePage() {
                 startDate: '',
                 endDate: '',
                 gpa: '',
+                skillsGained: [],
               })
             }
           >
@@ -583,6 +622,21 @@ export function ProfilePage() {
                     error={errors.education?.[index]?.endDate?.message}
                     allowPresent
                   />
+                  <Controller
+                    control={control}
+                    name={`education.${index}.skillsGained`}
+                    render={({ field, fieldState }) => (
+                      <SkillsGainedField
+                        id={`education-${index}-skills-gained`}
+                        itemLabel={`Education ${index + 1}`}
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                        className="sm:col-span-2"
+                      />
+                    )}
+                  />
               </ProfileEntryCard>
             ))}
           </div>
@@ -606,6 +660,7 @@ export function ProfilePage() {
                 expirationDate: '',
                 credentialId: '',
                 credentialUrl: '',
+                skillsGained: [],
               })
             }
           >
@@ -689,6 +744,21 @@ export function ProfilePage() {
                     {...register(`certifications.${index}.credentialUrl`)}
                   />
                 </Field>
+                <Controller
+                  control={control}
+                  name={`certifications.${index}.skillsGained`}
+                  render={({ field, fieldState }) => (
+                    <SkillsGainedField
+                      id={`certification-${index}-skills-gained`}
+                      itemLabel={`Certification ${index + 1}`}
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                      className="sm:col-span-2"
+                    />
+                  )}
+                />
               </ProfileEntryCard>
             ))}
           </div>
@@ -804,13 +874,20 @@ export function ProfilePage() {
       <Section
         id="profile-skills"
         title="Skills"
-        description="Tools, languages, and methods, shown as tags."
+        description="Your overall list. Skills gained in individual entries show below when they are missing here."
       >
         <SkillsField
           id="skills"
           skills={skills}
           onChange={setSkills}
           onDraftChange={setSkillDraft}
+        />
+        <SkillsGainedSuggestions
+          control={control}
+          overallSkills={skills}
+          disabled={isSubmitting}
+          onAdd={addSkill}
+          onAddAll={addAllMissingSkills}
         />
       </Section>
 
@@ -831,6 +908,7 @@ export function ProfilePage() {
                 endDate: '',
                 associatedWith: '',
                 bullets: [''],
+                skillsGained: [],
               })
             }
           >
@@ -904,6 +982,21 @@ export function ProfilePage() {
                         id={`project-${index}-bullets`}
                         itemLabel={`Project ${index + 1}`}
                         value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                        className="sm:col-span-2"
+                      />
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name={`projects.${index}.skillsGained`}
+                    render={({ field, fieldState }) => (
+                      <SkillsGainedField
+                        id={`project-${index}-skills-gained`}
+                        itemLabel={`Project ${index + 1}`}
+                        value={field.value ?? []}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         error={fieldState.error?.message}

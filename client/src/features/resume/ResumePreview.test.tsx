@@ -46,6 +46,30 @@ describe('ResumePreview', () => {
     expect(screen.queryByText(/quantif/i)).not.toBeInTheDocument()
   })
 
+  it('does not render per-entry skills gained', () => {
+    render(
+      <ResumePreview
+        resume={{
+          ...resume,
+          education: [
+            {
+              id: 'education-1',
+              school: 'State University',
+              degree: 'BSc',
+              field: 'Computer Science',
+              startDate: '',
+              endDate: '',
+              gpa: '',
+              skillsGained: ['gained-only-skill'],
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.queryByText(/gained-only-skill/)).not.toBeInTheDocument()
+  })
+
   it('renders project dates and the associated company', () => {
     render(
       <ResumePreview
@@ -83,6 +107,7 @@ describe('ResumePreview', () => {
               expirationDate: 'Mar 2027',
               credentialId: 'ABC-123',
               credentialUrl: 'https://example.com/verify/ABC-123',
+              skillsGained: [],
             },
           ],
           awards: [

@@ -505,6 +505,94 @@ describe('ProfilePage', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('suggests skills gained in entries and adds them to Skills', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    const experience = screen.getByRole('group', { name: 'Experience 1' })
+    await user.type(
+      within(experience).getByRole('textbox', { name: 'Experience 1 skills gained' }),
+      'Docker{Enter}Kubernetes{Enter}',
+    )
+
+    const panel = screen.getByRole('region', {
+      name: 'Skills gained not in your Skills list',
+    })
+    expect(
+      within(panel).getByRole('group', { name: 'Work experience · Experience 1' }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      within(panel).getByRole('button', { name: 'Add Docker to skills' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Remove skill Docker' }),
+    ).toBeInTheDocument()
+    expect(
+      within(panel).queryByRole('button', { name: 'Add Docker to skills' }),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Add all missing' }))
+    expect(
+      screen.getByRole('button', { name: 'Remove skill Kubernetes' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', {
+        name: 'Skills gained not in your Skills list',
+      }),
+    ).not.toBeInTheDocument()
+  }, 15000)
+
+  it('hides suggestions when entry skills are already listed', async () => {
+    const state = stateWithProfile()
+    state.profile.skills = ['Docker']
+    state.profile.experience = [
+      {
+        id: 'experience-1',
+        company: 'Acme',
+        title: 'Engineer',
+        startDate: '',
+        endDate: '',
+        bullets: [''],
+        skillsGained: ['docker'],
+      },
+    ]
+    installMockApi({ state })
+    await renderPage()
+
+    expect(
+      screen.queryByRole('region', {
+        name: 'Skills gained not in your Skills list',
+      }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('saves per-entry skills gained', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+
+    const experience = screen.getByRole('group', { name: 'Experience 1' })
+    await user.type(
+      within(experience).getByRole('textbox', { name: 'Experience 1 skills gained' }),
+      'Docker{Enter}',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.profile.experience[0]?.skillsGained).toEqual(['Docker'])
+    })
+  }, 15000)
+
   it('adds and removes individual bullets', async () => {
     const user = userEvent.setup()
     installMockApi()

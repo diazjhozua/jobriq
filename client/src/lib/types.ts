@@ -24,6 +24,7 @@ export interface WorkExperience {
   startDate: string
   endDate: string
   bullets: string[]
+  skillsGained: string[]
 }
 
 export interface Education {
@@ -34,6 +35,7 @@ export interface Education {
   startDate: string
   endDate: string
   gpa: string
+  skillsGained: string[]
 }
 
 export interface Certification {
@@ -44,6 +46,7 @@ export interface Certification {
   expirationDate: string
   credentialId: string
   credentialUrl: string
+  skillsGained: string[]
 }
 
 export interface Award {
@@ -63,6 +66,7 @@ export interface Project {
   endDate: string
   associatedWith: string
   bullets: string[]
+  skillsGained: string[]
 }
 
 export interface Profile {

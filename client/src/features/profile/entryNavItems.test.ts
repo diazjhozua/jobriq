@@ -23,6 +23,7 @@ function experience(overrides: Partial<WorkExperience> = {}): WorkExperience {
     startDate: '',
     endDate: '',
     bullets: [],
+    skillsGained: [],
     ...overrides,
   }
 }
@@ -36,6 +37,7 @@ function education(overrides: Partial<Education> = {}): Education {
     startDate: '',
     endDate: '',
     gpa: '',
+    skillsGained: [],
     ...overrides,
   }
 }
@@ -49,6 +51,7 @@ function project(overrides: Partial<Project> = {}): Project {
     endDate: '',
     associatedWith: '',
     bullets: [],
+    skillsGained: [],
     ...overrides,
   }
 }
@@ -64,6 +67,7 @@ function certification(
     expirationDate: '',
     credentialId: '',
     credentialUrl: '',
+    skillsGained: [],
     ...overrides,
   }
 }

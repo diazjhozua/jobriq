@@ -56,6 +56,7 @@ describe('profileSchema', () => {
       expirationDate: '',
       credentialId: '',
       credentialUrl: '',
+      skillsGained: [],
     })
     profile.awards.push({
       id: 'award-1',
@@ -89,6 +90,7 @@ describe('profileSchema', () => {
       expirationDate: '',
       credentialId: '',
       credentialUrl: 'not a url',
+      skillsGained: [],
     })
 
     const result = profileSchema.safeParse(profile)
@@ -275,6 +277,68 @@ describe('apiStateSchema', () => {
     expect(parsed.certifications[0]?.credentialUrl).toBe('')
     expect(parsed.awards[0]?.issuer).toBe('')
     expect(parsed.awards[0]?.description).toBe('')
+  })
+
+  it('defaults missing or null skillsGained to empty arrays', () => {
+    const profile = createEmptyProfile()
+    profile.personal.name = 'Jane Doe'
+    profile.personal.email = 'jane@example.com'
+
+    const parsed = apiStateSchema.parse({
+      profile: {
+        ...profile,
+        experience: [
+          {
+            id: 'experience-1',
+            company: 'Acme',
+            title: 'Engineer',
+            startDate: '',
+            endDate: '',
+            bullets: [],
+          },
+        ],
+        education: [
+          {
+            id: 'education-1',
+            school: 'State University',
+            degree: '',
+            field: '',
+            startDate: '',
+            endDate: '',
+            gpa: '',
+            skillsGained: null,
+          },
+        ],
+        certifications: [
+          {
+            id: 'certification-1',
+            name: 'AWS',
+            issuingOrganization: '',
+            issueDate: '',
+            expirationDate: '',
+            credentialId: '',
+            credentialUrl: '',
+          },
+        ],
+        projects: [
+          {
+            id: 'project-1',
+            name: 'Tool',
+            url: '',
+            startDate: '',
+            endDate: '',
+            associatedWith: '',
+            bullets: [],
+          },
+        ],
+      },
+      applications: [],
+    }).profile
+
+    expect(parsed.experience[0]?.skillsGained).toEqual([])
+    expect(parsed.education[0]?.skillsGained).toEqual([])
+    expect(parsed.certifications[0]?.skillsGained).toEqual([])
+    expect(parsed.projects[0]?.skillsGained).toEqual([])
   })
 
   it('defaults a missing standalone resume to null', () => {

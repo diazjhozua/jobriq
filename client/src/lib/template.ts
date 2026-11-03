@@ -82,6 +82,7 @@ function parseExperience(sections: Section[]): WorkExperience[] {
     startDate: field(section.lines, 'Start'),
     endDate: field(section.lines, 'End'),
     bullets: bullets(section.lines),
+    skillsGained: [],
   }))
 }
 
@@ -94,6 +95,7 @@ function parseEducation(sections: Section[]): Education[] {
     startDate: field(section.lines, 'Start'),
     endDate: field(section.lines, 'End'),
     gpa: field(section.lines, 'GPA'),
+    skillsGained: [],
   }))
 }
 
@@ -121,6 +123,7 @@ function parseProjects(sections: Section[]): Project[] {
       field(section.lines, 'Associated with') ||
       field(section.lines, 'Associated'),
     bullets: bullets(section.lines),
+    skillsGained: [],
   }))
 }
 

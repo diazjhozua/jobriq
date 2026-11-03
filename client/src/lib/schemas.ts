@@ -31,6 +31,7 @@ export const workExperienceSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   bullets: z.array(z.string()),
+  skillsGained: z.array(z.string()),
 })
 
 export const educationSchema = z.object({
@@ -41,6 +42,7 @@ export const educationSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   gpa: z.string(),
+  skillsGained: z.array(z.string()),
 })
 
 export const projectSchema = z.object({
@@ -51,6 +53,7 @@ export const projectSchema = z.object({
   endDate: z.string(),
   associatedWith: z.string(),
   bullets: z.array(z.string()),
+  skillsGained: z.array(z.string()),
 })
 
 export const certificationSchema = z.object({
@@ -61,6 +64,7 @@ export const certificationSchema = z.object({
   expirationDate: z.string(),
   credentialId: z.string(),
   credentialUrl: urlOrEmpty('Enter a valid credential URL'),
+  skillsGained: z.array(z.string()),
 })
 
 export const awardSchema = z.object({
@@ -89,6 +93,11 @@ const nullableString = z
   .nullish()
   .transform((value) => value ?? '')
 
+const nullableStringArray = z
+  .array(z.string())
+  .nullish()
+  .transform((value) => value ?? [])
+
 const storedPersonalInfoSchema = z.object({
   name: z.string(),
   email: z.string(),
@@ -104,6 +113,7 @@ const storedWorkExperienceSchema = workExperienceSchema.extend({
   title: z.string(),
   startDate: nullableString,
   endDate: nullableString,
+  skillsGained: nullableStringArray,
 })
 
 const storedEducationSchema = educationSchema.extend({
@@ -111,6 +121,7 @@ const storedEducationSchema = educationSchema.extend({
   gpa: nullableString,
   startDate: nullableString,
   endDate: nullableString,
+  skillsGained: nullableStringArray,
 })
 
 const storedCertificationSchema = certificationSchema.extend({
@@ -120,6 +131,7 @@ const storedCertificationSchema = certificationSchema.extend({
   expirationDate: nullableString,
   credentialId: nullableString,
   credentialUrl: nullableString,
+  skillsGained: nullableStringArray,
 })
 
 const storedAwardSchema = awardSchema.extend({
@@ -136,6 +148,7 @@ const storedProjectSchema = projectSchema.extend({
   startDate: nullableString,
   endDate: nullableString,
   associatedWith: nullableString,
+  skillsGained: nullableStringArray,
 })
 
 const storedProfileSchema = z.object({
