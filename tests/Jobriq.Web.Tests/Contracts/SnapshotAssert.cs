@@ -44,18 +44,20 @@ internal static class SnapshotAssert
     {
         string path = Path.Combine(SnapshotDirectory, $"{name}.json");
 
+        actual = actual.ReplaceLineEndings("\n");
+
         if (Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS") == "1")
         {
             Directory.CreateDirectory(SnapshotDirectory);
-            await File.WriteAllTextAsync(path, actual + Environment.NewLine);
+            await File.WriteAllTextAsync(path, actual + "\n");
             return;
         }
 
         File.Exists(path).ShouldBeTrue(
             $"Snapshot '{name}' is missing. Run with UPDATE_SNAPSHOTS=1 to create it.");
 
-        string expected = await File.ReadAllTextAsync(path);
-        actual.ShouldBe(expected.TrimEnd('\r', '\n'));
+        string expected = (await File.ReadAllTextAsync(path)).ReplaceLineEndings("\n");
+        actual.ShouldBe(expected.TrimEnd('\n'));
     }
 
     private static async Task<string> DescribeJsonAsync(HttpResponseMessage response)
@@ -129,7 +131,7 @@ internal static class SnapshotAssert
 
     private static string Normalize(string value)
     {
-        string normalized = GuidPattern.Replace(value, "<guid>");
+        string normalized = GuidPattern.Replace(value.ReplaceLineEndings("\n"), "<guid>");
         normalized = TimestampPattern.Replace(normalized, "<timestamp>");
         return FileTimestampPattern.Replace(normalized, "-<timestamp>.");
     }
