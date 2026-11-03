@@ -189,11 +189,15 @@ export function ResumeThemeDialog({
     <Dialog
       open={open}
       onOpenChange={close}
-      className="max-w-2xl"
+      className="max-w-6xl"
       title={theme ? 'Edit resume theme' : 'New resume theme'}
       description="Design the DOCX resume and cover letter. Markdown exports stay plain text."
     >
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="space-y-5"
+      >
         {error ? (
           <div
             role="alert"
@@ -203,14 +207,9 @@ export function ResumeThemeDialog({
           </div>
         ) : null}
 
-        <div>
-          <p className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted">
-            Preview
-          </p>
-          <ResumeThemePreview styles={preview} className="mt-2" />
-        </div>
-
-        <Field
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+          <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+            <Field
           label="Name"
           htmlFor="resume-theme-name"
           error={errors.name?.message}
@@ -435,6 +434,19 @@ export function ResumeThemeDialog({
             </label>
           </div>
         </fieldset>
+
+          </div>
+
+          <div className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-2 lg:self-start">
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted">
+              Preview
+            </p>
+            <ResumeThemePreview
+              styles={preview}
+              className="mx-auto mt-2 w-full max-w-md"
+            />
+          </div>
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button
