@@ -32,6 +32,7 @@ public sealed class DocxResumeExporterTests
         text.ShouldContain("Tool — https://example.com/tool");
         text.ShouldContain("Aug 2022 – Present · Acme");
         text.ShouldContain("Enhanced: Shipped a tool");
+        text.ShouldNotContain("gained-only-skill");
 
         text.IndexOf("Professional Summary", StringComparison.Ordinal)
             .ShouldBeLessThan(text.IndexOf("Work Experience", StringComparison.Ordinal));
@@ -184,7 +185,8 @@ public sealed class DocxResumeExporterTests
                 Field = "Computer Science",
                 StartDate = "2018",
                 EndDate = "2022",
-                Gpa = "3.9"
+                Gpa = "3.9",
+                SkillsGained = ["gained-only-skill"]
             }
         ],
         Certifications =
@@ -197,7 +199,8 @@ public sealed class DocxResumeExporterTests
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["gained-only-skill"]
             }
         ],
         Awards =

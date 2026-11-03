@@ -78,6 +78,8 @@ public sealed class MarkdownResumeExporterTests
             - Enhanced: Shipped a tool
 
             """.ReplaceLineEndings("\n"));
+
+        markdown.ShouldNotContain("gained-only-skill");
     }
 
     [Fact]
@@ -173,7 +175,8 @@ public sealed class MarkdownResumeExporterTests
                 Field = "Computer Science",
                 StartDate = "2018",
                 EndDate = "2022",
-                Gpa = "3.9"
+                Gpa = "3.9",
+                SkillsGained = ["gained-only-skill"]
             }
         ],
         Certifications =
@@ -186,7 +189,8 @@ public sealed class MarkdownResumeExporterTests
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["gained-only-skill"]
             }
         ],
         Awards =

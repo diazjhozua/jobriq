@@ -44,12 +44,15 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.SummaryType.ShouldBe(SummaryType.Professional);
         saved.Summary.ShouldBe("Summary.");
         saved.Experience.Single().Bullets.ShouldBe(["Built a thing"]);
+        saved.Experience.Single().SkillsGained.ShouldBe(["Docker", "Kubernetes"]);
         saved.Experience.Single().EnhancedBullets.ShouldNotBeNull();
         saved.Experience.Single().EnhancedBullets!.Single().Enhanced.ShouldBe("Enhanced: Built a thing");
         saved.Education.Single().School.ShouldBe("State University");
+        saved.Education.Single().SkillsGained.ShouldBe(["Algorithms"]);
         saved.Certifications.Single().Name.ShouldBe("AWS Solutions Architect");
         saved.Certifications.Single().CredentialId.ShouldBe("ABC-123");
         saved.Certifications.Single().CredentialUrl.ShouldBe("https://example.com/verify/ABC-123");
+        saved.Certifications.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
         saved.Awards.Single().Title.ShouldBe("Engineer of the Year");
         saved.Awards.Single().Issuer.ShouldBe("IEEE");
         saved.Skills.ShouldBe(["C#", "React"]);
@@ -57,6 +60,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         saved.Projects.Single().StartDate.ShouldBe("Aug 2022");
         saved.Projects.Single().EndDate.ShouldBe("Present");
         saved.Projects.Single().AssociatedWith.ShouldBe("Acme");
+        saved.Projects.Single().SkillsGained.ShouldBe(["TypeScript"]);
     }
 
     [Fact]
@@ -716,6 +720,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 StartDate = "2022",
                 EndDate = "Present",
                 Bullets = ["Built a thing"],
+                SkillsGained = ["Docker", "Kubernetes"],
                 EnhancedBullets =
                 [
                     new EnhancedBullet
@@ -735,7 +740,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 Field = "Computer Science",
                 StartDate = "2018",
                 EndDate = "2022",
-                Gpa = "3.9"
+                Gpa = "3.9",
+                SkillsGained = ["Algorithms"]
             }
         ],
         Certifications =
@@ -747,7 +753,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["Cloud architecture"]
             }
         ],
         Awards =
@@ -772,6 +779,7 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 EndDate = "Present",
                 AssociatedWith = "Acme",
                 Bullets = ["Shipped a tool"],
+                SkillsGained = ["TypeScript"],
                 EnhancedBullets =
                 [
                     new EnhancedBullet
@@ -820,7 +828,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 Field = "Computer Science",
                 StartDate = "2018",
                 EndDate = "2022",
-                Gpa = "3.9"
+                Gpa = "3.9",
+                SkillsGained = ["Algorithms"]
             }
         ],
         Certifications =
@@ -832,7 +841,8 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
                 IssueDate = "Mar 2024",
                 ExpirationDate = "Mar 2027",
                 CredentialId = "ABC-123",
-                CredentialUrl = "https://example.com/verify/ABC-123"
+                CredentialUrl = "https://example.com/verify/ABC-123",
+                SkillsGained = ["Cloud architecture"]
             }
         ],
         Awards =

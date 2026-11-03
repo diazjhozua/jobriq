@@ -272,6 +272,53 @@ public sealed class PromptsTests
     }
 
     [Fact]
+    public void Prompts_IgnoreSkillsGained()
+    {
+        const string sentinel = "gained-only-skill";
+        ResumeProfile profile = new()
+        {
+            Personal = new PersonalInfo { Name = "Jane Doe" },
+            Skills = ["C#"],
+            Experience =
+            [
+                new WorkExperience
+                {
+                    Company = "Acme",
+                    Title = "Engineer",
+                    Bullets = ["Built a thing"],
+                    SkillsGained = [sentinel]
+                }
+            ],
+            Education =
+            [
+                new Education { School = "State University", SkillsGained = [sentinel] }
+            ],
+            Certifications =
+            [
+                new Certification
+                {
+                    Name = "AWS Solutions Architect",
+                    SkillsGained = [sentinel]
+                }
+            ],
+            Projects =
+            [
+                new Project
+                {
+                    Name = "Tool",
+                    Bullets = ["Made it"],
+                    SkillsGained = [sentinel]
+                }
+            ]
+        };
+
+        Prompts.ReviewProfile(profile).ShouldNotContain(sentinel);
+        Prompts.GenerateCoverLetter(profile, "Acme", "Engineer", "Build reliable systems.")
+            .ShouldNotContain(sentinel);
+        Prompts.ExtractKeywords("Job text", profile).ShouldNotContain(sentinel);
+    }
+
+    [Fact]
     public void CoverLetterSystem_RejectsAiSoundingPhrases()
     {
         Prompts.CoverLetterSystem.ShouldContain("Never fabricate employers, dates, metrics, tools, or accomplishments.");
