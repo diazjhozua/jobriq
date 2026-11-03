@@ -159,6 +159,58 @@ test('creates a resume theme and keeps the active design across reloads', async 
   ).toHaveCount(0)
 })
 
+test('lays out the theme form and preview side by side', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/settings')
+
+  await page.getByRole('button', { name: 'New theme' }).click()
+  const dialog = page.getByRole('dialog')
+  const nameField = dialog.getByLabel('Name', { exact: true })
+  const preview = dialog.locator('[data-theme-page]')
+
+  await expect(preview).toBeVisible()
+
+  const fieldBox = await nameField.boundingBox()
+  const previewBox = await preview.boundingBox()
+
+  expect(fieldBox).not.toBeNull()
+  expect(previewBox).not.toBeNull()
+  expect(previewBox!.x).toBeGreaterThan(fieldBox!.x + fieldBox!.width)
+})
+
+test('previews a theme without activating it', async ({ page }) => {
+  await page.goto('/settings')
+
+  const preview = page.getByRole('region', { name: 'Theme preview' })
+  await expect(preview.getByText('Classic', { exact: true })).toBeVisible()
+
+  const previewButton = page.getByRole('button', { name: 'Preview Modern' })
+  await previewButton.click()
+
+  await expect(preview.getByText('Modern', { exact: true })).toBeVisible()
+  await expect(previewButton).toHaveAttribute('aria-pressed', 'true')
+  await expect(themeItem(page, 'Classic').getByText('Active', { exact: true })).toBeVisible()
+  await expect(themeItem(page, 'Modern').getByText('Active', { exact: true })).toHaveCount(0)
+})
+
+test('keeps the theme preview inside the viewport at 375px', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await page.goto('/settings')
+
+  const preview = page.getByRole('region', { name: 'Theme preview' })
+  await expect(preview).toBeVisible()
+
+  await page.getByRole('button', { name: 'Preview Modern' }).click()
+  await expect(preview.getByText('Modern', { exact: true })).toBeVisible()
+
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  )
+  expect(overflow).toBe(0)
+})
+
 test('falls back to Classic when the active custom theme is deleted', async ({
   page,
 }) => {
