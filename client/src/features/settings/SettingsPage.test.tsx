@@ -370,6 +370,109 @@ describe('SettingsPage resume themes', () => {
     expect(within(themeCard('Classic')).getByText('Active')).toBeInTheDocument()
   })
 
+  it('previews the active theme by default', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    const pane = screen.getByRole('region', { name: 'Theme preview' })
+    expect(within(pane).getByText('Classic')).toBeInTheDocument()
+    expect(within(pane).getByText('Jane Doe')).toHaveStyle({
+      fontFamily: 'Calibri',
+    })
+  })
+
+  it('previews a theme without activating it', async () => {
+    const api = installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Preview Modern' }))
+
+    const pane = screen.getByRole('region', { name: 'Theme preview' })
+    expect(within(pane).getByText('Modern')).toBeInTheDocument()
+    expect(within(pane).getByText('Jane Doe')).toHaveStyle({
+      fontFamily: 'Segoe UI',
+    })
+    expect(
+      screen.getByRole('button', { name: 'Preview Modern' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(api.state.resumeThemes.activeThemeId).toBe(CLASSIC_THEME_ID)
+    expect(within(themeCard('Classic')).getByText('Active')).toBeInTheDocument()
+    expect(
+      within(themeCard('Modern')).queryByText('Active'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('previews a theme with the keyboard', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    const user = userEvent.setup()
+    screen.getByRole('button', { name: 'Preview Modern' }).focus()
+    await user.keyboard('{Enter}')
+
+    expect(
+      within(screen.getByRole('region', { name: 'Theme preview' })).getByText(
+        'Modern',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('falls back to the active theme when the previewed theme is deleted', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await createTheme('Warm serif')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Preview Warm serif' }))
+
+    expect(
+      within(screen.getByRole('region', { name: 'Theme preview' })).getByText(
+        'Warm serif',
+      ),
+    ).toBeInTheDocument()
+
+    await user.click(
+      within(themeCard('Warm serif')).getByRole('button', {
+        name: 'Delete Warm serif',
+      }),
+    )
+
+    const confirm = await screen.findByRole('alertdialog')
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('region', { name: 'Theme preview' })).getByText(
+          'Classic',
+        ),
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('shows an empty preview when no themes exist', async () => {
+    installMockApi({ state: createEmptyState() })
+    await renderPage()
+
+    expect(
+      within(screen.getByRole('region', { name: 'Theme preview' })).getByText(
+        'No themes are available to preview.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the full page preview in the theme dialog', async () => {
+    installMockApi({ state: stateWithThemes() })
+    await renderPage()
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'New theme' }))
+    const dialog = await screen.findByRole('dialog')
+
+    expect(within(dialog).getByText('Jane Doe')).toBeInTheDocument()
+    expect(within(dialog).getByText('Professional Summary')).toBeInTheDocument()
+  })
+
   it('rejects a theme name that collides with a built-in', async () => {
     installMockApi({ state: stateWithThemes() })
     await renderPage()

@@ -415,6 +415,9 @@ describe('resume theme schemas', () => {
     expect(parsed.resumeThemes.builtIns.map((theme) => theme.name)).toEqual([
       'Classic',
       'Modern',
+      'Compact',
+      'Editorial',
+      'Monochrome',
     ])
     expect(parsed.resumeThemes.builtIns[0]?.createdAt).toBeNull()
     expect(parsed.resumeThemes.builtIns[0]?.isBuiltIn).toBe(true)
