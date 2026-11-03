@@ -12,6 +12,28 @@ export function parseSkills(value: string): string[] {
     .filter(Boolean)
 }
 
+export function uniqueSkills(skills: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const unique: string[] = []
+
+  for (const skill of skills) {
+    const trimmed = skill.trim()
+    const key = trimmed.toLowerCase()
+    if (!trimmed || seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    unique.push(trimmed)
+  }
+
+  return unique
+}
+
+export function mergeSkills(existing: readonly string[], raw: string): string[] {
+  return uniqueSkills([...existing, ...parseSkills(raw)])
+}
+
 export function formatDate(value: string): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString()
