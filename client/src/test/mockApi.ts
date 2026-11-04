@@ -16,6 +16,7 @@ import type {
 type Operation =
   | 'state'
   | 'profile'
+  | 'profileExport'
   | 'review'
   | 'create'
   | 'status'
@@ -50,6 +51,7 @@ interface MockApiOptions {
   review?: ProfileReview
   reviewGate?: Promise<unknown>
   profileGate?: Promise<unknown>
+  exportGate?: Promise<unknown>
   fail?: MockFailures
 }
 
@@ -66,6 +68,7 @@ export function installMockApi({
   review,
   reviewGate,
   profileGate,
+  exportGate,
   fail = {},
 }: MockApiOptions = {}) {
   const current = structuredClone(state)
@@ -385,6 +388,21 @@ export function installMockApi({
       return json({ profile: current.profile })
     }
 
+    if (path === '/api/profile/export' && method === 'POST') {
+      if (exportGate) {
+        await exportGate
+      }
+
+      return new Response(new Blob(['[PERSONAL]']), {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Disposition':
+            'attachment; filename="jane-doe-profile-20260102-030405.txt"',
+        },
+      })
+    }
+
     if (path === '/api/profile/review' && method === 'POST') {
       if (reviewGate) {
         await reviewGate
@@ -572,6 +590,10 @@ function operationFor(path: string, method: string): Operation | null {
 
   if (path === '/api/pii-masking') {
     return 'piiMaskingUpdate'
+  }
+
+  if (path === '/api/profile/export') {
+    return 'profileExport'
   }
 
   if (path === '/api/profile/review') {

@@ -10,6 +10,7 @@ import {
   deletePromptStyle,
   deleteResumeTheme,
   downloadCoverLetter,
+  downloadProfile,
   fetchState,
   generateCoverLetter,
   generateStandaloneResume,
@@ -299,6 +300,30 @@ describe('api', () => {
       method: 'POST',
       path: '/api/cover-letter/export',
       body: { letter: { company: 'Acme' } },
+    })
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
+  })
+
+  it('downloads the profile from the export endpoint', async () => {
+    const createObjectURL = vi.fn(() => 'blob:profile')
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: createObjectURL,
+      configurable: true,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: vi.fn(),
+      configurable: true,
+    })
+    const api = installMockApi()
+    const profile = createEmptyProfile()
+    profile.personal.name = 'Jane Doe'
+
+    await downloadProfile(profile)
+
+    expect(api.calls.at(-1)).toMatchObject({
+      method: 'POST',
+      path: '/api/profile/export',
+      body: { profile: { personal: { name: 'Jane Doe' } } },
     })
     expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
   })
