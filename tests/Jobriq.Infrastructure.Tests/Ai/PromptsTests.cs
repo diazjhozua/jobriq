@@ -236,7 +236,7 @@ public sealed class PromptsTests
             ]
         };
 
-        string prompt = Prompts.ReviewProfile(profile);
+        string prompt = Prompts.ReviewProfile(profile, contactDetailsRedacted: false);
 
         prompt.ShouldContain("Jane Doe");
         prompt.ShouldContain("jane@example.com");
@@ -312,7 +312,7 @@ public sealed class PromptsTests
             ]
         };
 
-        Prompts.ReviewProfile(profile).ShouldNotContain(sentinel);
+        Prompts.ReviewProfile(profile, contactDetailsRedacted: false).ShouldNotContain(sentinel);
         Prompts.GenerateCoverLetter(profile, "Acme", "Engineer", "Build reliable systems.")
             .ShouldNotContain(sentinel);
         Prompts.ExtractKeywords("Job text", profile).ShouldNotContain(sentinel);
@@ -385,9 +385,38 @@ public sealed class PromptsTests
     }
 
     [Fact]
+    public void ReviewProfile_WithRedactedContactDetails_AddsWithholdingInstruction()
+    {
+        ResumeProfile profile = new()
+        {
+            Personal = new PersonalInfo
+            {
+                Name = "[redacted]",
+                Email = "[redacted]"
+            }
+        };
+
+        string prompt = Prompts.ReviewProfile(profile, contactDetailsRedacted: true);
+
+        prompt.ShouldContain("Name: [redacted]");
+        prompt.ShouldContain("contact details are intentionally withheld");
+        prompt.ShouldNotContain("jane@example.com");
+    }
+
+    [Fact]
+    public void ReviewProfile_WithoutRedaction_OmitsWithholdingInstruction()
+    {
+        string prompt = Prompts.ReviewProfile(
+            new ResumeProfile(),
+            contactDetailsRedacted: false);
+
+        prompt.ShouldNotContain("contact details are intentionally withheld");
+    }
+
+    [Fact]
     public void ReviewProfile_MarksMissingSections()
     {
-        string prompt = Prompts.ReviewProfile(new ResumeProfile());
+        string prompt = Prompts.ReviewProfile(new ResumeProfile(), contactDetailsRedacted: false);
 
         prompt.ShouldContain("EXPERIENCE\n(none)");
         prompt.ShouldContain("EDUCATION\n(none)");
@@ -400,7 +429,7 @@ public sealed class PromptsTests
     [Fact]
     public void ReviewProfile_SectionListMatchesReviewSectionEnum()
     {
-        string prompt = Prompts.ReviewProfile(new ResumeProfile());
+        string prompt = Prompts.ReviewProfile(new ResumeProfile(), contactDetailsRedacted: false);
 
         foreach (ReviewSection section in Enum.GetValues<ReviewSection>())
         {

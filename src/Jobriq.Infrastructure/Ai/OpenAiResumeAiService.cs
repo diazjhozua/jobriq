@@ -46,9 +46,13 @@ internal sealed class OpenAiResumeAiService(
 
     public async Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
         ResumeProfile profile,
+        bool contactDetailsRedacted,
         CancellationToken cancellationToken)
     {
-        string content = await CompleteAsync(Prompts.ReviewProfile(profile), json: true, cancellationToken);
+        string content = await CompleteAsync(
+            Prompts.ReviewProfile(profile, contactDetailsRedacted),
+            json: true,
+            cancellationToken);
         ReviewResponse? response = Parse<ReviewResponse>(content);
 
         return ReviewSuggestionMapper.Map(response?.Suggestions);

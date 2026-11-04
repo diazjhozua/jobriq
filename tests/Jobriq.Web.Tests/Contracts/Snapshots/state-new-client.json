@@ -4,6 +4,9 @@
   "location": null,
   "body": {
     "applications": [],
+    "piiMasking": {
+      "enabled": true
+    },
     "profile": {
       "awards": [],
       "certifications": [],

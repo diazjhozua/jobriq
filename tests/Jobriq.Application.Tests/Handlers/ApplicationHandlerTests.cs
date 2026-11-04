@@ -379,6 +379,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             repository,
             ClientContext(),
             TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
             new TestTimeProvider(TestData.Now));
 
         Result<ApplicationDto> result = await handler.Handle(
@@ -404,6 +405,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             repository,
             ClientContext(),
             TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<JobriqResourceNotFoundException>(async () =>
@@ -439,6 +441,7 @@ public sealed class GenerateCoverLetterCommandHandlerTests
             repository,
             ClientContext(),
             TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<JobriqValidationException>(async () =>

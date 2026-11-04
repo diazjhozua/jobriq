@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
@@ -696,6 +697,66 @@ public sealed class PostgresJobriqRepositoryTests(PostgresFixture fixture)
         Signature = "Jane Doe",
         GeneratedAt = new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero)
     };
+
+    [Fact]
+    public async Task PiiMasking_DefaultsToEnabledForNewClient()
+    {
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        PiiMaskingSettings settings = await repository.GetPiiMaskingSettingsAsync(
+            Guid.NewGuid(),
+            CancellationToken.None);
+
+        settings.Enabled.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task PiiMasking_RoundTripsAndUpserts()
+    {
+        Guid clientId = Guid.NewGuid();
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        await repository.SavePiiMaskingSettingsAsync(
+            clientId,
+            new PiiMaskingSettings(false),
+            CancellationToken.None);
+        await repository.SavePiiMaskingSettingsAsync(
+            clientId,
+            new PiiMaskingSettings(true),
+            CancellationToken.None);
+
+        PiiMaskingSettings settings = await repository.GetPiiMaskingSettingsAsync(
+            clientId,
+            CancellationToken.None);
+        JobriqState state = await repository.GetStateAsync(clientId, CancellationToken.None);
+
+        settings.Enabled.ShouldBeTrue();
+        state.PiiMasking.Enabled.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task PiiMasking_IsClientScoped()
+    {
+        Guid firstClient = Guid.NewGuid();
+        Guid secondClient = Guid.NewGuid();
+
+        await using JobriqDbContext context = fixture.CreateContext();
+        PostgresJobriqRepository repository = new(context, TimeProvider.System);
+
+        await repository.SavePiiMaskingSettingsAsync(
+            firstClient,
+            new PiiMaskingSettings(false),
+            CancellationToken.None);
+
+        PiiMaskingSettings second = await repository.GetPiiMaskingSettingsAsync(
+            secondClient,
+            CancellationToken.None);
+
+        second.Enabled.ShouldBeTrue();
+    }
 
     private static ResumeProfile CreateProfile() => new()
     {

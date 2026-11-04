@@ -1,8 +1,10 @@
 using FluentValidation;
 using Jobriq.Application.Abstractions.Behaviors;
 using Jobriq.Application.Abstractions.Messaging;
+using Jobriq.Application.Abstractions.PiiMasking;
 using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Application.Abstractions.ResumeThemes;
+using Jobriq.Application.PiiMasking;
 using Jobriq.Application.PromptStyles;
 using Jobriq.Application.ResumeThemes;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +44,7 @@ public static class DependencyInjection
 
         services.AddScoped<IPromptStyleResolver, PromptStyleResolver>();
         services.AddScoped<IResumeThemeResolver, ResumeThemeResolver>();
+        services.AddScoped<IPiiMaskingSettingsResolver, PiiMaskingSettingsResolver>();
 
         return services;
     }

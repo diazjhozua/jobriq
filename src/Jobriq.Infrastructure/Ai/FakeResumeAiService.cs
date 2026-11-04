@@ -33,6 +33,7 @@ internal sealed class FakeResumeAiService : IResumeAiService
 
     public Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
         ResumeProfile profile,
+        bool contactDetailsRedacted,
         CancellationToken cancellationToken)
     {
         List<ReviewSuggestion> suggestions =

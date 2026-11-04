@@ -19,7 +19,8 @@ public static class StateMappings
                 ? null
                 : ResumeMappings.ToDto(state.StandaloneResume),
             PromptStyles = PromptStyleMappings.ToDto(state.PromptStyles),
-            ResumeThemes = ResumeThemeMappings.ToDto(state.ResumeThemes)
+            ResumeThemes = ResumeThemeMappings.ToDto(state.ResumeThemes),
+            PiiMasking = PiiMaskingMappings.ToDto(state.PiiMasking)
         };
     }
 }

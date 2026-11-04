@@ -1,3 +1,4 @@
+using Jobriq.Application.PiiMasking;
 using Jobriq.Domain.Reviews;
 using Jobriq.Domain.Resumes;
 
@@ -48,13 +49,14 @@ internal static class ProfileReviewNormalizer
         IReadOnlyDictionary<Guid, WorkExperience> experienceById,
         IReadOnlyDictionary<Guid, Project> projectsById)
     {
-        string title = suggestion.Title.Trim();
+        string title = ProfileRedactor.RemovePlaceholders(suggestion.Title);
         if (title.Length == 0)
         {
             return null;
         }
 
-        string? proposedText = TrimToNull(suggestion.ProposedText);
+        string? proposedText = TrimToNull(
+            ProfileRedactor.RemovePlaceholders(suggestion.ProposedText));
         string? originalText = null;
         Guid? itemId = null;
         int? bulletIndex = null;
@@ -112,7 +114,7 @@ internal static class ProfileReviewNormalizer
             BulletIndex = bulletIndex,
             Category = suggestion.Category,
             Title = title,
-            Detail = suggestion.Detail.Trim(),
+            Detail = ProfileRedactor.RemovePlaceholders(suggestion.Detail),
             OriginalText = originalText,
             ProposedText = proposedText
         };

@@ -1,5 +1,6 @@
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
@@ -15,6 +16,7 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
     private readonly Dictionary<Guid, (Guid ClientId, PromptStyle Style)> promptStyles = [];
     private readonly Dictionary<Guid, (Guid ClientId, ResumeTheme Theme)> resumeThemes = [];
     private readonly Dictionary<Guid, Guid?> activeResumeThemes = [];
+    private readonly Dictionary<Guid, bool> piiMasking = [];
     private readonly object gate = new();
 
     public bool Unavailable { get; set; }
@@ -70,7 +72,9 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
                     clientApplications,
                     standaloneResume,
                     new PromptStyleSettings(clientStyles, activeStyleId),
-                    new ResumeThemeSettings(clientThemes, activeThemeId)));
+                    new ResumeThemeSettings(clientThemes, activeThemeId),
+                    new PiiMaskingSettings(
+                        piiMasking.TryGetValue(clientId, out bool enabled) ? enabled : true)));
         }
     }
 
@@ -518,6 +522,35 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
 
             return Task.FromResult(true);
         }
+    }
+
+    public Task<PiiMaskingSettings> GetPiiMaskingSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            return Task.FromResult(
+                new PiiMaskingSettings(
+                    piiMasking.TryGetValue(clientId, out bool enabled) ? enabled : true));
+        }
+    }
+
+    public Task<PiiMaskingSettings> SavePiiMaskingSettingsAsync(
+        Guid clientId,
+        PiiMaskingSettings settings,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfUnavailable();
+
+        lock (gate)
+        {
+            piiMasking[clientId] = settings.Enabled;
+        }
+
+        return Task.FromResult(settings);
     }
 
     private ResumeTheme? FindResumeTheme(Guid clientId, Guid resumeThemeId) =>

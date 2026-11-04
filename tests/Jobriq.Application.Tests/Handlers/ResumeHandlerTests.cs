@@ -27,6 +27,7 @@ public sealed class GenerateResumeCommandHandlerTests
         GenerateResumeCommandHandler handler = new(
             aiService,
             TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
             new TestTimeProvider(TestData.Now));
 
         Result<GeneratedResumeDto> result = await handler.Handle(
@@ -68,6 +69,7 @@ public sealed class GenerateResumeCommandHandlerTests
         GenerateResumeCommandHandler handler = new(
             aiService,
             TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
             new TestTimeProvider(TestData.Now));
 
         await Should.ThrowAsync<MissingApiKeyException>(async () =>

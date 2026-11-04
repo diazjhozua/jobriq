@@ -1,4 +1,5 @@
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
@@ -124,5 +125,14 @@ public interface IJobriqRepository
     Task<bool> ActivateResumeThemeAsync(
         Guid clientId,
         Guid resumeThemeId,
+        CancellationToken cancellationToken);
+
+    Task<PiiMaskingSettings> GetPiiMaskingSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken);
+
+    Task<PiiMaskingSettings> SavePiiMaskingSettingsAsync(
+        Guid clientId,
+        PiiMaskingSettings settings,
         CancellationToken cancellationToken);
 }

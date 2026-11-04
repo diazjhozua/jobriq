@@ -1,11 +1,14 @@
 using Jobriq.Application.Abstractions;
 using Jobriq.Application.Abstractions.Messaging;
 using Jobriq.Application.Abstractions.Persistence;
+using Jobriq.Application.Abstractions.PiiMasking;
 using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Application.Common.Mapping;
 using Jobriq.Application.CoverLetters.Generate;
+using Jobriq.Application.PiiMasking;
 using Jobriq.Contracts;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.Resumes;
 using Jobriq.SharedKernel;
@@ -17,6 +20,7 @@ internal sealed class GenerateCoverLetterCommandHandler(
     IJobriqRepository repository,
     IClientContext clientContext,
     IPromptStyleResolver promptStyleResolver,
+    IPiiMaskingSettingsResolver piiMaskingSettingsResolver,
     TimeProvider timeProvider)
     : ICommandHandler<GenerateCoverLetterCommand, ApplicationDto>
 {
@@ -40,8 +44,13 @@ internal sealed class GenerateCoverLetterCommandHandler(
 
         PromptStyleDefinition style = await promptStyleResolver.ResolveAsync(cancellationToken);
 
+        PiiMaskingSettings masking = await piiMaskingSettingsResolver.ResolveAsync(
+            cancellationToken);
+
+        ResumeProfile aiProfile = ProfileRedactor.Redact(profile, masking);
+
         CoverLetterDraft draft = await aiService.GenerateCoverLetterAsync(
-            profile,
+            aiProfile,
             application.Company,
             application.Role,
             application.JobDescription,

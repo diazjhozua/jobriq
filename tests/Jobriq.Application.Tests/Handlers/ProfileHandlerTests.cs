@@ -56,7 +56,10 @@ public sealed class ReviewProfileCommandHandlerTests
     {
         IResumeAiService aiService = Substitute.For<IResumeAiService>();
         aiService
-            .ReviewProfileAsync(Arg.Any<ResumeProfile>(), Arg.Any<CancellationToken>())
+            .ReviewProfileAsync(
+                Arg.Any<ResumeProfile>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>())
             .Returns(new List<ReviewSuggestion>
             {
                 new()
@@ -80,7 +83,9 @@ public sealed class ReviewProfileCommandHandlerTests
                 }
             });
 
-        ReviewProfileCommandHandler handler = new(aiService);
+        ReviewProfileCommandHandler handler = new(
+            aiService,
+            TestData.PiiMaskingResolver());
 
         Result<ReviewProfileResponse> result = await handler.Handle(
             new ReviewProfileCommand(TestData.Profile()),

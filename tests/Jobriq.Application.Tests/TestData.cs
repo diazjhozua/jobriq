@@ -1,6 +1,8 @@
+using Jobriq.Application.Abstractions.PiiMasking;
 using Jobriq.Application.Abstractions.PromptStyles;
 using Jobriq.Application.Abstractions.ResumeThemes;
 using Jobriq.Contracts;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.ResumeThemes;
 using NSubstitute;
@@ -21,6 +23,16 @@ internal static class TestData
         resolver
             .ResolveAsync(Arg.Any<CancellationToken>())
             .Returns(style ?? PromptStyleDefinition.BuiltIn);
+
+        return resolver;
+    }
+
+    public static IPiiMaskingSettingsResolver PiiMaskingResolver(bool enabled = true)
+    {
+        IPiiMaskingSettingsResolver resolver = Substitute.For<IPiiMaskingSettingsResolver>();
+        resolver
+            .ResolveAsync(Arg.Any<CancellationToken>())
+            .Returns(new PiiMaskingSettings(enabled));
 
         return resolver;
     }

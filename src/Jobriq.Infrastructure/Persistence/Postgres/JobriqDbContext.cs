@@ -15,6 +15,8 @@ public sealed class JobriqDbContext(DbContextOptions<JobriqDbContext> options) :
 
     internal DbSet<ResumeThemeSettingsRow> ResumeThemeSettings => Set<ResumeThemeSettingsRow>();
 
+    internal DbSet<PiiMaskingSettingsRow> PiiMaskingSettings => Set<PiiMaskingSettingsRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ProfileRow>();
@@ -22,6 +24,7 @@ public sealed class JobriqDbContext(DbContextOptions<JobriqDbContext> options) :
         modelBuilder.Entity<PromptStyleRow>();
         modelBuilder.Entity<ResumeThemeRow>();
         modelBuilder.Entity<ResumeThemeSettingsRow>();
+        modelBuilder.Entity<PiiMaskingSettingsRow>();
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JobriqDbContext).Assembly);
         modelBuilder.HasDefaultSchema("public");
     }

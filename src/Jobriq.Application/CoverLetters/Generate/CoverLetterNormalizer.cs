@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Jobriq.Application.Abstractions;
+using Jobriq.Application.PiiMasking;
 using Jobriq.Domain.Applications;
 using Jobriq.Domain.Resumes;
 
@@ -104,7 +105,7 @@ public static partial class CoverLetterNormalizer
 
     private static string Clean(string paragraph)
     {
-        string value = paragraph.ReplaceLineEndings(" ").Trim();
+        string value = ProfileRedactor.RemovePlaceholders(paragraph).ReplaceLineEndings(" ").Trim();
         value = value.Trim('"', '\'', '“', '”');
         value = MarkdownMarkers().Replace(value, string.Empty);
         value = ListMarker().Replace(value, string.Empty);

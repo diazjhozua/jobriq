@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Domain.Applications;
+using Jobriq.Domain.PiiMasking;
 using Jobriq.Domain.PromptStyles;
 using Jobriq.Domain.ResumeThemes;
 using Jobriq.Domain.Resumes;
@@ -45,12 +46,17 @@ internal sealed class PostgresJobriqRepository(
                 clientId,
                 cancellationToken);
 
+            PiiMaskingSettings piiMasking = await LoadPiiMaskingSettingsAsync(
+                clientId,
+                cancellationToken);
+
             return new JobriqState(
                 profile,
                 [.. applicationRows.Select(ToDomain)],
                 standaloneResume,
                 promptStyles,
-                resumeThemes);
+                resumeThemes,
+                piiMasking);
         });
 
     public Task SaveProfileAsync(
@@ -555,6 +561,45 @@ internal sealed class PostgresJobriqRepository(
 
             return true;
         });
+
+    public Task<PiiMaskingSettings> GetPiiMaskingSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken) =>
+        GuardAsync(() => LoadPiiMaskingSettingsAsync(clientId, cancellationToken));
+
+    public Task<PiiMaskingSettings> SavePiiMaskingSettingsAsync(
+        Guid clientId,
+        PiiMaskingSettings settings,
+        CancellationToken cancellationToken) =>
+        GuardAsync(async () =>
+        {
+            DateTimeOffset now = timeProvider.GetUtcNow();
+
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                INSERT INTO pii_masking_settings (client_id, enabled, updated_at)
+                VALUES ({clientId}, {settings.Enabled}, {now})
+                ON CONFLICT (client_id) DO UPDATE
+                SET enabled = EXCLUDED.enabled,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                cancellationToken);
+
+            return settings;
+        });
+
+    private async Task<PiiMaskingSettings> LoadPiiMaskingSettingsAsync(
+        Guid clientId,
+        CancellationToken cancellationToken)
+    {
+        PiiMaskingSettingsRow? row = await dbContext.PiiMaskingSettings
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                candidate => candidate.ClientId == clientId,
+                cancellationToken);
+
+        return row is null ? PiiMaskingSettings.Default : new PiiMaskingSettings(row.Enabled);
+    }
 
     private async Task<ResumeThemeSettings> LoadResumeThemeSettingsAsync(
         Guid clientId,

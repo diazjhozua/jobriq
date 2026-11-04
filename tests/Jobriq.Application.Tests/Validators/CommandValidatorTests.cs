@@ -4,6 +4,7 @@ using Jobriq.Application.Applications.SaveGeneratedResume;
 using Jobriq.Application.Applications.UpdateDetails;
 using Jobriq.Application.Applications.UpdateStatus;
 using Jobriq.Application.CoverLetters.Export;
+using Jobriq.Application.PiiMasking.Update;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
@@ -273,6 +274,25 @@ public sealed class CommandValidatorTests
             new ActivatePromptStyleCommandValidator().Validate(
                 new ActivatePromptStyleCommand(Guid.Empty)),
             "A prompt style is required.");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UpdatePiiMasking_WithEnabledValue_Passes(bool enabled)
+    {
+        new UpdatePiiMaskingCommandValidator()
+            .Validate(new UpdatePiiMaskingCommand(enabled))
+            .IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void UpdatePiiMasking_WithoutEnabled_Fails()
+    {
+        AssertSingle(
+            new UpdatePiiMaskingCommandValidator().Validate(
+                new UpdatePiiMaskingCommand(null)),
+            "Choose whether to redact personal details.");
     }
 
     private static void AssertSingle(ValidationResult result, string message)

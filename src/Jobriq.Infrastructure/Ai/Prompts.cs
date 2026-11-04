@@ -160,7 +160,7 @@ internal static class Prompts
             """);
     }
 
-    public static string ReviewProfile(ResumeProfile profile) =>
+    public static string ReviewProfile(ResumeProfile profile, bool contactDetailsRedacted) =>
         Normalize($$"""
             Review this resume profile and suggest concrete improvements. The review is job-agnostic: do not reference a job description, ATS keywords, or a specific role.
 
@@ -174,6 +174,7 @@ internal static class Prompts
             - "category" must be one of: completeness, impact, clarity.
             - "title" is a short imperative phrase. "detail" explains why the change matters.
             - When a section is missing entirely, suggest what to add instead of rewriting.
+            {{(contactDetailsRedacted ? "- Personal contact details are intentionally withheld and shown as [redacted]. Do not request them and do not suggest adding them." : string.Empty)}}
 
             Profile:
             {{ProfileText(profile)}}

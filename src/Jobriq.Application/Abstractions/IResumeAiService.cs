@@ -18,6 +18,7 @@ public interface IResumeAiService
 
     Task<IReadOnlyList<ReviewSuggestion>> ReviewProfileAsync(
         ResumeProfile profile,
+        bool contactDetailsRedacted,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<EnhancedBullet>> EnhanceExperienceBulletsAsync(

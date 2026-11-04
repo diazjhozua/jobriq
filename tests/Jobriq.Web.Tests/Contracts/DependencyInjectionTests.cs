@@ -6,6 +6,7 @@ using Jobriq.Application.Applications.SaveGeneratedResume;
 using Jobriq.Application.Applications.UpdateDetails;
 using Jobriq.Application.Applications.UpdateStatus;
 using Jobriq.Application.CoverLetters.Export;
+using Jobriq.Application.PiiMasking.Update;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
@@ -57,6 +58,7 @@ public sealed class DependencyInjectionTests
         services.GetRequiredService<ICommandHandler<UpdateResumeThemeCommand, ResumeThemesDto>>();
         services.GetRequiredService<ICommandHandler<DeleteResumeThemeCommand, ResumeThemesDto>>();
         services.GetRequiredService<ICommandHandler<ActivateResumeThemeCommand, ResumeThemesDto>>();
+        services.GetRequiredService<ICommandHandler<UpdatePiiMaskingCommand, PiiMaskingDto>>();
 
         true.ShouldBeTrue();
     }

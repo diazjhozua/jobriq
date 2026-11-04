@@ -87,6 +87,28 @@ namespace Jobriq.Infrastructure.Persistence.Postgres.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Jobriq.Infrastructure.Persistence.Postgres.Rows.PiiMaskingSettingsRow", b =>
+                {
+                    b.Property<Guid>("ClientId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("enabled");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("ClientId")
+                        .HasName("pk_pii_masking_settings");
+
+                    b.ToTable("pii_masking_settings", "public");
+                });
+
             modelBuilder.Entity("Jobriq.Infrastructure.Persistence.Postgres.Rows.ProfileRow", b =>
                 {
                     b.Property<Guid>("ClientId")
