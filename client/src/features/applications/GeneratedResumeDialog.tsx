@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
 import { generateResume } from '../../lib/api'
+import { sortProfile } from '../../lib/ordering/profileSectionOrder'
 import type { JobApplication } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
 import { EnhanceProfileNotice } from '../resume/EnhanceProfileNotice'
@@ -42,7 +43,10 @@ export function GeneratedResumeDialog({
     clearDownloadError()
 
     try {
-      const generated = await generateResume(profile, application.jobDescription)
+      const generated = await generateResume(
+        sortProfile(profile),
+        application.jobDescription,
+      )
       await saveGeneratedResume(application.id, generated)
     } catch (caught) {
       setGenerateError(

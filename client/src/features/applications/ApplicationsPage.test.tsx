@@ -331,6 +331,49 @@ describe('ApplicationsPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('generates a resume from profile entries newest first', async () => {
+    const user = userEvent.setup()
+    const state = stateWithApplication()
+    state.profile.experience = [
+      {
+        id: 'exp-old',
+        company: 'Older Co',
+        title: 'Engineer',
+        startDate: 'Jan 2018',
+        endDate: '',
+        bullets: ['Built a thing'],
+        skillsGained: [],
+      },
+      {
+        id: 'exp-new',
+        company: 'Newer Co',
+        title: 'Staff',
+        startDate: 'Aug 2022',
+        endDate: 'Present',
+        bullets: ['Led a team'],
+        skillsGained: [],
+      },
+    ]
+    const api = installMockApi({ state, generatedResume: generated })
+    await renderPage()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Generate resume for Engineer at Acme' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Generate resume' }))
+
+    await within(dialog).findByText('Tailored summary.')
+    const generateCall = api.calls.find(
+      (call) => call.path === '/api/resume/generate',
+    )
+    const body = generateCall?.body as { profile: JobriqState['profile'] }
+    expect(body.profile.experience.map((entry) => entry.id)).toEqual([
+      'exp-new',
+      'exp-old',
+    ])
+  })
+
   it('generates a cover letter and previews it', async () => {
     const user = userEvent.setup()
     const api = installMockApi({ state: stateWithApplication() })
