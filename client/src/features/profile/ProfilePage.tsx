@@ -20,7 +20,6 @@ import type {
   ReviewSuggestion,
 } from '../../lib/types'
 import { useJobriq } from '../../providers/JobriqProvider'
-import { AssociatedWithField } from './AssociatedWithField'
 import { BulletListField } from './BulletListField'
 import {
   AwardEntryNav,
@@ -29,6 +28,7 @@ import {
   ExperienceEntryNav,
   ProjectEntryNav,
 } from './ProfileEntryNavs'
+import { ProfileComboboxField } from './ProfileComboboxField'
 import { ProfileEntryCard } from './ProfileEntryCard'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
 import { ProfileSaveBar } from './ProfileSaveBar'
@@ -38,6 +38,7 @@ import { SkillsGainedField } from './SkillsGainedField'
 import { SkillsGainedSuggestions } from './SkillsGainedSuggestions'
 import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
+import { useProfileOptionSets } from './profileOptions'
 
 interface SectionProps {
   id: string
@@ -148,6 +149,8 @@ export function ProfilePage() {
   const certifications = useFieldArray({ control, name: 'certifications' })
   const awards = useFieldArray({ control, name: 'awards' })
   const projects = useFieldArray({ control, name: 'projects' })
+  const { projectAssociations, awardAssociations, issuerSuggestions } =
+    useProfileOptionSets(control)
 
   const skillsDirty =
     JSON.stringify(skills) !== JSON.stringify(profile.skills) ||
@@ -695,18 +698,15 @@ export function ProfilePage() {
                     {...register(`certifications.${index}.name`)}
                   />
                 </Field>
-                <Field
+                <ProfileComboboxField
+                  control={control}
+                  name={`certifications.${index}.issuingOrganization`}
+                  id={`certification-${index}-issuer`}
                   label="Issuing organization"
-                  htmlFor={`certification-${index}-issuer`}
-                  error={
-                    errors.certifications?.[index]?.issuingOrganization?.message
-                  }
-                >
-                  <Input
-                    id={`certification-${index}-issuer`}
-                    {...register(`certifications.${index}.issuingOrganization`)}
-                  />
-                </Field>
+                  options={issuerSuggestions}
+                  placeholder="e.g. Amazon Web Services"
+                  allowClear
+                />
                 <MonthYearField
                   control={control}
                   name={`certifications.${index}.issueDate`}
@@ -815,27 +815,25 @@ export function ProfilePage() {
                     {...register(`awards.${index}.title`)}
                   />
                 </Field>
-                <Field
+                <ProfileComboboxField
+                  control={control}
+                  name={`awards.${index}.associatedWith`}
+                  id={`award-${index}-associated`}
                   label="Associated with"
-                  htmlFor={`award-${index}-associated`}
                   hint="Where the award came from, such as a company or school."
-                  error={errors.awards?.[index]?.associatedWith?.message}
-                >
-                  <Input
-                    id={`award-${index}-associated`}
-                    {...register(`awards.${index}.associatedWith`)}
-                  />
-                </Field>
-                <Field
+                  options={awardAssociations}
+                  placeholder="Company or school"
+                  allowClear
+                />
+                <ProfileComboboxField
+                  control={control}
+                  name={`awards.${index}.issuer`}
+                  id={`award-${index}-issuer`}
                   label="Issuer"
-                  htmlFor={`award-${index}-issuer`}
-                  error={errors.awards?.[index]?.issuer?.message}
-                >
-                  <Input
-                    id={`award-${index}-issuer`}
-                    {...register(`awards.${index}.issuer`)}
-                  />
-                </Field>
+                  options={issuerSuggestions}
+                  placeholder="e.g. IEEE"
+                  allowClear
+                />
                 <MonthYearField
                   control={control}
                   name={`awards.${index}.issueDate`}
@@ -952,28 +950,36 @@ export function ProfilePage() {
                       {...register(`projects.${index}.url`)}
                     />
                   </Field>
-                  <AssociatedWithField
+                  <ProfileComboboxField
                     control={control}
-                    index={index}
+                    name={`projects.${index}.associatedWith`}
                     id={`project-${index}-associated`}
+                    label="Associated with (optional)"
+                    hint="Link this project to a company or school, or mark it as personal."
+                    options={projectAssociations}
+                    placeholder="Company or school"
+                    allowClear
+                    className="sm:col-span-2"
                   />
-                  <MonthYearField
-                    control={control}
-                    name={`projects.${index}.startDate`}
-                    id={`project-${index}-start`}
-                    label="Start date"
-                    pickerLabel={`Project ${index + 1} start date`}
-                    error={errors.projects?.[index]?.startDate?.message}
-                  />
-                  <MonthYearField
-                    control={control}
-                    name={`projects.${index}.endDate`}
-                    id={`project-${index}-end`}
-                    label="End date"
-                    pickerLabel={`Project ${index + 1} end date`}
-                    error={errors.projects?.[index]?.endDate?.message}
-                    allowPresent
-                  />
+                  <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+                    <MonthYearField
+                      control={control}
+                      name={`projects.${index}.startDate`}
+                      id={`project-${index}-start`}
+                      label="Start date"
+                      pickerLabel={`Project ${index + 1} start date`}
+                      error={errors.projects?.[index]?.startDate?.message}
+                    />
+                    <MonthYearField
+                      control={control}
+                      name={`projects.${index}.endDate`}
+                      id={`project-${index}-end`}
+                      label="End date"
+                      pickerLabel={`Project ${index + 1} end date`}
+                      error={errors.projects?.[index]?.endDate?.message}
+                      allowPresent
+                    />
+                  </div>
                   <Controller
                     control={control}
                     name={`projects.${index}.bullets`}

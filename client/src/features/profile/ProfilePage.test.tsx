@@ -766,6 +766,124 @@ describe('ProfilePage', () => {
     })
   }, 15000)
 
+  it('suggests schools for award associations and pools issuer values', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+
+    await user.click(screen.getByRole('button', { name: 'Add education' }))
+    await user.type(screen.getByLabelText('School'), 'State University')
+
+    await user.click(screen.getByRole('button', { name: 'Add certification' }))
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#certification-0-name' }),
+      'AWS Solutions Architect',
+    )
+    await user.type(
+      screen.getByLabelText('Issuing organization'),
+      'Amazon Web Services',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Add award' }))
+
+    const association = screen.getByLabelText('Associated with')
+    await user.click(association)
+    expect(screen.getByRole('option', { name: 'Acme' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'State University' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('option', { name: 'Personal Project' }),
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('option', { name: 'State University' }))
+
+    const issuer = screen.getByLabelText('Issuer')
+    await user.click(issuer)
+    expect(screen.getByRole('option', { name: 'Acme' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'State University' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'Amazon Web Services' }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('option', { name: 'Amazon Web Services' }))
+
+    expect(association).toHaveValue('State University')
+    expect(issuer).toHaveValue('Amazon Web Services')
+  }, 15000)
+
+  it('keeps a custom project association typed as free text', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+
+    await user.click(screen.getByRole('button', { name: 'Add project' }))
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#project-0-name' }),
+      'Legacy App',
+    )
+
+    const association = screen.getByLabelText('Associated with (optional)')
+    await user.type(association, 'OldCo')
+
+    expect(association).toHaveValue('OldCo')
+    expect(
+      screen.queryByRole('option', { name: 'OldCo' }),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.profile.projects[0]).toMatchObject({
+        name: 'Legacy App',
+        associatedWith: 'OldCo',
+      })
+    })
+  }, 15000)
+
+  it('clears an association', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), 'Jane Doe')
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com')
+
+    await user.click(screen.getByRole('button', { name: 'Add experience' }))
+    await user.type(screen.getByLabelText('Company'), 'Acme')
+    await user.type(screen.getByLabelText('Title'), 'Engineer')
+
+    await user.click(screen.getByRole('button', { name: 'Add project' }))
+    await user.type(
+      screen.getByLabelText('Name', { selector: '#project-0-name' }),
+      'Jobriq',
+    )
+
+    const association = screen.getByLabelText('Associated with (optional)')
+    await user.click(association)
+    await user.click(screen.getByRole('option', { name: 'Acme' }))
+    expect(association).toHaveValue('Acme')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Clear Associated with (optional)' }),
+    )
+    expect(association).toHaveValue('')
+
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(api.state.profile.projects[0]?.associatedWith).toBe('')
+    })
+  }, 15000)
+
   it('links to each experience entry and labels it with live values', async () => {
     const user = userEvent.setup()
     installMockApi()
@@ -812,6 +930,9 @@ describe('ProfilePage', () => {
     await user.type(screen.getByLabelText('Company'), 'Acme')
     await user.type(screen.getByLabelText('Title'), 'Engineer')
 
+    await user.click(screen.getByRole('button', { name: 'Add education' }))
+    await user.type(screen.getByLabelText('School'), 'State University')
+
     await user.click(screen.getByRole('button', { name: 'Add project' }))
     await user.type(
       screen.getByLabelText('Name', { selector: '#project-0-name' }),
@@ -819,13 +940,15 @@ describe('ProfilePage', () => {
     )
 
     const association = screen.getByLabelText('Associated with (optional)')
+    await user.click(association)
+    expect(screen.getByRole('option', { name: 'Acme' })).toBeInTheDocument()
     expect(
-      within(association).getByRole('option', { name: 'Acme' }),
+      screen.getByRole('option', { name: 'State University' }),
     ).toBeInTheDocument()
     expect(
-      within(association).getByRole('option', { name: 'Personal Project' }),
+      screen.getByRole('option', { name: 'Personal Project' }),
     ).toBeInTheDocument()
-    await user.selectOptions(association, 'Acme')
+    await user.click(screen.getByRole('option', { name: 'Acme' }))
 
     await user.click(
       screen.getByLabelText('Start date', { selector: '#project-0-start' }),
