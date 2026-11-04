@@ -8,6 +8,7 @@ import { Card } from '../../components/ui/card'
 import type { PromptStyle, ResumeTheme } from '../../lib/types'
 import { cn } from '../../lib/utils'
 import { useJobriq } from '../../providers/JobriqProvider'
+import { PiiMaskingSetting } from './PiiMaskingSetting'
 import { PromptStyleDialog } from './PromptStyleDialog'
 import { ResumeThemeDialog } from './ResumeThemeDialog'
 import { ResumeThemePreview } from './ResumeThemePreview'
@@ -218,7 +219,7 @@ export function SettingsPage() {
     <div className="space-y-10">
       <PageHeader
         title="Settings"
-        description="Choose the voice Jobriq writes in and the design it uses for exported resumes and cover letters."
+        description="Choose the voice Jobriq writes in, the design it uses for exported resumes and cover letters, and what it shares with the AI provider."
         actions={
           <>
             {baseStyles ? (
@@ -234,6 +235,27 @@ export function SettingsPage() {
           </>
         }
       />
+
+      <section
+        aria-labelledby="privacy-title"
+        className="grid gap-5 border-t border-border pt-8 lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-10"
+      >
+        <div>
+          <h2
+            id="privacy-title"
+            className="text-[1.3rem] font-medium leading-tight"
+          >
+            Privacy
+          </h2>
+          <p className="mt-2 max-w-[32ch] text-[0.8rem] leading-5 text-muted">
+            Control what Jobriq sends to the AI provider.
+          </p>
+        </div>
+
+        <Card className="p-5 sm:p-6">
+          <PiiMaskingSetting />
+        </Card>
+      </section>
 
       <section
         aria-labelledby="baseline-title"

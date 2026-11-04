@@ -22,6 +22,7 @@ import type {
   GeneratedResume,
   JobApplication,
   JobriqState,
+  PiiMasking,
   Profile,
   ProfileReview,
   PromptStyles,
@@ -36,6 +37,7 @@ interface JobriqContextValue {
   standaloneResume: GeneratedResume | null
   promptStyles: PromptStyles
   resumeThemes: ResumeThemes
+  piiMasking: PiiMasking
   status: LoadStatus
   loadError: string | null
   syncError: string | null
@@ -60,6 +62,7 @@ interface JobriqContextValue {
   updateResumeTheme: (id: string, input: ResumeThemeInput) => Promise<void>
   deleteResumeTheme: (id: string) => Promise<void>
   activateResumeTheme: (id: string) => Promise<void>
+  setPiiMasking: (enabled: boolean) => Promise<void>
   review: ProfileReview | null
   reviewedAt: string | null
   reviewing: boolean
@@ -99,6 +102,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const stateRef = useRef(state)
+  const piiMaskingRequestId = useRef(0)
 
   const setJobriqState = useCallback(
     (update: (current: JobriqState) => JobriqState) => {
@@ -414,6 +418,38 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
     [replaceResumeThemes],
   )
 
+  const setPiiMasking = useCallback(
+    async (enabled: boolean) => {
+      const previous = stateRef.current.piiMasking
+      const requestId = piiMaskingRequestId.current + 1
+      piiMaskingRequestId.current = requestId
+
+      setJobriqState((current) => ({ ...current, piiMasking: { enabled } }))
+
+      try {
+        const next = await api.updatePiiMasking(enabled)
+        if (piiMaskingRequestId.current !== requestId) {
+          return
+        }
+
+        setJobriqState((current) => ({ ...current, piiMasking: next }))
+        setSyncError(null)
+      } catch (error) {
+        if (piiMaskingRequestId.current === requestId) {
+          setJobriqState((current) =>
+            current.piiMasking.enabled === enabled
+              ? { ...current, piiMasking: previous }
+              : current,
+          )
+          setSyncError(errorMessage(error))
+        }
+
+        throw error
+      }
+    },
+    [setJobriqState],
+  )
+
   const reviewProfile = useCallback(async (profile: Profile) => {
     setReviewing(true)
     setReviewError(null)
@@ -438,6 +474,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       standaloneResume: state.standaloneResume,
       promptStyles: state.promptStyles,
       resumeThemes: state.resumeThemes,
+      piiMasking: state.piiMasking,
       status,
       loadError,
       syncError,
@@ -459,6 +496,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateResumeTheme,
       deleteResumeTheme,
       activateResumeTheme,
+      setPiiMasking,
       review,
       reviewedAt,
       reviewing,
@@ -471,6 +509,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       state.standaloneResume,
       state.promptStyles,
       state.resumeThemes,
+      state.piiMasking,
       status,
       loadError,
       syncError,
@@ -492,6 +531,7 @@ export function JobriqProvider({ children }: { children: ReactNode }) {
       updateResumeTheme,
       deleteResumeTheme,
       activateResumeTheme,
+      setPiiMasking,
       review,
       reviewedAt,
       reviewing,

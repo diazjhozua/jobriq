@@ -3,6 +3,7 @@ import {
   apiStateSchema,
   applicationResponseSchema,
   generatedResumeSchema,
+  piiMaskingSchema,
   profileResponseSchema,
   profileReviewSchema,
   promptStylesSchema,
@@ -14,6 +15,7 @@ import type {
   GeneratedResume,
   JobApplication,
   JobriqState,
+  PiiMasking,
   Profile,
   ProfileReview,
   PromptStyles,
@@ -331,6 +333,14 @@ export async function activateResumeTheme(id: string): Promise<ResumeThemes> {
     `${resumeThemeUrl(id)}/activate`,
     { method: 'POST' },
     resumeThemesSchema,
+  )
+}
+
+export async function updatePiiMasking(enabled: boolean): Promise<PiiMasking> {
+  return requestJson(
+    '/api/pii-masking',
+    jsonRequest('PUT', { enabled }),
+    piiMaskingSchema,
   )
 }
 

@@ -1,5 +1,6 @@
 import type {
   JobriqState,
+  PiiMasking,
   Profile,
   PromptStyles,
   ResumeThemes,
@@ -47,6 +48,10 @@ export function createEmptyPromptStyles(): PromptStyles {
   }
 }
 
+export function createEmptyPiiMasking(): PiiMasking {
+  return { enabled: true }
+}
+
 export function createEmptyProfile(): Profile {
   return {
     personal: {
@@ -76,5 +81,6 @@ export function createEmptyState(): JobriqState {
     standaloneResume: null,
     promptStyles: createEmptyPromptStyles(),
     resumeThemes: createEmptyResumeThemes(),
+    piiMasking: createEmptyPiiMasking(),
   }
 }

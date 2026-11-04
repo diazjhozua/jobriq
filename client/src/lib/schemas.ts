@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  createEmptyPiiMasking,
   createEmptyPromptStyles,
   createEmptyResumeThemes,
   DEFAULT_RESUME_THEME_ID,
@@ -379,6 +380,10 @@ export const resumeThemeFormSchema = z.object({
 
 export type ResumeThemeFormValues = z.infer<typeof resumeThemeFormSchema>
 
+export const piiMaskingSchema = z.object({
+  enabled: z.boolean().default(true),
+})
+
 export const apiStateSchema = z.object({
   profile: storedProfileSchema,
   applications: z.array(applicationSchema),
@@ -389,6 +394,9 @@ export const apiStateSchema = z.object({
   resumeThemes: resumeThemesSchema
     .optional()
     .transform((value) => value ?? createEmptyResumeThemes()),
+  piiMasking: piiMaskingSchema
+    .nullish()
+    .transform((value) => value ?? createEmptyPiiMasking()),
 })
 
 export const profileResponseSchema = z.object({

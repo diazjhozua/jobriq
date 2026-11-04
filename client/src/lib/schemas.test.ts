@@ -144,6 +144,53 @@ describe('apiStateSchema', () => {
     expect(parsed.promptStyles.baseline.isActive).toBe(true)
   })
 
+  it('defaults a missing PII masking slice to enabled', () => {
+    const parsed = apiStateSchema.parse({
+      profile: createEmptyProfile(),
+      applications: [],
+    })
+
+    expect(parsed.piiMasking).toEqual({ enabled: true })
+  })
+
+  it('defaults a null or partial PII masking slice to enabled', () => {
+    expect(
+      apiStateSchema.parse({
+        profile: createEmptyProfile(),
+        applications: [],
+        piiMasking: null,
+      }).piiMasking,
+    ).toEqual({ enabled: true })
+
+    expect(
+      apiStateSchema.parse({
+        profile: createEmptyProfile(),
+        applications: [],
+        piiMasking: {},
+      }).piiMasking,
+    ).toEqual({ enabled: true })
+  })
+
+  it('keeps an explicit PII masking value', () => {
+    const parsed = apiStateSchema.parse({
+      profile: createEmptyProfile(),
+      applications: [],
+      piiMasking: { enabled: false },
+    })
+
+    expect(parsed.piiMasking).toEqual({ enabled: false })
+  })
+
+  it('rejects a malformed PII masking slice', () => {
+    const result = apiStateSchema.safeParse({
+      profile: createEmptyProfile(),
+      applications: [],
+      piiMasking: { enabled: 'yes' },
+    })
+
+    expect(result.success).toBe(false)
+  })
+
   it('keeps null prompt style timestamps null', () => {
     const parsed = apiStateSchema.parse({
       profile: createEmptyProfile(),

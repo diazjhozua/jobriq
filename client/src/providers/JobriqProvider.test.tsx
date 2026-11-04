@@ -38,6 +38,8 @@ function Harness() {
     reviewing,
     reviewError,
     reviewProfile,
+    piiMasking,
+    setPiiMasking,
   } = useJobriq()
 
   const resume: GeneratedResume = {
@@ -65,6 +67,7 @@ function Harness() {
       <p data-testid="profile-name">{profile.personal.name}</p>
       <p data-testid="applications">{JSON.stringify(applications)}</p>
       <p data-testid="standalone-resume">{JSON.stringify(standaloneResume)}</p>
+      <p data-testid="pii-masking">{String(piiMasking.enabled)}</p>
       <button onClick={retry}>Retry</button>
       <button
         onClick={() =>
@@ -128,6 +131,11 @@ function Harness() {
         Generate standalone
       </button>
       <button onClick={() => void reviewProfile(profile)}>Run review</button>
+      <button
+        onClick={() => void setPiiMasking(!piiMasking.enabled).catch(() => {})}
+      >
+        Toggle masking
+      </button>
     </div>
   )
 }
@@ -164,6 +172,46 @@ describe('JobriqProvider', () => {
     await waitForReady()
 
     expect(screen.getByTestId('profile-name')).toHaveTextContent('Hydrated Name')
+  })
+
+  it('hydrates and toggles the PII masking setting', async () => {
+    const user = userEvent.setup()
+    const api = installMockApi()
+    renderHarness()
+    await waitForReady()
+
+    expect(screen.getByTestId('pii-masking')).toHaveTextContent('true')
+
+    await user.click(screen.getByRole('button', { name: 'Toggle masking' }))
+
+    await waitFor(() => {
+      expect(api.state.piiMasking.enabled).toBe(false)
+    })
+    expect(screen.getByTestId('pii-masking')).toHaveTextContent('false')
+  })
+
+  it('rolls back a failed PII masking toggle', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      fail: {
+        piiMaskingUpdate: {
+          status: 503,
+          detail: 'The database is unavailable.',
+          code: 'database_unavailable',
+        },
+      },
+    })
+    renderHarness()
+    await waitForReady()
+
+    await user.click(screen.getByRole('button', { name: 'Toggle masking' }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-error')).toHaveTextContent(
+        'The database is unavailable.',
+      )
+    })
+    expect(screen.getByTestId('pii-masking')).toHaveTextContent('true')
   })
 
   it('saves the profile on demand', async () => {

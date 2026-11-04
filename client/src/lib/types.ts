@@ -220,12 +220,17 @@ export interface ResumeThemes {
   activeThemeId: string
 }
 
+export interface PiiMasking {
+  enabled: boolean
+}
+
 export interface JobriqState {
   profile: Profile
   applications: JobApplication[]
   standaloneResume: GeneratedResume | null
   promptStyles: PromptStyles
   resumeThemes: ResumeThemes
+  piiMasking: PiiMasking
 }
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [

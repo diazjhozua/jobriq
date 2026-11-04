@@ -33,6 +33,7 @@ type Operation =
   | 'resumeThemeUpdate'
   | 'resumeThemeDelete'
   | 'resumeThemeActivate'
+  | 'piiMaskingUpdate'
 
 export interface MockFailure {
   status?: number
@@ -129,6 +130,7 @@ export function installMockApi({
         standaloneResume: current.standaloneResume,
         promptStyles: current.promptStyles,
         resumeThemes: current.resumeThemes,
+        piiMasking: current.piiMasking,
       })
     }
 
@@ -369,6 +371,11 @@ export function installMockApi({
       return json(snapshotThemes())
     }
 
+    if (path === '/api/pii-masking' && method === 'PUT') {
+      current.piiMasking = { enabled: Boolean(body?.enabled) }
+      return json(current.piiMasking)
+    }
+
     if (path === '/api/profile' && method === 'PUT') {
       if (profileGate) {
         await profileGate
@@ -561,6 +568,10 @@ function operationFor(path: string, method: string): Operation | null {
 
   if (path === '/api/profile') {
     return 'profile'
+  }
+
+  if (path === '/api/pii-masking') {
+    return 'piiMaskingUpdate'
   }
 
   if (path === '/api/profile/review') {

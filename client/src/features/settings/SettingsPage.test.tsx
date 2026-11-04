@@ -90,6 +90,23 @@ describe('SettingsPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('toggles PII masking and persists it', async () => {
+    const api = installMockApi()
+    await renderPage()
+
+    const toggle = screen.getByRole('switch', {
+      name: 'Redact personal details before AI requests',
+    })
+    expect(toggle).toBeChecked()
+
+    await userEvent.setup().click(toggle)
+
+    await waitFor(() => {
+      expect(api.state.piiMasking.enabled).toBe(false)
+    })
+    expect(toggle).not.toBeChecked()
+  })
+
   it('activates the first saved style automatically', async () => {
     const api = installMockApi()
     await renderPage()

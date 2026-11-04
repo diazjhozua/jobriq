@@ -18,6 +18,7 @@ import {
   saveProfile,
   updateApplication,
   updateApplicationStatus,
+  updatePiiMasking,
   updatePromptStyle,
   updateResumeTheme,
 } from './api'
@@ -50,6 +51,20 @@ describe('api', () => {
 
     expect(state).toEqual(createEmptyState())
     expect(api.calls[0]).toMatchObject({ method: 'GET', path: '/api/state' })
+  })
+
+  it('updates the PII masking setting', async () => {
+    const api = installMockApi()
+
+    const setting = await updatePiiMasking(false)
+
+    expect(setting).toEqual({ enabled: false })
+    expect(api.state.piiMasking.enabled).toBe(false)
+    expect(api.calls[0]).toMatchObject({
+      method: 'PUT',
+      path: '/api/pii-masking',
+      body: { enabled: false },
+    })
   })
 
   it('saves the profile through the API', async () => {
