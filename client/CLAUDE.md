@@ -7,6 +7,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 - Routes: `/profile`, `/applications`, and `/settings`; unknown paths redirect to `/profile`.
 - `src/providers/JobriqProvider.tsx` hydrates once from `GET /api/state` and exposes async mutations. Add new state there rather than introducing another store or per-component persistence.
 - Prompt styles live on `state.promptStyles` (`styles`, `activeStyleId`, `baseline`). The four mutations (`createPromptStyle`, `updatePromptStyle`, `deletePromptStyle`, `activatePromptStyle`) replace that slice with the server snapshot; the first saved style auto-activates, and the read-only baseline applies whenever `activeStyleId` is null. `SettingsPage` is the only consumer.
+- PII masking lives on `state.piiMasking` (`{ enabled: boolean }`), defaults to enabled, and is toggled by `setPiiMasking(enabled)` through `PUT /api/pii-masking`. The provider updates optimistically, replaces the slice with the server response, and rolls back with a sync error on failure. `SettingsPage` renders it in the Privacy section through `PiiMaskingSetting`.
 - Resume themes live on `state.resumeThemes` (`themes`, `builtIns`, `activeThemeId`). The four mutations (`createResumeTheme`, `updateResumeTheme`, `deleteResumeTheme`, `activateResumeTheme`) replace that slice with the server snapshot. Built-ins come from the server and are never duplicated client-side; a missing slice falls back to `createEmptyResumeThemes()`, and `activeThemeId` falls back to `DEFAULT_RESUME_THEME_ID` (Classic). `SettingsPage` is the only consumer. It renders the themes as a thumbnail gallery beside a shared full-page `ResumeThemePreview`; the preview selection is local state, not activation, and `ResumeThemeDialog` reuses the same preview.
 - Hydration failure blocks the workspace with a retry panel; mutation failure rolls back optimistic updates and shows a dismissible sync banner. Do not swallow API errors silently.
 - Every request carries the anonymous `jobriq_client` cookie; the server scopes all data to it. There is no `localStorage` persistence and no client-side storage key.
@@ -20,7 +21,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 `src/lib/schemas.ts` keeps two profiles on purpose:
 
 - Strict `profileSchema` and friends validate the form; `promptStyleFormSchema` and `resumeThemeFormSchema` validate the Settings dialogs.
-- Lenient `stored*` schemas validate API responses, so partially filled profiles still load. `promptStylesSchema` and `resumeThemesSchema` are lenient in the same way: missing slices in the state fall back to `createEmptyPromptStyles()` and `createEmptyResumeThemes()`.
+- Lenient `stored*` schemas validate API responses, so partially filled profiles still load. `promptStylesSchema`, `resumeThemesSchema`, and `piiMaskingSchema` are lenient in the same way: missing slices in the state fall back to `createEmptyPromptStyles()`, `createEmptyResumeThemes()`, and `createEmptyPiiMasking()` (enabled).
 
 When adding a field, update both, plus `src/lib/types.ts` and `src/lib/defaults.ts`.
 
