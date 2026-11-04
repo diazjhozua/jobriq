@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createEmptyState } from '../../lib/defaults'
 import { installMockApi } from '../../test/mockApi'
 import type { JobriqState } from '../../lib/types'
@@ -209,6 +209,89 @@ describe('ProfilePage', () => {
     expect(
       await within(dialog).findByText('personal.email: Enter a valid email address'),
     ).toBeInTheDocument()
+  })
+
+  it('exports the current form values as a template', async () => {
+    const user = userEvent.setup()
+    const createObjectURL = vi.fn(() => 'blob:profile')
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: createObjectURL,
+      configurable: true,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: vi.fn(),
+      configurable: true,
+    })
+    const api = installMockApi({ state: stateWithProfile() })
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), ' Jr')
+    await user.click(screen.getByRole('button', { name: 'Export profile' }))
+
+    await waitFor(() => {
+      expect(api.calls.at(-1)).toMatchObject({
+        method: 'POST',
+        path: '/api/profile/export',
+      })
+    })
+    expect(api.calls.at(-1)?.body).toMatchObject({
+      profile: { personal: { name: 'Jane Doe Jr' } },
+    })
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('disables the export button while the request runs', async () => {
+    const user = userEvent.setup()
+    let release: () => void = () => {}
+    const exportGate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: vi.fn(() => 'blob:profile'),
+      configurable: true,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: vi.fn(),
+      configurable: true,
+    })
+    installMockApi({ state: stateWithProfile(), exportGate })
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Export profile' }))
+
+    const button = screen.getByRole('button', { name: 'Export profile' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByText('Exporting profile…')).toBeInTheDocument()
+
+    release()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Export profile' })).toBeEnabled()
+    })
+  })
+
+  it('shows an export error without blocking the form', async () => {
+    const user = userEvent.setup()
+    installMockApi({
+      state: stateWithProfile(),
+      fail: {
+        profileExport: {
+          status: 500,
+          detail: 'The profile could not be exported.',
+          code: 'export_failed',
+        },
+      },
+    })
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Export profile' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The profile could not be exported.',
+    )
+    expect(screen.getByRole('button', { name: 'Export profile' })).toBeEnabled()
   })
 
   it('reviews unsaved form values without saving the profile', async () => {
