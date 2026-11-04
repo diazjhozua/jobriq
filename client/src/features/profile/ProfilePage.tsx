@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { FileText, Plus, Upload } from 'lucide-react'
+import { Download, FileText, Loader2, Plus, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
@@ -39,6 +39,7 @@ import { SkillsGainedSuggestions } from './SkillsGainedSuggestions'
 import { StandaloneResumeDialog } from './StandaloneResumeDialog'
 import { TemplateImportDialog } from './TemplateImportDialog'
 import { useProfileOptionSets } from './profileOptions'
+import { useProfileExport } from './useProfileExport'
 
 interface SectionProps {
   id: string
@@ -130,6 +131,7 @@ export function ProfilePage() {
   const location = useLocation()
   const [importOpen, setImportOpen] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
+  const { exporting, exportError, exportProfile } = useProfileExport()
 
   const {
     control,
@@ -336,6 +338,23 @@ export function ProfilePage() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => exportProfile(getProfile())}
+              disabled={isSubmitting || exporting}
+              aria-busy={exporting}
+            >
+              {exporting ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={15}
+                  className="animate-spin motion-reduce:animate-none"
+                />
+              ) : (
+                <Download aria-hidden="true" size={15} />
+              )}
+              Export profile
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setResumeOpen(true)}
               disabled={isSubmitting}
             >
@@ -345,6 +364,15 @@ export function ProfilePage() {
           </>
         }
       />
+
+      {exportError ? (
+        <div
+          role="alert"
+          className="border-l-2 border-accent bg-canvas px-3 py-2 text-[0.85rem] leading-6 text-body"
+        >
+          {exportError}
+        </div>
+      ) : null}
 
       <ProfileSectionNav />
 
@@ -1021,7 +1049,13 @@ export function ProfilePage() {
           onImported={handleImported}
         />
         <p role="status" className="sr-only">
-          {isSubmitting ? 'Saving profile…' : saved ? 'Profile saved.' : ''}
+          {exporting
+            ? 'Exporting profile…'
+            : isSubmitting
+              ? 'Saving profile…'
+              : saved
+                ? 'Profile saved.'
+                : ''}
         </p>
         <ProfileSaveBar
           dirty={dirty}
