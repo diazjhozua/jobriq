@@ -241,3 +241,33 @@ test('falls back to Classic when the active custom theme is deleted', async ({
     page.getByRole('heading', { name: 'No saved themes yet' }),
   ).toBeVisible()
 })
+
+test('toggles PII masking and keeps it across reloads', async ({ page }) => {
+  await page.goto('/settings')
+
+  const toggle = page.getByRole('switch', {
+    name: 'Redact personal details before AI requests',
+  })
+  await expect(toggle).toBeChecked()
+
+  const disabled = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/pii-masking') &&
+      response.request().method() === 'PUT',
+  )
+  await toggle.uncheck()
+  await disabled
+  await expect(toggle).not.toBeChecked()
+
+  await page.reload()
+  await expect(toggle).not.toBeChecked()
+
+  const enabled = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/pii-masking') &&
+      response.request().method() === 'PUT',
+  )
+  await toggle.check()
+  await enabled
+  await expect(toggle).toBeChecked()
+})
