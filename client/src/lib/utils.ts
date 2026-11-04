@@ -12,12 +12,12 @@ export function parseSkills(value: string): string[] {
     .filter(Boolean)
 }
 
-export function uniqueSkills(skills: readonly string[]): string[] {
+export function uniqueStrings(values: readonly string[]): string[] {
   const seen = new Set<string>()
   const unique: string[] = []
 
-  for (const skill of skills) {
-    const trimmed = skill.trim()
+  for (const value of values) {
+    const trimmed = value.trim()
     const key = trimmed.toLowerCase()
     if (!trimmed || seen.has(key)) {
       continue
@@ -28,6 +28,10 @@ export function uniqueSkills(skills: readonly string[]): string[] {
   }
 
   return unique
+}
+
+export function uniqueSkills(skills: readonly string[]): string[] {
+  return uniqueStrings(skills)
 }
 
 export function mergeSkills(existing: readonly string[], raw: string): string[] {

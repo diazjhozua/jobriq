@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { mergeSkills, uniqueSkills } from './utils'
+import { mergeSkills, uniqueSkills, uniqueStrings } from './utils'
+
+describe('uniqueStrings', () => {
+  it('trims, drops blanks, and dedupes case-insensitively', () => {
+    expect(uniqueStrings([' Acme ', 'acme', '', '  ', 'Globex'])).toEqual([
+      'Acme',
+      'Globex',
+    ])
+  })
+})
 
 describe('uniqueSkills', () => {
   it('trims, drops blanks, and dedupes case-insensitively', () => {
