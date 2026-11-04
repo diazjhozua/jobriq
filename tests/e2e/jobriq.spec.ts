@@ -1,6 +1,8 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 
 const fileNamePattern = /^jane-doe-resume-\d{8}-\d{6}\.(md|docx)$/
+const profileFileNamePattern = /^jane-doe-profile-\d{8}-\d{6}\.txt$/
 
 async function pickMonthYear(
   page: Page,
@@ -72,6 +74,24 @@ test('imports a pasted resume template', async ({ page }) => {
   await page.reload()
   await expect(page.getByLabel('Name')).toHaveValue('Imported Person')
   await expect(page.getByLabel('Company')).toHaveValue('Acme')
+})
+
+test('exports the current profile as an import template', async ({ page }) => {
+  await page.goto('/profile')
+
+  await page.getByLabel('Name').fill('Jane Doe')
+  await page.getByLabel('Email').fill('jane@example.com')
+
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export profile' }).click()
+  const file = await download
+
+  expect(file.suggestedFilename()).toMatch(profileFileNamePattern)
+
+  const content = await readFile((await file.path())!, 'utf8')
+  expect(content).toContain('[PERSONAL]')
+  expect(content).toContain('Name: Jane Doe')
+  expect(content).toContain('Email: jane@example.com')
 })
 
 test('captures project dates and the associated company', async ({ page }) => {
