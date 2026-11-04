@@ -84,9 +84,17 @@ test('captures project dates and the associated company', async ({ page }) => {
   await page.getByLabel('Company').fill('Acme')
   await page.getByLabel('Title').fill('Engineer')
 
+  await page.getByRole('button', { name: 'Add education' }).click()
+  await page.getByLabel('School').fill('State University')
+
   await page.getByRole('button', { name: 'Add project' }).click()
   await page.locator('#project-0-name').fill('Jobriq')
-  await page.locator('#project-0-associated').selectOption('Acme')
+  await page.locator('#project-0-associated').click()
+  await expect(
+    page.getByRole('option', { name: 'State University' }),
+  ).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Personal Project' })).toBeVisible()
+  await page.getByRole('option', { name: 'Acme' }).click()
 
   await page.locator('#project-0-start').click()
   await page.getByLabel('Project 1 start date year').selectOption('2022')
@@ -116,11 +124,15 @@ test('captures certifications and awards in the generated resume', async ({
   await page.getByLabel('Name').fill('Jane Doe')
   await page.getByLabel('Email').fill('jane@example.com')
 
+  await page.getByRole('button', { name: 'Add education' }).click()
+  await page.getByLabel('School').fill('State University')
+
   await page.getByRole('button', { name: 'Add certification' }).click()
   await page.locator('#certification-0-name').fill('AWS Solutions Architect')
   await page
     .locator('#certification-0-issuer')
     .fill('Amazon Web Services')
+  await page.keyboard.press('Escape')
   await page.locator('#certification-0-issue').click()
   await page.getByLabel('Certification 1 issue date year').selectOption('2024')
   await page.getByRole('button', { name: 'March 2024' }).click()
@@ -131,8 +143,20 @@ test('captures certifications and awards in the generated resume', async ({
 
   await page.getByRole('button', { name: 'Add award' }).click()
   await page.locator('#award-0-title').fill('Engineer of the Year')
+  await page.locator('#award-0-associated').click()
+  await expect(
+    page.getByRole('option', { name: 'State University' }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
   await page.locator('#award-0-associated').fill('Acme')
+  await page.keyboard.press('Escape')
+  await page.locator('#award-0-issuer').click()
+  await expect(
+    page.getByRole('option', { name: 'Amazon Web Services' }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
   await page.locator('#award-0-issuer').fill('IEEE')
+  await page.keyboard.press('Escape')
   await page.locator('#award-0-issue').click()
   await page.getByLabel('Award 1 issue date year').selectOption('2023')
   await page.getByRole('button', { name: 'December 2023' }).click()
