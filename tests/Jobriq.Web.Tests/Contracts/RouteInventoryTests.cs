@@ -26,6 +26,7 @@ public sealed class RouteInventoryTests
         "POST /api/resume/generate",
         "PUT /api/applications/{id:guid}",
         "PUT /api/applications/{id:guid}/generated-resume",
+        "PUT /api/pii-masking",
         "PUT /api/profile",
         "PUT /api/prompt-styles/{id:guid}",
         "PUT /api/resume-themes/{id:guid}"

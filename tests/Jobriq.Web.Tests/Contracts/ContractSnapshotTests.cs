@@ -215,6 +215,19 @@ public sealed class ContractSnapshotTests
     }
 
     [Fact]
+    public async Task PiiMasking_Update()
+    {
+        await using ContractWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PutAsJsonAsync(
+            "/api/pii-masking",
+            new { enabled = false });
+
+        await SnapshotAssert.MatchesJsonAsync("pii-masking-update", response);
+    }
+
+    [Fact]
     public async Task Problem_InvalidRequest_Profile()
     {
         await using ContractWebFactory factory = new();
