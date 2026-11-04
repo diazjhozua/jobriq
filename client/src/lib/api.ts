@@ -140,6 +140,16 @@ export async function reviewProfile(profile: Profile): Promise<ProfileReview> {
   )
 }
 
+export async function downloadProfile(profile: Profile): Promise<void> {
+  const response = await fetch('/api/profile/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ profile }),
+  })
+
+  await saveResponse(response, 'profile.txt')
+}
+
 export async function createApplication(
   application: NewApplicationInput,
 ): Promise<JobApplication> {
