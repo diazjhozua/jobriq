@@ -29,4 +29,5 @@ tests/e2e/playwright-report/
 .claude/plans/
 .claude/cache/
 .claude/todos/
+.claude/worktrees/
 .claude/.verify-failed
