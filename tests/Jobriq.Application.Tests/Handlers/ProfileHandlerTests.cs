@@ -2,6 +2,7 @@ using Jobriq.Application.Abstractions;
 using Jobriq.Application.Abstractions.Persistence;
 using Jobriq.Application.Common.Mapping;
 using Jobriq.Application.CoverLetters.Export;
+using Jobriq.Application.Profiles.Export;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
 using Jobriq.Application.Resumes.ExportResume;
@@ -137,6 +138,50 @@ public sealed class GetStateQueryHandlerTests
         IClientContext context = Substitute.For<IClientContext>();
         context.ClientId.Returns(TestData.ClientId);
         return context;
+    }
+}
+
+public sealed class ExportProfileQueryHandlerTests
+{
+    [Fact]
+    public async Task ExportsTemplateWithTimestampedName()
+    {
+        IProfileExporter exporter = Substitute.For<IProfileExporter>();
+        exporter.FileExtension.Returns(".txt");
+        exporter.ContentType.Returns("text/plain; charset=utf-8");
+        exporter.Export(Arg.Any<ResumeProfile>()).Returns("template"u8.ToArray());
+
+        ExportProfileQueryHandler handler = new(
+            exporter,
+            new TestTimeProvider(TestData.Now));
+
+        Result<ExportedFile> result = await handler.Handle(
+            new ExportProfileQuery(TestData.Profile()),
+            CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.FileName.ShouldBe("jane-doe-profile-20260102-030405.txt");
+        result.Value.ContentType.ShouldBe("text/plain; charset=utf-8");
+        result.Value.Content.ShouldBe("template"u8.ToArray());
+    }
+
+    [Fact]
+    public async Task ExportFailure_ThrowsExportFailed()
+    {
+        IProfileExporter exporter = Substitute.For<IProfileExporter>();
+        exporter.FileExtension.Returns(".txt");
+        exporter
+            .When(candidate => candidate.Export(Arg.Any<ResumeProfile>()))
+            .Throw(new InvalidOperationException("Boom."));
+
+        ExportProfileQueryHandler handler = new(
+            exporter,
+            new TestTimeProvider(TestData.Now));
+
+        await Should.ThrowAsync<ExportFailedException>(async () =>
+            await handler.Handle(
+                new ExportProfileQuery(TestData.Profile()),
+                CancellationToken.None));
     }
 }
 

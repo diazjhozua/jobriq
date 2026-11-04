@@ -16,6 +16,7 @@ public sealed class RouteInventoryTests
         "POST /api/applications",
         "POST /api/applications/{id:guid}/cover-letter",
         "POST /api/cover-letter/export",
+        "POST /api/profile/export",
         "POST /api/profile/resume",
         "POST /api/profile/review",
         "POST /api/prompt-styles",

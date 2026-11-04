@@ -1,0 +1,6 @@
+{
+  "status": 200,
+  "contentType": "text/plain; charset=utf-8",
+  "contentDisposition": "attachment; filename=jane-doe-profile-<timestamp>.txt; filename*=UTF-8''jane-doe-profile-<timestamp>.txt",
+  "hasContent": true
+}

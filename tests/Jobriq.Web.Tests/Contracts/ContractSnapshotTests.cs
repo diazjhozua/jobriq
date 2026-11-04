@@ -51,6 +51,22 @@ public sealed class ContractSnapshotTests
     }
 
     [Fact]
+    public async Task Profile_Export()
+    {
+        await using ContractWebFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/profile/export",
+            new { profile = CreateProfile() });
+
+        response.Content.Headers.ContentDisposition!.FileName
+            .ShouldBe("jane-doe-profile-20260102-030405.txt");
+
+        await SnapshotAssert.MatchesBinaryAsync("profile-export", response);
+    }
+
+    [Fact]
     public async Task StandaloneResume_Generate()
     {
         await using ContractWebFactory factory = new();

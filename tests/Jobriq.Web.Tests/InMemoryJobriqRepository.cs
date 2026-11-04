@@ -21,6 +21,17 @@ internal sealed class InMemoryJobriqRepository : IJobriqRepository
 
     public bool Unavailable { get; set; }
 
+    public int SavedProfileCount
+    {
+        get
+        {
+            lock (gate)
+            {
+                return profiles.Count;
+            }
+        }
+    }
+
     public Task<JobriqState> GetStateAsync(Guid clientId, CancellationToken cancellationToken)
     {
         ThrowIfUnavailable();

@@ -5,6 +5,7 @@ using Jobriq.Application.Applications.UpdateDetails;
 using Jobriq.Application.Applications.UpdateStatus;
 using Jobriq.Application.CoverLetters.Export;
 using Jobriq.Application.PiiMasking.Update;
+using Jobriq.Application.Profiles.Export;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
@@ -287,12 +288,39 @@ public sealed class CommandValidatorTests
     }
 
     [Fact]
+    public void ExportProfile_ValidCommand_Passes()
+    {
+        new ExportProfileQueryValidator()
+            .Validate(new ExportProfileQuery(TestData.Profile()))
+            .IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
     public void UpdatePiiMasking_WithoutEnabled_Fails()
     {
         AssertSingle(
             new UpdatePiiMaskingCommandValidator().Validate(
                 new UpdatePiiMaskingCommand(null)),
             "Choose whether to redact personal details.");
+    }
+
+    [Fact]
+    public void ExportProfile_WithoutProfile_Fails()
+    {
+        AssertSingle(
+            new ExportProfileQueryValidator().Validate(new ExportProfileQuery(null)),
+            "A complete profile is required.");
+    }
+
+    [Fact]
+    public void ExportProfile_WithoutCollections_Fails()
+    {
+        ProfileDto profile = TestData.Profile();
+        profile.Skills = null;
+
+        AssertSingle(
+            new ExportProfileQueryValidator().Validate(new ExportProfileQuery(profile)),
+            "A complete profile is required.");
     }
 
     private static void AssertSingle(ValidationResult result, string message)

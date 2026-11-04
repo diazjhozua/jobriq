@@ -7,6 +7,7 @@ using Jobriq.Application.Applications.UpdateDetails;
 using Jobriq.Application.Applications.UpdateStatus;
 using Jobriq.Application.CoverLetters.Export;
 using Jobriq.Application.PiiMasking.Update;
+using Jobriq.Application.Profiles.Export;
 using Jobriq.Application.Profiles.GenerateStandaloneResume;
 using Jobriq.Application.Profiles.Review;
 using Jobriq.Application.Profiles.Save;
@@ -50,6 +51,7 @@ public sealed class DependencyInjectionTests
         services.GetRequiredService<ICommandHandler<ReviewProfileCommand, ReviewProfileResponse>>();
         services.GetRequiredService<IQueryHandler<GetStateQuery, StateDto>>();
         services.GetRequiredService<IQueryHandler<ExportCoverLetterQuery, ExportedFile>>();
+        services.GetRequiredService<IQueryHandler<ExportProfileQuery, ExportedFile>>();
         services.GetRequiredService<ICommandHandler<CreatePromptStyleCommand, PromptStylesDto>>();
         services.GetRequiredService<ICommandHandler<UpdatePromptStyleCommand, PromptStylesDto>>();
         services.GetRequiredService<ICommandHandler<DeletePromptStyleCommand, PromptStylesDto>>();
