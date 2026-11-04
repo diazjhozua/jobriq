@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Download, FileText, Loader2, Plus, Upload } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
-import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { useLocation } from 'react-router-dom'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { Button } from '../../components/ui/button'
@@ -11,8 +11,18 @@ import { MonthYearField } from '../../components/ui/month-year-field'
 import { Select } from '../../components/ui/select'
 import { Textarea } from '../../components/ui/textarea'
 import { formatMonthYearValue } from '../../lib/monthYear'
+import {
+  compareAwards,
+  compareCertifications,
+  compareEducation,
+  compareExperience,
+  compareProjects,
+  sortProfile,
+} from '../../lib/ordering/profileSectionOrder'
+import { useAutoArrangeFieldArray } from '../../lib/ordering/useAutoArrangeFieldArray'
 import { profileSchema } from '../../lib/schemas'
 import { mergeSkills, uniqueSkills } from '../../lib/utils'
+import { entryAnchorId, type EntrySection } from './entryNavItems'
 import type {
   Award,
   Certification,
@@ -114,6 +124,14 @@ function canonicalDates(profile: Profile): Profile {
   }
 }
 
+const SECTION_LABELS: Record<EntrySection, string> = {
+  experience: 'Experience',
+  education: 'Education',
+  certifications: 'Certification',
+  awards: 'Award',
+  projects: 'Project',
+}
+
 export function ProfilePage() {
   const {
     profile,
@@ -132,6 +150,17 @@ export function ProfilePage() {
   const [importOpen, setImportOpen] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
   const { exporting, exportError, exportProfile } = useProfileExport()
+  const [moveAnnouncement, setMoveAnnouncement] = useState('')
+  const revealTimer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (revealTimer.current !== null) {
+        window.clearTimeout(revealTimer.current)
+      }
+    },
+    [],
+  )
 
   const {
     control,
@@ -146,11 +175,99 @@ export function ProfilePage() {
     defaultValues: profile,
   })
 
-  const experience = useFieldArray({ control, name: 'experience' })
-  const education = useFieldArray({ control, name: 'education' })
-  const certifications = useFieldArray({ control, name: 'certifications' })
-  const awards = useFieldArray({ control, name: 'awards' })
-  const projects = useFieldArray({ control, name: 'projects' })
+  const experience = useAutoArrangeFieldArray({
+    control,
+    getValues,
+    name: 'experience',
+    compare: compareExperience,
+  })
+  const education = useAutoArrangeFieldArray({
+    control,
+    getValues,
+    name: 'education',
+    compare: compareEducation,
+  })
+  const certifications = useAutoArrangeFieldArray({
+    control,
+    getValues,
+    name: 'certifications',
+    compare: compareCertifications,
+  })
+  const awards = useAutoArrangeFieldArray({
+    control,
+    getValues,
+    name: 'awards',
+    compare: compareAwards,
+  })
+  const projects = useAutoArrangeFieldArray({
+    control,
+    getValues,
+    name: 'projects',
+    compare: compareProjects,
+  })
+
+  const revealEntry = (
+    section: EntrySection,
+    entries: readonly { id: string }[],
+    entryId: string,
+  ) => {
+    const index = entries.findIndex((entry) => entry.id === entryId)
+
+    if (index === -1) {
+      return
+    }
+
+    setMoveAnnouncement(
+      `${SECTION_LABELS[section]} moved to position ${index + 1} of ${entries.length}.`,
+    )
+
+    if (revealTimer.current !== null) {
+      window.clearTimeout(revealTimer.current)
+    }
+
+    revealTimer.current = window.setTimeout(() => {
+      revealTimer.current = null
+      document
+        .getElementById(entryAnchorId(section, index))
+        ?.scrollIntoView({ block: 'start' })
+    }, 0)
+  }
+
+  const arrangeExperience = (index: number) => {
+    const entryId = getValues('experience')[index]?.id
+    if (entryId && experience.arrange()) {
+      revealEntry('experience', getValues('experience'), entryId)
+    }
+  }
+
+  const arrangeEducation = (index: number) => {
+    const entryId = getValues('education')[index]?.id
+    if (entryId && education.arrange()) {
+      revealEntry('education', getValues('education'), entryId)
+    }
+  }
+
+  const arrangeCertifications = (index: number) => {
+    const entryId = getValues('certifications')[index]?.id
+    if (entryId && certifications.arrange()) {
+      revealEntry('certifications', getValues('certifications'), entryId)
+    }
+  }
+
+  const arrangeAwards = (index: number) => {
+    const entryId = getValues('awards')[index]?.id
+    if (entryId && awards.arrange()) {
+      revealEntry('awards', getValues('awards'), entryId)
+    }
+  }
+
+  const arrangeProjects = (index: number) => {
+    const entryId = getValues('projects')[index]?.id
+    if (entryId && projects.arrange()) {
+      revealEntry('projects', getValues('projects'), entryId)
+    }
+  }
+
   const { projectAssociations, awardAssociations, issuerSuggestions } =
     useProfileOptionSets(control)
 
@@ -194,7 +311,7 @@ export function ProfilePage() {
   const normalize = (values: Profile): Profile => {
     const dated = canonicalDates(values)
 
-    return {
+    const cleaned: Profile = {
       ...dated,
       skills: uniqueSkills(skills),
       experience: dated.experience.map((entry) => ({
@@ -216,6 +333,8 @@ export function ProfilePage() {
         skillsGained: uniqueSkills(entry.skillsGained ?? []),
       })),
     }
+
+    return sortProfile(cleaned)
   }
 
   const addSkill = (skill: string) => {
@@ -246,7 +365,7 @@ export function ProfilePage() {
   }
 
   const handleImported = async (imported: Profile) => {
-    const next = canonicalDates(imported)
+    const next = sortProfile(canonicalDates(imported))
 
     await saveProfile(next)
     reset(next)
@@ -323,6 +442,9 @@ export function ProfilePage() {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_21rem]">
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="min-w-0 space-y-9">
+      <p role="status" className="sr-only">
+        {moveAnnouncement}
+      </p>
       <PageHeader
         title="Profile"
         description="Everything here feeds your resumes, whether you tailor one to an application or generate one on its own."
@@ -508,6 +630,7 @@ export function ProfilePage() {
                     label="Start date"
                     pickerLabel={`Experience ${index + 1} start date`}
                     error={errors.experience?.[index]?.startDate?.message}
+                    onCommit={() => arrangeExperience(index)}
                   />
                   <MonthYearField
                     control={control}
@@ -516,6 +639,7 @@ export function ProfilePage() {
                     label="End date"
                     pickerLabel={`Experience ${index + 1} end date`}
                     error={errors.experience?.[index]?.endDate?.message}
+                    onCommit={() => arrangeExperience(index)}
                     allowPresent
                   />
                   <Controller
@@ -643,6 +767,7 @@ export function ProfilePage() {
                     label="Start date"
                     pickerLabel={`Education ${index + 1} start date`}
                     error={errors.education?.[index]?.startDate?.message}
+                    onCommit={() => arrangeEducation(index)}
                   />
                   <MonthYearField
                     control={control}
@@ -651,6 +776,7 @@ export function ProfilePage() {
                     label="End date"
                     pickerLabel={`Education ${index + 1} end date`}
                     error={errors.education?.[index]?.endDate?.message}
+                    onCommit={() => arrangeEducation(index)}
                     allowPresent
                   />
                   <Controller
@@ -742,6 +868,7 @@ export function ProfilePage() {
                   label="Issue date"
                   pickerLabel={`Certification ${index + 1} issue date`}
                   error={errors.certifications?.[index]?.issueDate?.message}
+                  onCommit={() => arrangeCertifications(index)}
                 />
                 <MonthYearField
                   control={control}
@@ -750,6 +877,7 @@ export function ProfilePage() {
                   label="Expiration date (optional)"
                   pickerLabel={`Certification ${index + 1} expiration date`}
                   error={errors.certifications?.[index]?.expirationDate?.message}
+                  onCommit={() => arrangeCertifications(index)}
                 />
                 <Field
                   label="Credential ID"
@@ -869,6 +997,7 @@ export function ProfilePage() {
                   label="Issue date"
                   pickerLabel={`Award ${index + 1} issue date`}
                   error={errors.awards?.[index]?.issueDate?.message}
+                  onCommit={() => arrangeAwards(index)}
                 />
                 <Field
                   label="Description"
@@ -997,6 +1126,7 @@ export function ProfilePage() {
                       label="Start date"
                       pickerLabel={`Project ${index + 1} start date`}
                       error={errors.projects?.[index]?.startDate?.message}
+                      onCommit={() => arrangeProjects(index)}
                     />
                     <MonthYearField
                       control={control}
@@ -1005,6 +1135,7 @@ export function ProfilePage() {
                       label="End date"
                       pickerLabel={`Project ${index + 1} end date`}
                       error={errors.projects?.[index]?.endDate?.message}
+                      onCommit={() => arrangeProjects(index)}
                       allowPresent
                     />
                   </div>

@@ -1100,4 +1100,263 @@ describe('ProfilePage', () => {
       within(projectNav).getByRole('link', { name: '1 · Jobriq' }),
     ).toBeInTheDocument()
   })
+
+  describe('auto arrange', () => {
+    type ExperienceEntry = JobriqState['profile']['experience'][number]
+
+    function experienceEntry(
+      id: string,
+      company: string,
+      startDate: string,
+      endDate = '',
+    ): ExperienceEntry {
+      return {
+        id,
+        company,
+        title: company === 'Newer Co' ? 'Staff' : 'Engineer',
+        startDate,
+        endDate,
+        bullets: ['Built a thing'],
+        skillsGained: [],
+      }
+    }
+
+    function stateWithExperience(entries: ExperienceEntry[]): JobriqState {
+      const state = stateWithProfile()
+      state.profile.experience = entries
+      return state
+    }
+
+    const companies = () =>
+      screen
+        .getAllByLabelText('Company')
+        .map((input) => (input as HTMLInputElement).value)
+
+    async function pickStartDate(
+      user: ReturnType<typeof userEvent.setup>,
+      index: number,
+      year: string,
+      monthLabel: string,
+    ) {
+      await user.click(
+        screen.getByLabelText('Start date', {
+          selector: `#experience-${index}-start`,
+        }),
+      )
+      await user.selectOptions(
+        screen.getByLabelText(`Experience ${index + 1} start date year`),
+        year,
+      )
+      await user.click(screen.getByRole('button', { name: monthLabel }))
+    }
+
+    it('moves the edited entry newest first when a start date is committed', async () => {
+      const user = userEvent.setup()
+      const api = installMockApi({
+        state: stateWithExperience([
+          experienceEntry('exp-new', 'Newer Co', 'Aug 2022'),
+          experienceEntry('exp-old', 'Older Co', 'Jan 2018'),
+        ]),
+      })
+      await renderPage()
+
+      expect(companies()).toEqual(['Newer Co', 'Older Co'])
+
+      await pickStartDate(user, 1, '2024', 'March 2024')
+
+      await waitFor(() => {
+        expect(companies()).toEqual(['Older Co', 'Newer Co'])
+      })
+      expect(
+        screen.getByText('Experience moved to position 1 of 2.'),
+      ).toBeInTheDocument()
+
+      const nav = screen.getByRole('navigation', {
+        name: 'Work experience entries',
+      })
+      expect(
+        within(nav).getByRole('link', { name: '1 · Older Co — Engineer' }),
+      ).toHaveAttribute('href', '#profile-experience-entry-1')
+      expect(
+        within(nav).getByRole('link', { name: '2 · Newer Co — Staff' }),
+      ).toHaveAttribute('href', '#profile-experience-entry-2')
+
+      expect(
+        api.calls.some(
+          (call) => call.method === 'PUT' && call.path === '/api/profile',
+        ),
+      ).toBe(false)
+    })
+
+    it('uses Present as the newest end date for a start-date tie', async () => {
+      const user = userEvent.setup()
+      installMockApi({
+        state: stateWithExperience([
+          experienceEntry('exp-ended', 'Ended Co', 'Jan 2020', 'Jan 2021'),
+          experienceEntry('exp-current', 'Current Co', 'Jan 2020'),
+        ]),
+      })
+      await renderPage()
+
+      expect(companies()).toEqual(['Ended Co', 'Current Co'])
+
+      await user.click(
+        screen.getByLabelText('End date', { selector: '#experience-1-end' }),
+      )
+      await user.click(screen.getByRole('button', { name: 'Present' }))
+
+      await waitFor(() => {
+        expect(companies()).toEqual(['Current Co', 'Ended Co'])
+      })
+    })
+
+    it('keeps certifications ordered by issue date when an expiration changes', async () => {
+      const user = userEvent.setup()
+      const state = stateWithProfile()
+      state.profile.certifications = [
+        {
+          id: 'cert-new',
+          name: 'Newer cert',
+          issuingOrganization: '',
+          issueDate: 'Jan 2024',
+          expirationDate: '',
+          credentialId: '',
+          credentialUrl: '',
+          skillsGained: [],
+        },
+        {
+          id: 'cert-old',
+          name: 'Older cert',
+          issuingOrganization: '',
+          issueDate: 'Jan 2020',
+          expirationDate: '',
+          credentialId: '',
+          credentialUrl: '',
+          skillsGained: [],
+        },
+      ]
+      const api = installMockApi({ state })
+      await renderPage()
+
+      const names = () =>
+        screen
+          .getAllByLabelText('Name', { selector: 'input[id$="-name"]' })
+          .map((input) => (input as HTMLInputElement).value)
+
+      await user.click(
+        screen.getByLabelText('Expiration date (optional)', {
+          selector: '#certification-1-expiration',
+        }),
+      )
+      await user.selectOptions(
+        screen.getByLabelText('Certification 2 expiration date year'),
+        '2026',
+      )
+      await user.click(screen.getByRole('button', { name: 'March 2026' }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByLabelText('Expiration date (optional)', {
+            selector: '#certification-1-expiration',
+          }),
+        ).toHaveTextContent('Mar 2026')
+      })
+      expect(names()).toEqual(['Newer cert', 'Older cert'])
+      expect(
+        api.calls.some(
+          (call) => call.method === 'PUT' && call.path === '/api/profile',
+        ),
+      ).toBe(false)
+    })
+
+    it('saves entries newest first with undated entries last', async () => {
+      const user = userEvent.setup()
+      const api = installMockApi({
+        state: stateWithExperience([
+          experienceEntry('exp-old', 'Older Co', 'Jan 2018'),
+          experienceEntry('exp-legacy', 'Legacy Co', 'Spring 2020'),
+          experienceEntry('exp-new', 'Newer Co', 'Aug 2022'),
+        ]),
+      })
+      await renderPage()
+
+      await user.type(screen.getAllByLabelText('Company')[0], ' Inc')
+      await user.click(screen.getByRole('button', { name: 'Save profile' }))
+
+      expect(await screen.findByText('Saved')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(
+          api.state.profile.experience.map((entry) => entry.id),
+        ).toEqual(['exp-new', 'exp-old', 'exp-legacy'])
+      })
+    })
+
+    it('reviews entries newest first without saving the profile', async () => {
+      const user = userEvent.setup()
+      const api = installMockApi({
+        state: stateWithExperience([
+          experienceEntry('exp-old', 'Older Co', 'Jan 2018'),
+          experienceEntry('exp-new', 'Newer Co', 'Aug 2022'),
+        ]),
+      })
+      await renderPage()
+
+      await user.click(screen.getByRole('button', { name: 'Review profile' }))
+      await screen.findByText(/3 suggestions/)
+
+      const reviewCall = api.calls.find(
+        (call) => call.path === '/api/profile/review',
+      )
+      const reviewed = reviewCall?.body as {
+        profile: JobriqState['profile']
+      }
+      expect(reviewed.profile.experience.map((entry) => entry.id)).toEqual([
+        'exp-new',
+        'exp-old',
+      ])
+      expect(
+        api.calls.some(
+          (call) => call.method === 'PUT' && call.path === '/api/profile',
+        ),
+      ).toBe(false)
+    })
+
+    it('sorts imported entries newest first', async () => {
+      const user = userEvent.setup()
+      const api = installMockApi()
+      await renderPage()
+
+      await user.click(screen.getByRole('button', { name: 'Import template' }))
+      const dialog = await screen.findByRole('dialog')
+      fireEvent.change(within(dialog).getByLabelText('Template text'), {
+        target: {
+          value: [
+            '[PERSONAL]',
+            'Name: Jane Doe',
+            'Email: jane@example.com',
+            '',
+            '[EXPERIENCE]',
+            'Company: Older Co',
+            'Title: Engineer',
+            'Start: Jan 2018',
+            '',
+            '[EXPERIENCE]',
+            'Company: Newer Co',
+            'Title: Staff',
+            'Start: Aug 2022',
+          ].join('\n'),
+        },
+      })
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Import profile' }),
+      )
+
+      expect(await screen.findByText('Saved')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(
+          api.state.profile.experience.map((entry) => entry.company),
+        ).toEqual(['Newer Co', 'Older Co'])
+      })
+    })
+  })
 })
