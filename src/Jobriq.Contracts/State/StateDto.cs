@@ -11,4 +11,6 @@ public sealed class StateDto
     public PromptStylesDto PromptStyles { get; set; } = new();
 
     public ResumeThemesDto ResumeThemes { get; set; } = new();
+
+    public PiiMaskingDto PiiMasking { get; set; } = new();
 }
