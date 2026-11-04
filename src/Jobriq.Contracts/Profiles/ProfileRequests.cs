@@ -10,6 +10,11 @@ public sealed class SaveProfileResponse
     public ProfileDto Profile { get; set; } = new();
 }
 
+public sealed class ExportProfileRequest
+{
+    public ProfileDto? Profile { get; set; }
+}
+
 public sealed class ReviewProfileRequest
 {
     public ProfileDto? Profile { get; set; }

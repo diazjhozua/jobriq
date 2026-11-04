@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IResumeExporter, MarkdownResumeExporter>();
         services.AddSingleton<IResumeExporter, DocxResumeExporter>();
         services.AddSingleton<ICoverLetterExporter, DocxCoverLetterExporter>();
+        services.AddSingleton<IProfileExporter, TemplateProfileExporter>();
         services.AddPersistence(configuration, isTesting);
 
         return services;
