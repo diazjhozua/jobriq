@@ -19,6 +19,8 @@ interface MonthYearPickerProps {
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
+  /** Runs after a picked value is committed and the popover closes. */
+  onCommit?: (value: string) => void
   allowPresent?: boolean
   allowClear?: boolean
   placeholder?: string
@@ -34,6 +36,7 @@ export function MonthYearPicker({
   value,
   onChange,
   onBlur,
+  onCommit,
   allowPresent = false,
   allowClear = true,
   placeholder = 'Select month and year',
@@ -61,6 +64,7 @@ export function MonthYearPicker({
   const commit = (next: string) => {
     onChange(next)
     close()
+    onCommit?.(next)
   }
 
   const selectedMonth =

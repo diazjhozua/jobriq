@@ -15,6 +15,7 @@ interface MonthYearFieldProps<T extends FieldValues> {
   pickerLabel: string
   error?: string
   allowPresent?: boolean
+  onCommit?: (value: string) => void
   className?: string
 }
 
@@ -26,6 +27,7 @@ export function MonthYearField<T extends FieldValues>({
   pickerLabel,
   error,
   allowPresent,
+  onCommit,
   className,
 }: MonthYearFieldProps<T>) {
   return (
@@ -40,6 +42,7 @@ export function MonthYearField<T extends FieldValues>({
             value={typeof field.value === 'string' ? field.value : ''}
             onChange={field.onChange}
             onBlur={field.onBlur}
+            onCommit={onCommit}
             allowPresent={allowPresent}
           />
         )}
