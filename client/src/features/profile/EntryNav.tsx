@@ -29,7 +29,7 @@ export function EntryNav({ ariaLabel, items }: EntryNavProps) {
               className={cn(
                 'line-clamp-2 min-h-9 border-l-2 py-1.5 pl-2.5 pr-1 text-[0.78rem] leading-5 transition-colors break-words',
                 active === item.id
-                  ? 'border-primary font-medium text-navy'
+                  ? 'border-primary font-medium text-navy hover:bg-surface'
                   : 'border-transparent text-muted hover:border-border hover:text-navy',
               )}
             >

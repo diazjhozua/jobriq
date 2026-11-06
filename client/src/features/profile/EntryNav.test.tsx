@@ -37,7 +37,9 @@ describe('EntryNav', () => {
       '#profile-experience-entry-2',
     ])
     expect(links[0]).toHaveAttribute('aria-current', 'location')
+    expect(links[0]).toHaveClass('hover:bg-surface')
     expect(links[1]).not.toHaveAttribute('aria-current')
+    expect(links[1]).not.toHaveClass('hover:bg-surface')
     expect(links[0]).toHaveAttribute('title', '1 · Acme — Engineer')
     expect(nav).toBeInTheDocument()
   })
