@@ -75,6 +75,8 @@ public sealed class MarkdownResumeExporterTests
 
             ### [Tool](https://example.com/tool)
             *Aug 2022 – Present · Acme*
+
+            A small tool.
             - Enhanced: Shipped a tool
 
             """.ReplaceLineEndings("\n"));
@@ -216,6 +218,7 @@ public sealed class MarkdownResumeExporterTests
                 StartDate = "Aug 2022",
                 EndDate = "Present",
                 AssociatedWith = "Acme",
+                Description = "A small tool.",
                 Bullets =
                 [
                     new EnhancedBullet

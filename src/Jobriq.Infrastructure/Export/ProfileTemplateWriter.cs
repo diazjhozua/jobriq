@@ -101,7 +101,7 @@ internal static class ProfileTemplateWriter
             Field("Start", project.StartDate),
             Field("End", project.EndDate),
             Field("Associated with", project.AssociatedWith)
-        }.Concat(BulletLines(project.Bullets)));
+        }.Concat(DescriptionLines(project.Description)).Concat(BulletLines(project.Bullets)));
 
     private static string Section(string name, IEnumerable<string> lines) =>
         string.Join('\n', lines.Prepend($"[{name}]"));
@@ -110,6 +110,32 @@ internal static class ProfileTemplateWriter
     {
         string text = SingleLine(value);
         return text.Length == 0 ? $"{key}:" : $"{key}: {text}";
+    }
+
+    private static IEnumerable<string> DescriptionLines(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
+        List<string> lines = [.. value.ReplaceLineEndings("\n").Split('\n')];
+        while (lines.Count > 0 && lines[0].Trim().Length == 0)
+        {
+            lines.RemoveAt(0);
+        }
+
+        while (lines.Count > 0 && lines[^1].Trim().Length == 0)
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return
+        [
+            "Description: |",
+            .. lines.Select(line =>
+                line.TrimEnd() is { Length: > 0 } text ? $"  {text}" : "  ")
+        ];
     }
 
     private static IEnumerable<string> BulletLines(IEnumerable<string> bullets) =>
@@ -139,6 +165,7 @@ internal static class ProfileTemplateWriter
         HasText(project.StartDate) ||
         HasText(project.EndDate) ||
         HasText(project.AssociatedWith) ||
+        HasText(project.Description) ||
         project.Bullets.Any(HasText);
 
     private static bool HasText(string? value) => SingleLine(value).Length > 0;

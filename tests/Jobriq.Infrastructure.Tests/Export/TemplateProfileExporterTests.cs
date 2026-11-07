@@ -51,6 +51,8 @@ public sealed class TemplateProfileExporterTests
             Start: 2021
             End: 2022
             Associated with: Personal Project
+            Description: |
+              A small tool.
             - Made it
 
             """.ReplaceLineEndings("\n"));
@@ -224,6 +226,7 @@ public sealed class TemplateProfileExporterTests
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "A small tool.",
                 Bullets = ["Made it"],
                 SkillsGained = ["gained-only-skill"]
             }

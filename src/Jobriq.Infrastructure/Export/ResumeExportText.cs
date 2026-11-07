@@ -17,6 +17,9 @@ internal static class ResumeExportText
         return associated.Length == 0 ? dates : $"{dates} · {associated}";
     }
 
+    public static string ProjectDescription(GeneratedProject project) =>
+        project.Description?.Trim() ?? string.Empty;
+
     public static string CertificationHeader(Certification certification)
     {
         string name = certification.Name?.Trim() ?? string.Empty;

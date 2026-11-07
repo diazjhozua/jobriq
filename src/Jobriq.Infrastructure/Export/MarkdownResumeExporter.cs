@@ -162,7 +162,9 @@ public sealed class MarkdownResumeExporter : IResumeExporter
 
         List<GeneratedProject> activeProjects = [.. resume.Projects.Where(project =>
             !string.IsNullOrEmpty(project.Name)
-            && (project.Bullets.Count > 0 || ResumeExportText.ProjectMeta(project).Length > 0))];
+            && (project.Bullets.Count > 0
+                || ResumeExportText.ProjectMeta(project).Length > 0
+                || ResumeExportText.ProjectDescription(project).Length > 0))];
         if (activeProjects.Count > 0)
         {
             lines.Add(string.Empty);
@@ -181,6 +183,13 @@ public sealed class MarkdownResumeExporter : IResumeExporter
                 if (meta.Length > 0)
                 {
                     lines.Add($"*{meta}*");
+                }
+
+                string description = ResumeExportText.ProjectDescription(project);
+                if (description.Length > 0)
+                {
+                    lines.Add(string.Empty);
+                    lines.Add(description);
                 }
 
                 foreach (EnhancedBullet bullet in project.Bullets)

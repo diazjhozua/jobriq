@@ -249,7 +249,9 @@ public sealed class DocxResumeExporter : IResumeExporter
     {
         List<GeneratedProject> active = [.. resume.Projects.Where(project =>
             !string.IsNullOrEmpty(project.Name)
-            && (project.Bullets.Count > 0 || ResumeExportText.ProjectMeta(project).Length > 0))];
+            && (project.Bullets.Count > 0
+                || ResumeExportText.ProjectMeta(project).Length > 0
+                || ResumeExportText.ProjectDescription(project).Length > 0))];
         if (active.Count == 0)
         {
             return;
@@ -275,11 +277,63 @@ public sealed class DocxResumeExporter : IResumeExporter
                     theme.CreateRun(meta, theme.SmallSize, theme.MutedColor)));
             }
 
+            string description = ResumeExportText.ProjectDescription(project);
+            if (description.Length > 0)
+            {
+                AddDescription(body, description, theme);
+            }
+
             foreach (EnhancedBullet bullet in project.Bullets)
             {
                 body.Append(BulletParagraph(bullet.Enhanced, theme));
             }
         }
+    }
+
+    private static void AddDescription(Body body, string description, DocxTheme theme)
+    {
+        List<string> paragraphLines = [];
+
+        foreach (string line in description.ReplaceLineEndings("\n").Split('\n'))
+        {
+            string text = line.Trim();
+            if (text.Length == 0)
+            {
+                FlushDescriptionParagraph(body, paragraphLines, theme);
+                continue;
+            }
+
+            paragraphLines.Add(text);
+        }
+
+        FlushDescriptionParagraph(body, paragraphLines, theme);
+    }
+
+    private static void FlushDescriptionParagraph(
+        Body body,
+        List<string> lines,
+        DocxTheme theme)
+    {
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        Paragraph paragraph = new(
+            new ParagraphProperties(new SpacingBetweenLines { After = "40" }));
+
+        for (int index = 0; index < lines.Count; index++)
+        {
+            if (index > 0)
+            {
+                paragraph.Append(new Break());
+            }
+
+            paragraph.Append(theme.CreateRun(lines[index], theme.BodySize, theme.TextColor));
+        }
+
+        body.Append(paragraph);
+        lines.Clear();
     }
 
     private static Paragraph BulletParagraph(string text, DocxTheme theme) =>

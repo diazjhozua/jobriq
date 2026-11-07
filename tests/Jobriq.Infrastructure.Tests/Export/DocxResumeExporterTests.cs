@@ -31,7 +31,12 @@ public sealed class DocxResumeExporterTests
         text.ShouldContain("C#, React");
         text.ShouldContain("Tool — https://example.com/tool");
         text.ShouldContain("Aug 2022 – Present · Acme");
+        text.ShouldContain("A small tool.");
         text.ShouldContain("Enhanced: Shipped a tool");
+        text.IndexOf("Aug 2022 – Present · Acme", StringComparison.Ordinal)
+            .ShouldBeLessThan(text.IndexOf("A small tool.", StringComparison.Ordinal));
+        text.IndexOf("A small tool.", StringComparison.Ordinal)
+            .ShouldBeLessThan(text.IndexOf("Enhanced: Shipped a tool", StringComparison.Ordinal));
         text.ShouldNotContain("gained-only-skill");
 
         text.IndexOf("Professional Summary", StringComparison.Ordinal)
@@ -226,6 +231,7 @@ public sealed class DocxResumeExporterTests
                 StartDate = "Aug 2022",
                 EndDate = "Present",
                 AssociatedWith = "Acme",
+                Description = "A small tool.",
                 Bullets =
                 [
                     new EnhancedBullet
