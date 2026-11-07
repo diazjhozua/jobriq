@@ -6,91 +6,55 @@ import type {
   Project,
   WorkExperience,
 } from '../types'
-import { compareDateSortKeysDesc, toDateSortKey } from './dateSortKey'
+import {
+  compareByPolicy,
+  rangeOrderingPolicy,
+  singleDateOrderingPolicy,
+  sortByPolicy,
+  type SectionOrderingPolicy,
+} from './orderingPolicy'
 
-export interface ProfileSectionDescriptor<T extends { id: string }> {
-  primary: (entry: T) => string
-  secondary?: (entry: T) => string
-}
-
-export interface ProfileSectionDescriptors {
-  experience: ProfileSectionDescriptor<WorkExperience>
-  education: ProfileSectionDescriptor<Education>
-  certifications: ProfileSectionDescriptor<Certification>
-  awards: ProfileSectionDescriptor<Award>
-  projects: ProfileSectionDescriptor<Project>
+export interface ProfileSectionPolicies {
+  experience: SectionOrderingPolicy<WorkExperience>
+  education: SectionOrderingPolicy<Education>
+  certifications: SectionOrderingPolicy<Certification>
+  awards: SectionOrderingPolicy<Award>
+  projects: SectionOrderingPolicy<Project>
 }
 
 /**
- * Which date fields order each profile section. Ranges order by start date
- * with the end date as a tie-break; certifications and awards order by their
- * issue date only.
+ * Which dates order each profile section. Ranges order by end date, where an
+ * unfilled end means the entry is ongoing (ranked like `Present`), and use the
+ * start date as the tie-break; certifications and awards order by issue date.
  */
-export const PROFILE_SECTION_ORDER: ProfileSectionDescriptors = {
-  experience: {
-    primary: (entry) => entry.startDate,
-    secondary: (entry) => entry.endDate,
-  },
-  education: {
-    primary: (entry) => entry.startDate,
-    secondary: (entry) => entry.endDate,
-  },
-  certifications: {
-    primary: (entry) => entry.issueDate,
-  },
-  awards: {
-    primary: (entry) => entry.issueDate,
-  },
-  projects: {
-    primary: (entry) => entry.startDate,
-    secondary: (entry) => entry.endDate,
-  },
+export const PROFILE_SECTION_ORDER: ProfileSectionPolicies = {
+  experience: rangeOrderingPolicy(
+    (entry) => entry.startDate,
+    (entry) => entry.endDate,
+  ),
+  education: rangeOrderingPolicy(
+    (entry) => entry.startDate,
+    (entry) => entry.endDate,
+  ),
+  certifications: singleDateOrderingPolicy((entry) => entry.issueDate),
+  awards: singleDateOrderingPolicy((entry) => entry.issueDate),
+  projects: rangeOrderingPolicy(
+    (entry) => entry.startDate,
+    (entry) => entry.endDate,
+  ),
 }
 
 export function createEntryComparator<T extends { id: string }>(
-  descriptor: ProfileSectionDescriptor<T>,
+  policy: SectionOrderingPolicy<T>,
 ): (left: T, right: T) => number {
-  return (left, right) => {
-    const leftPrimary = toDateSortKey(descriptor.primary(left))
-    const rightPrimary = toDateSortKey(descriptor.primary(right))
-    const primary = compareDateSortKeysDesc(leftPrimary, rightPrimary)
-
-    if (primary !== 0) {
-      return primary
-    }
-
-    // Undated entries are last as a group and keep their relative order.
-    if (leftPrimary.kind === 'unparseable' || rightPrimary.kind === 'unparseable') {
-      return 0
-    }
-
-    if (!descriptor.secondary) {
-      return 0
-    }
-
-    return compareDateSortKeysDesc(
-      toDateSortKey(descriptor.secondary(left)),
-      toDateSortKey(descriptor.secondary(right)),
-    )
-  }
-}
-
-/** Stable sort that preserves the original order of equal entries. */
-export function sortStableBy<T>(
-  entries: readonly T[],
-  compare: (left: T, right: T) => number,
-): T[] {
-  return entries
-    .map((entry, index) => ({ entry, index }))
-    .sort((left, right) => compare(left.entry, right.entry) || left.index - right.index)
-    .map(({ entry }) => entry)
+  return (left, right) => compareByPolicy(policy, left, right)
 }
 
 export function sortProfileEntries<T extends { id: string }>(
   entries: readonly T[],
-  descriptor: ProfileSectionDescriptor<T>,
+  policy: SectionOrderingPolicy<T>,
 ): T[] {
-  return sortStableBy(entries, createEntryComparator(descriptor))
+  return sortByPolicy(entries, policy)
 }
 
 export const compareExperience = createEntryComparator(

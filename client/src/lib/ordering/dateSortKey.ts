@@ -1,17 +1,24 @@
 import { parseMonthYear } from '../monthYear'
 
+/** How an empty date value participates in ordering. */
+export type EmptyDatePolicy = 'ongoing' | 'unparseable'
+
 export type DateSortKey =
   | { kind: 'dated'; ordinal: number; precision: 'month' | 'year' }
-  | { kind: 'present' }
+  | { kind: 'ongoing'; source: 'present' | 'empty' }
   | { kind: 'unparseable'; reason: 'empty' | 'legacy'; raw: string }
 
 /**
  * Turns a stored month-year display string into a comparable key.
  * Months rank by `year * 12 + (month - 1)`; a year-only value is treated as
- * January of that year; `Present` is newest; empty and legacy free text are
- * unparseable and sort last.
+ * January of that year; `Present` is ongoing and newest. An empty value is
+ * unparseable by default; pass `'ongoing'` to rank it like `Present`. Legacy
+ * free text is always unparseable and sorts last.
  */
-export function toDateSortKey(value: string): DateSortKey {
+export function toDateSortKey(
+  value: string,
+  empty: EmptyDatePolicy = 'unparseable',
+): DateSortKey {
   const parsed = parseMonthYear(value)
 
   switch (parsed.kind) {
@@ -24,17 +31,19 @@ export function toDateSortKey(value: string): DateSortKey {
     case 'year':
       return { kind: 'dated', ordinal: parsed.year * 12, precision: 'year' }
     case 'present':
-      return { kind: 'present' }
+      return { kind: 'ongoing', source: 'present' }
     case 'legacy':
       return { kind: 'unparseable', reason: 'legacy', raw: parsed.raw }
     default:
-      return { kind: 'unparseable', reason: 'empty', raw: '' }
+      return empty === 'ongoing'
+        ? { kind: 'ongoing', source: 'empty' }
+        : { kind: 'unparseable', reason: 'empty', raw: '' }
   }
 }
 
 function rank(key: DateSortKey): number {
   switch (key.kind) {
-    case 'present':
+    case 'ongoing':
       return 2
     case 'dated':
       return 1
@@ -44,7 +53,7 @@ function rank(key: DateSortKey): number {
 }
 
 /**
- * Descending order: Present, then dated values newest first (a month outranks
+ * Descending order: ongoing, then dated values newest first (a month outranks
  * a year-only value on the same ordinal), then unparseable values.
  */
 export function compareDateSortKeysDesc(

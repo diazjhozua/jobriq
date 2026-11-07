@@ -7,7 +7,7 @@ import {
   type UseFieldArrayReturn,
   type UseFormGetValues,
 } from 'react-hook-form'
-import { sortStableBy } from './profileSectionOrder'
+import { sortStableBy } from './orderingPolicy'
 
 type FieldArrayEntry<T extends FieldValues, K extends FieldArrayPath<T>> =
   T[K] extends readonly (infer Entry)[] ? Entry : never
