@@ -71,6 +71,40 @@ public sealed class PromptsTests
     }
 
     [Fact]
+    public void EnhanceProject_UsesNameDescriptionAndBullets()
+    {
+        Project project = new()
+        {
+            Name = "Jobriq",
+            Description = "A resume builder.",
+            Bullets = ["Built a thing"]
+        };
+
+        string prompt = Prompts.EnhanceProject(project);
+
+        prompt.ShouldContain("project called \"Jobriq\"");
+        prompt.ShouldContain("Project description:\nA resume builder.");
+        prompt.ShouldContain("1. Built a thing");
+        prompt.ShouldContain("Describe what the project is and what it does");
+        prompt.ShouldContain("product description, not a work log");
+        prompt.ShouldContain("\"Developed\", \"Built\", \"Created\"");
+        prompt.ShouldContain("\"description\"");
+        prompt.ShouldContain("\"bullets\"");
+        prompt.ShouldNotContain("\r");
+    }
+
+    [Fact]
+    public void EnhanceProject_MarksMissingDescriptionAndBullets()
+    {
+        Project project = new() { Name = "Jobriq" };
+
+        string prompt = Prompts.EnhanceProject(project);
+
+        prompt.ShouldContain("Project description:\n(none)");
+        prompt.ShouldContain("Bullets:\n(none)");
+    }
+
+    [Fact]
     public void GenerateSummary_UsesObjectiveWordingWhenRequested()
     {
         WorkExperience experience = new()
@@ -231,6 +265,7 @@ public sealed class PromptsTests
                     StartDate = "Aug 2022",
                     EndDate = "Present",
                     AssociatedWith = "Acme",
+                    Description = "A small tool.",
                     Bullets = ["Shipped a tool"]
                 }
             ]
@@ -264,7 +299,9 @@ public sealed class PromptsTests
         prompt.ShouldContain("Jobriq");
         prompt.ShouldContain("Dates: Aug 2022 - Present");
         prompt.ShouldContain("Associated with: Acme");
+        prompt.ShouldContain("Description: A small tool.");
         prompt.ShouldContain("0. Shipped a tool");
+        prompt.ShouldContain("only propose bullet changes");
         prompt.ShouldContain("job-agnostic");
         prompt.ShouldContain("proposedText");
         prompt.ShouldContain("\"suggestions\"");

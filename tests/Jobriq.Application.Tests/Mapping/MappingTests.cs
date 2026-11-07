@@ -44,6 +44,7 @@ public sealed class MappingTests
         roundTripped.Awards.Single().Issuer.ShouldBe("Acme");
         roundTripped.Skills.ShouldBe(profile.Skills);
         roundTripped.Projects.Single().AssociatedWith.ShouldBe("Personal Project");
+        roundTripped.Projects.Single().Description.ShouldBe("A small tool.");
         roundTripped.Projects.Single().SkillsGained.ShouldBe(["TypeScript"]);
     }
 
@@ -98,6 +99,7 @@ public sealed class MappingTests
         roundTripped.Education.Single().SkillsGained.ShouldBe(["Algorithms"]);
         roundTripped.Certifications.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
         roundTripped.Projects.Single().Bullets.Single().Original.ShouldBe("Made it");
+        roundTripped.Projects.Single().Description.ShouldBe("Enhanced: A small tool.");
         roundTripped.Keywords!.Matched.ShouldBe(["C#", "React"]);
         roundTripped.Keywords.Missing.ShouldBe(["Kubernetes"]);
         roundTripped.GeneratedAt.ShouldBe(Timestamp);
@@ -282,6 +284,7 @@ public sealed class MappingTests
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "A small tool.",
                 Bullets = ["Made it"],
                 SkillsGained = ["TypeScript"],
                 EnhancedBullets =
@@ -336,6 +339,7 @@ public sealed class MappingTests
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "Enhanced: A small tool.",
                 Bullets =
                 [
                     new EnhancedBullet { Original = "Made it", Enhanced = "Enhanced: Made it" }

@@ -201,6 +201,7 @@ public sealed class PiiMaskingHandlerTests
     {
         ProfileDto profile = TestData.Profile();
         profile.Experience![0].Bullets = ["Emailed jane@example.com"];
+        profile.Projects![0].Description = "Built by jane@example.com.";
 
         IResumeAiService aiService = Substitute.For<IResumeAiService>();
         aiService
@@ -217,14 +218,15 @@ public sealed class PiiMaskingHandlerTests
                 }
             });
         aiService
-            .EnhanceProjectBulletsAsync(
-                Arg.Any<Project>(),
+            .EnhanceProjectAsync(
+                Arg.Is<Project>(project =>
+                    project.Description.Contains(ProfileRedactor.Placeholder)
+                    && !project.Description.Contains("jane@example.com")),
                 Arg.Any<PromptStyleDefinition>(),
                 Arg.Any<CancellationToken>())
-            .Returns(new List<EnhancedBullet>
-            {
-                new() { Original = "Made it", Enhanced = "Enhanced: Made it" }
-            });
+            .Returns(new EnhancedProject(
+                "Enhanced: Built by [redacted].",
+                [new() { Original = "Made it", Enhanced = "Enhanced: Made it" }]));
         aiService
             .GenerateSummaryAsync(
                 Arg.Any<IReadOnlyList<WorkExperience>>(),
@@ -262,6 +264,58 @@ public sealed class PiiMaskingHandlerTests
         GeneratedExperienceDto experience = result.Value.Experience![0];
         experience.Bullets![0].Original.ShouldBe("Emailed jane@example.com");
         experience.Bullets[0].Enhanced.ShouldBe("Enhanced: Emailed");
+        result.Value.Projects![0].Description.ShouldBe("Enhanced: Built by.");
+        result.Value.Projects[0].Description.ShouldNotContain(ProfileRedactor.Placeholder);
+    }
+
+    [Fact]
+    public async Task GenerateResume_FallsBackToRealProjectDescriptionWhenAiReturnsBlank()
+    {
+        ProfileDto profile = TestData.Profile();
+
+        IResumeAiService aiService = Substitute.For<IResumeAiService>();
+        aiService
+            .EnhanceExperienceBulletsAsync(
+                Arg.Any<WorkExperience>(),
+                Arg.Any<PromptStyleDefinition>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new List<EnhancedBullet>
+            {
+                new() { Original = "Built a thing", Enhanced = "Enhanced: Built a thing" }
+            });
+        aiService
+            .EnhanceProjectAsync(
+                Arg.Any<Project>(),
+                Arg.Any<PromptStyleDefinition>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new EnhancedProject(
+                string.Empty,
+                [new() { Original = "Made it", Enhanced = "Enhanced: Made it" }]));
+        aiService
+            .GenerateSummaryAsync(
+                Arg.Any<IReadOnlyList<WorkExperience>>(),
+                Arg.Any<SummaryType>(),
+                Arg.Any<PromptStyleDefinition>(),
+                Arg.Any<CancellationToken>())
+            .Returns("Generated summary.");
+        aiService
+            .ExtractKeywordsAsync(
+                Arg.Any<string>(),
+                Arg.Any<ResumeProfile>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new KeywordMatch { Matched = ["C#"], Missing = ["Kubernetes"] });
+
+        GenerateResumeCommandHandler handler = new(
+            aiService,
+            TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(enabled: true),
+            new TestTimeProvider(TestData.Now));
+
+        Result<GeneratedResumeDto> result = await handler.Handle(
+            new GenerateResumeCommand(profile, null),
+            CancellationToken.None);
+
+        result.Value.Projects![0].Description.ShouldBe("A small tool.");
     }
 
     [Fact]

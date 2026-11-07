@@ -47,6 +47,7 @@ public sealed class ProfileRedactorTests
         profile.Experience[0].Bullets = ["jane@example.com reviewed the build"];
         profile.Education[0].School = "Jane Doe University";
         profile.Awards[0].Description = "Awarded to Jane Doe.";
+        profile.Projects[0].Description = "Built by Jane Doe for jane@example.com.";
         profile.Projects[0].Bullets = ["Built by Jane Doe"];
 
         ResumeProfile redacted = ProfileRedactor.Redact(profile, Enabled);
@@ -60,6 +61,8 @@ public sealed class ProfileRedactorTests
         redacted.Experience[0].Bullets[0].ShouldNotContain("jane@example.com");
         redacted.Education[0].School.ShouldNotContain("Jane Doe");
         redacted.Awards[0].Description.ShouldNotContain("Jane Doe");
+        redacted.Projects[0].Description.ShouldNotContain("Jane Doe");
+        redacted.Projects[0].Description.ShouldNotContain("jane@example.com");
         redacted.Projects[0].Bullets[0].ShouldNotContain("Jane Doe");
     }
 
@@ -213,6 +216,22 @@ public sealed class ProfileRedactorTests
     {
         ProfileRedactor.RemovePlaceholders("Built [redacted]  the   thing")
             .ShouldBe("Built the thing");
+    }
+
+    [Fact]
+    public void RemovePlaceholdersPreservingLinesKeepsParagraphs()
+    {
+        ProfileRedactor.RemovePlaceholdersPreservingLines(
+                "Built [redacted]  the   thing\n\nShipped it to [redacted].")
+            .ShouldBe("Built the thing\n\nShipped it to.");
+    }
+
+    [Fact]
+    public void RemovePlaceholdersPreservingLinesTrimsBlankEdges()
+    {
+        ProfileRedactor.RemovePlaceholdersPreservingLines("\n\nBuilt it\n\n")
+            .ShouldBe("Built it");
+        ProfileRedactor.RemovePlaceholdersPreservingLines("   ").ShouldBeEmpty();
     }
 
     private static ResumeProfile CreateProfile() =>

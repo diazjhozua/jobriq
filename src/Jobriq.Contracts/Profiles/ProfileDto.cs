@@ -107,6 +107,8 @@ public sealed class ProjectDto
 
     public string AssociatedWith { get; set; } = string.Empty;
 
+    public string Description { get; set; } = string.Empty;
+
     public List<string>? Bullets { get; set; } = [];
 
     public List<string>? SkillsGained { get; set; } = [];

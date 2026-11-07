@@ -95,6 +95,7 @@ public static class ResumeMappings
         StartDate = dto.StartDate,
         EndDate = dto.EndDate,
         AssociatedWith = dto.AssociatedWith,
+        Description = dto.Description,
         Bullets = dto.Bullets is null
             ? null!
             : dto.Bullets.Select(ProfileMappings.ToDomain).ToList()
@@ -108,6 +109,7 @@ public static class ResumeMappings
         StartDate = project.StartDate,
         EndDate = project.EndDate,
         AssociatedWith = project.AssociatedWith,
+        Description = project.Description,
         Bullets = project.Bullets is null
             ? null
             : project.Bullets.Select(ProfileMappings.ToDto).ToList()

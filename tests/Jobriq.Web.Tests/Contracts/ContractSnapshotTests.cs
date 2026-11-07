@@ -403,6 +403,7 @@ public sealed class ContractSnapshotTests
                 startDate = "2021",
                 endDate = "2022",
                 associatedWith = "Personal Project",
+                description = "A small tool.",
                 bullets = new[] { "Made it" },
                 skillsGained = new[] { "TypeScript" }
             }
@@ -489,6 +490,7 @@ public sealed class ContractSnapshotTests
                 startDate = "2021",
                 endDate = "2022",
                 associatedWith = "Personal Project",
+                description = "Enhanced: A small tool.",
                 bullets = new[] { new { original = "Made it", enhanced = "Enhanced: Made it" } }
             }
         },

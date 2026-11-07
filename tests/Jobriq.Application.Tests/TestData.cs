@@ -116,6 +116,7 @@ internal static class TestData
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "A small tool.",
                 Bullets = ["Made it"],
                 SkillsGained = ["TypeScript"]
             }
@@ -170,6 +171,7 @@ internal static class TestData
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "Enhanced: A small tool.",
                 Bullets =
                 [
                     new EnhancedBulletDto

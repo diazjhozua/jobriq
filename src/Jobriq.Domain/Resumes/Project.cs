@@ -14,6 +14,8 @@ public sealed class Project
 
     public string AssociatedWith { get; set; } = string.Empty;
 
+    public string Description { get; set; } = string.Empty;
+
     public List<string> Bullets { get; set; } = [];
 
     public List<string> SkillsGained { get; set; } = [];

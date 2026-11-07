@@ -70,22 +70,32 @@ internal sealed class GenerateResumeCommandHandler(
             Project aiCopy = Clone(aiProfile.Projects[index]);
             Project copy = Clone(profile.Projects[index]);
 
-            if (aiCopy.Bullets.Count > 0)
+            if (aiCopy.Bullets.Count > 0 || !string.IsNullOrWhiteSpace(aiCopy.Description))
             {
-                IReadOnlyList<EnhancedBullet> enhanced =
-                    await aiService.EnhanceProjectBulletsAsync(
+                EnhancedProject enhanced =
+                    await aiService.EnhanceProjectAsync(
                         aiCopy,
                         style,
                         cancellationToken);
 
-                aiCopy.EnhancedBullets = CleanEnhanced(
-                    enhanced,
-                    aiCopy.Bullets,
-                    aiCopy.Bullets);
-                copy.EnhancedBullets = CleanEnhanced(
-                    enhanced,
-                    aiCopy.Bullets,
-                    copy.Bullets);
+                if (aiCopy.Bullets.Count > 0)
+                {
+                    aiCopy.EnhancedBullets = CleanEnhanced(
+                        enhanced.Bullets,
+                        aiCopy.Bullets,
+                        aiCopy.Bullets);
+                    copy.EnhancedBullets = CleanEnhanced(
+                        enhanced.Bullets,
+                        aiCopy.Bullets,
+                        copy.Bullets);
+                }
+                else
+                {
+                    aiCopy.EnhancedBullets = [];
+                    copy.EnhancedBullets = [];
+                }
+
+                copy.Description = CleanDescription(enhanced.Description, copy.Description);
             }
 
             aiProjects.Add(aiCopy);
@@ -183,6 +193,17 @@ internal sealed class GenerateResumeCommandHandler(
         return cleaned;
     }
 
+    private static string CleanDescription(string? enhanced, string realOriginal)
+    {
+        if (string.IsNullOrWhiteSpace(realOriginal))
+        {
+            return string.Empty;
+        }
+
+        string cleaned = ProfileRedactor.RemovePlaceholdersPreservingLines(enhanced);
+        return cleaned.Length == 0 ? realOriginal.Trim() : cleaned;
+    }
+
     private static int FindOriginalIndex(
         IReadOnlyList<string> originals,
         string? original)
@@ -222,6 +243,7 @@ internal sealed class GenerateResumeCommandHandler(
         StartDate = project.StartDate,
         EndDate = project.EndDate,
         AssociatedWith = project.AssociatedWith,
+        Description = project.Description,
         Bullets = [.. project.Bullets],
         SkillsGained = project.SkillsGained is null ? [] : [.. project.SkillsGained]
     };
@@ -280,6 +302,7 @@ internal sealed class GenerateResumeCommandHandler(
         StartDate = real.StartDate,
         EndDate = real.EndDate,
         AssociatedWith = real.AssociatedWith,
+        Description = enhanced.Description,
         Bullets = enhanced.EnhancedBullets ?? []
     };
 }

@@ -183,6 +183,7 @@ public static class ProfileMappings
         StartDate = dto.StartDate,
         EndDate = dto.EndDate,
         AssociatedWith = dto.AssociatedWith,
+        Description = dto.Description,
         Bullets = dto.Bullets is null ? null! : [.. dto.Bullets],
         SkillsGained = dto.SkillsGained is null ? [] : [.. dto.SkillsGained],
         EnhancedBullets = dto.EnhancedBullets?.Select(ToDomain).ToList()
@@ -196,6 +197,7 @@ public static class ProfileMappings
         StartDate = project.StartDate,
         EndDate = project.EndDate,
         AssociatedWith = project.AssociatedWith,
+        Description = project.Description,
         Bullets = project.Bullets is null ? null : [.. project.Bullets],
         SkillsGained = project.SkillsGained is null ? [] : [.. project.SkillsGained],
         EnhancedBullets = project.EnhancedBullets?.Select(ToDto).ToList()

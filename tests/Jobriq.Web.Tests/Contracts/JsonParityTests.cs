@@ -300,6 +300,7 @@ public sealed class JsonParityTests
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "A small tool.",
                 Bullets = ["Made it"],
                 EnhancedBullets =
                 [
@@ -353,6 +354,7 @@ public sealed class JsonParityTests
                 StartDate = "2021",
                 EndDate = "2022",
                 AssociatedWith = "Personal Project",
+                Description = "Enhanced: A small tool.",
                 Bullets =
                 [
                     new EnhancedBullet { Original = "Made it", Enhanced = "Enhanced: Made it" }

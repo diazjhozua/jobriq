@@ -14,5 +14,7 @@ public sealed class GeneratedProject
 
     public string AssociatedWith { get; set; } = string.Empty;
 
+    public string Description { get; set; } = string.Empty;
+
     public List<EnhancedBullet> Bullets { get; set; } = [];
 }

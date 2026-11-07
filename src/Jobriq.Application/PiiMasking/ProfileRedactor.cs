@@ -72,6 +72,31 @@ public static partial class ProfileRedactor
         return SpaceBeforePunctuation().Replace(cleaned, "$1");
     }
 
+    public static string RemovePlaceholdersPreservingLines(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        List<string> lines = [.. value
+            .ReplaceLineEndings("\n")
+            .Split('\n')
+            .Select(RemovePlaceholders)];
+
+        while (lines.Count > 0 && lines[0].Length == 0)
+        {
+            lines.RemoveAt(0);
+        }
+
+        while (lines.Count > 0 && lines[^1].Length == 0)
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return string.Join('\n', lines);
+    }
+
     private static ResumeProfile Clone(
         ResumeProfile profile,
         Func<string, string> scrub,
@@ -155,6 +180,7 @@ public static partial class ProfileRedactor
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 AssociatedWith = scrub(project.AssociatedWith),
+                Description = scrub(project.Description),
                 Bullets = [.. project.Bullets.Select(scrub)],
                 SkillsGained = project.SkillsGained is null ? [] : [.. project.SkillsGained],
                 EnhancedBullets = project.EnhancedBullets is null

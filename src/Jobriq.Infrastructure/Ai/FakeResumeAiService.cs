@@ -86,11 +86,15 @@ internal sealed class FakeResumeAiService : IResumeAiService
         CancellationToken cancellationToken) =>
         Task.FromResult(Enhance(experience.Bullets, style));
 
-    public Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
+    public Task<EnhancedProject> EnhanceProjectAsync(
         Project project,
         PromptStyleDefinition style,
         CancellationToken cancellationToken) =>
-        Task.FromResult(Enhance(project.Bullets, style));
+        Task.FromResult(new EnhancedProject(
+            string.IsNullOrWhiteSpace(project.Description)
+                ? string.Empty
+                : $"Enhanced: {project.Description.Trim()}{StyleSuffix(style)}",
+            Enhance(project.Bullets, style)));
 
     public Task<string> GenerateSummaryAsync(
         IReadOnlyList<WorkExperience> experience,

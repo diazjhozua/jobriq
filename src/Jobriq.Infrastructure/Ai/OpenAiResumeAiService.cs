@@ -73,7 +73,7 @@ internal sealed class OpenAiResumeAiService(
         return response?.Bullets ?? [];
     }
 
-    public async Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
+    public async Task<EnhancedProject> EnhanceProjectAsync(
         Project project,
         PromptStyleDefinition style,
         CancellationToken cancellationToken)
@@ -83,9 +83,11 @@ internal sealed class OpenAiResumeAiService(
             json: true,
             cancellationToken,
             Prompts.ComposeSystem(Prompts.System, style));
-        EnhanceResponse? response = Parse<EnhanceResponse>(content);
+        EnhanceProjectResponse? response = Parse<EnhanceProjectResponse>(content);
 
-        return response?.Bullets ?? [];
+        return new EnhancedProject(
+            response?.Description?.Trim() ?? string.Empty,
+            response?.Bullets ?? []);
     }
 
     public async Task<string> GenerateSummaryAsync(
@@ -229,6 +231,13 @@ internal sealed class OpenAiResumeAiService(
 
     private sealed class EnhanceResponse
     {
+        public List<EnhancedBullet>? Bullets { get; set; }
+    }
+
+    private sealed class EnhanceProjectResponse
+    {
+        public string? Description { get; set; }
+
         public List<EnhancedBullet>? Bullets { get; set; }
     }
 

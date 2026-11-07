@@ -40,6 +40,7 @@ public sealed class GenerateResumeCommandHandlerTests
             .ShouldBe("Enhanced: Built a thing");
         result.Value.Projects!.Single().Bullets!.Single().Enhanced
             .ShouldBe("Enhanced: Made it");
+        result.Value.Projects!.Single().Description.ShouldBe("Enhanced: A small tool.");
         result.Value.Education!.Single().SkillsGained.ShouldBe(["Algorithms"]);
         result.Value.Certifications!.Single().SkillsGained.ShouldBe(["Cloud architecture"]);
 
@@ -50,6 +51,8 @@ public sealed class GenerateResumeCommandHandlerTests
         JsonElement root = document.RootElement;
         root.GetProperty("experience")[0].TryGetProperty("skillsGained", out _).ShouldBeFalse();
         root.GetProperty("projects")[0].TryGetProperty("skillsGained", out _).ShouldBeFalse();
+        root.GetProperty("projects")[0].GetProperty("description").GetString()
+            .ShouldBe("Enhanced: A small tool.");
         root.GetProperty("education")[0].GetProperty("skillsGained")[0].GetString()
             .ShouldBe("Algorithms");
         root.GetProperty("certifications")[0].GetProperty("skillsGained")[0].GetString()
@@ -58,6 +61,47 @@ public sealed class GenerateResumeCommandHandlerTests
         result.Value.Keywords!.Matched.ShouldBe(["C#", "React"]);
         result.Value.Keywords.Missing.ShouldBe(["Kubernetes"]);
         result.Value.GeneratedAt.ShouldBe(TestData.Now);
+    }
+
+    [Fact]
+    public async Task ProjectDescriptionOnly_StillCallsAi()
+    {
+        IResumeAiService aiService = CreateAiService();
+        ProfileDto profile = TestData.Profile();
+        profile.Projects![0].Bullets = [];
+
+        GenerateResumeCommandHandler handler = new(
+            aiService,
+            TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
+            new TestTimeProvider(TestData.Now));
+
+        Result<GeneratedResumeDto> result = await handler.Handle(
+            new GenerateResumeCommand(profile, null),
+            CancellationToken.None);
+
+        result.Value.Projects!.Single().Description.ShouldBe("Enhanced: A small tool.");
+        result.Value.Projects!.Single().Bullets.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task BlankProjectDescription_StaysBlankEvenWhenAiReturnsText()
+    {
+        IResumeAiService aiService = CreateAiService();
+        ProfileDto profile = TestData.Profile();
+        profile.Projects![0].Description = string.Empty;
+
+        GenerateResumeCommandHandler handler = new(
+            aiService,
+            TestData.StyleResolver(),
+            TestData.PiiMaskingResolver(),
+            new TestTimeProvider(TestData.Now));
+
+        Result<GeneratedResumeDto> result = await handler.Handle(
+            new GenerateResumeCommand(profile, null),
+            CancellationToken.None);
+
+        result.Value.Projects!.Single().Description.ShouldBeEmpty();
     }
 
     [Fact]
@@ -91,14 +135,13 @@ public sealed class GenerateResumeCommandHandlerTests
                 new() { Original = "Built a thing", Enhanced = "Enhanced: Built a thing" }
             });
         aiService
-            .EnhanceProjectBulletsAsync(
+            .EnhanceProjectAsync(
                 Arg.Any<Project>(),
                 Arg.Any<PromptStyleDefinition>(),
                 Arg.Any<CancellationToken>())
-            .Returns(new List<EnhancedBullet>
-            {
-                new() { Original = "Made it", Enhanced = "Enhanced: Made it" }
-            });
+            .Returns(new EnhancedProject(
+                "Enhanced: A small tool.",
+                [new() { Original = "Made it", Enhanced = "Enhanced: Made it" }]));
         aiService
             .GenerateSummaryAsync(
                 Arg.Any<IReadOnlyList<WorkExperience>>(),

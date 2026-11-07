@@ -59,7 +59,18 @@ internal static class Prompts
 
     public static string EnhanceProject(Project project) =>
         Normalize($$"""
-            Enhance the following resume bullet points for a project called "{{project.Name}}".
+            Enhance the following resume content for a project called "{{project.Name}}".
+
+            Project description:
+            {{DescriptionText(project.Description)}}
+
+            For the description:
+            1. Describe what the project is and what it does — its purpose and main capabilities — in one to three sentences.
+            2. Write it as a product description, not a work log. Do not start with or center action verbs such as "Developed", "Built", "Created", "Implemented", or "Designed"; do not describe the candidate's role or accomplishments — the bullets cover that.
+            3. Use present tense and neutral third-person phrasing, for example "A web app that tracks applications and generates tailored resumes."
+            4. Keep every fact the user wrote; never invent features, metrics, tools, or outcomes.
+            5. Keep any number the user already wrote, and never invent or placeholder a metric.
+            6. If the description is "(none)", return an empty string.
 
             For each bullet:
             1. Rewrite it as an accomplishment (not a task description)
@@ -68,10 +79,11 @@ internal static class Prompts
             4. Keep any number the user already wrote, and never invent or placeholder a metric
 
             Bullets:
-            {{BulletList(project.Bullets)}}
+            {{BulletListOrNone(project.Bullets)}}
 
             Respond with a JSON object:
             {
+              "description": "rewritten project description or an empty string",
               "bullets": [
                 {
                   "original": "exact original text",
@@ -131,7 +143,8 @@ internal static class Prompts
                 certification.Name,
                 certification.IssuingOrganization
             }))
-            .Concat(profile.Projects.SelectMany(project => project.Bullets))
+            .Concat(profile.Projects.SelectMany(project =>
+                new[] { project.Description }.Concat(project.Bullets)))
             .Where(line => !string.IsNullOrEmpty(line));
 
         string resumeText = string.Join('\n', lines);
@@ -170,6 +183,7 @@ internal static class Prompts
             - "section" must be one of: personal, summary, experience, education, certifications, awards, skills, projects.
             - For experience and projects, "itemId" must be the exact id shown in the profile and "bulletIndex" is zero-based.
             - "proposedText" may be provided only for summary and for experience/project bullets. Set it to null for personal, education, certifications, awards, and skills.
+            - For projects, only propose bullet changes. Do not propose changes to a project description.
             - For certifications and awards, do not provide itemId or bulletIndex.
             - "category" must be one of: completeness, impact, clarity.
             - "title" is a short imperative phrase. "detail" explains why the change matters.
@@ -350,6 +364,7 @@ internal static class Prompts
                 lines.Add($"URL: {Value(project.Url)}");
                 lines.Add($"Dates: {Value(project.StartDate)} - {Value(project.EndDate)}");
                 lines.Add($"Associated with: {Value(project.AssociatedWith)}");
+                lines.Add($"Description: {Value(project.Description)}");
                 lines.Add("Bullets:");
                 lines.Add(IndexedBullets(project.Bullets));
                 lines.Add(string.Empty);
@@ -392,6 +407,12 @@ internal static class Prompts
 
     private static string BulletList(IReadOnlyList<string> bullets) =>
         string.Join('\n', bullets.Select((bullet, index) => $"{index + 1}. {bullet}"));
+
+    private static string BulletListOrNone(IReadOnlyList<string> bullets) =>
+        bullets.Count == 0 ? "(none)" : BulletList(bullets);
+
+    private static string DescriptionText(string? description) =>
+        string.IsNullOrWhiteSpace(description) ? "(none)" : description.Trim();
 
     private static string Normalize(string value) => value.ReplaceLineEndings("\n");
 }

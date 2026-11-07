@@ -26,7 +26,7 @@ public interface IResumeAiService
         PromptStyleDefinition style,
         CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<EnhancedBullet>> EnhanceProjectBulletsAsync(
+    Task<EnhancedProject> EnhanceProjectAsync(
         Project project,
         PromptStyleDefinition style,
         CancellationToken cancellationToken);
