@@ -109,6 +109,9 @@ test('captures project dates and the associated company', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Add project' }).click()
   await page.locator('#project-0-name').fill('Jobriq')
+  await page
+    .locator('#project-0-description')
+    .fill('A resume builder for tracking applications.')
   await page.locator('#project-0-associated').click()
   await expect(
     page.getByRole('option', { name: 'State University' }),
@@ -134,6 +137,9 @@ test('captures project dates and the associated company', async ({ page }) => {
   await expect(page.locator('#project-0-start')).toContainText('Aug 2022')
   await expect(page.locator('#project-0-end')).toContainText('Present')
   await expect(page.locator('#project-0-associated')).toHaveValue('Acme')
+  await expect(page.locator('#project-0-description')).toHaveValue(
+    'A resume builder for tracking applications.',
+  )
 })
 
 test('captures certifications and awards in the generated resume', async ({
