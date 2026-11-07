@@ -329,6 +329,7 @@ export function ProfilePage() {
       })),
       projects: dated.projects.map((entry) => ({
         ...entry,
+        description: entry.description.trim(),
         bullets: cleanBullets(entry.bullets),
         skillsGained: uniqueSkills(entry.skillsGained ?? []),
       })),
@@ -1062,6 +1063,7 @@ export function ProfilePage() {
                 startDate: '',
                 endDate: '',
                 associatedWith: '',
+                description: '',
                 bullets: [''],
                 skillsGained: [],
               })
@@ -1139,6 +1141,27 @@ export function ProfilePage() {
                       allowPresent
                     />
                   </div>
+                  <Field
+                    label="Description (optional)"
+                    htmlFor={`project-${index}-description`}
+                    error={errors.projects?.[index]?.description?.message}
+                    className="sm:col-span-2"
+                  >
+                    <Controller
+                      control={control}
+                      name={`projects.${index}.description`}
+                      render={({ field }) => (
+                        <Textarea
+                          id={`project-${index}-description`}
+                          rows={3}
+                          autoGrow
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      )}
+                    />
+                  </Field>
                   <Controller
                     control={control}
                     name={`projects.${index}.bullets`}

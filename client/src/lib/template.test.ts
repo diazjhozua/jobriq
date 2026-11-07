@@ -48,6 +48,9 @@ URL: example.com/tool
 Start: Aug 2022
 End: Present
 Associated: Acme
+Description: |
+  A small tool.
+  Built to last.
 - Shipped it
 
 [JOB DESCRIPTION]
@@ -85,8 +88,58 @@ describe('parseResumeTemplate', () => {
       startDate: 'Aug 2022',
       endDate: 'Present',
       associatedWith: 'Acme',
+      description: 'A small tool.\nBuilt to last.',
       bullets: ['Shipped it'],
     })
+  })
+
+  it('keeps blank lines inside a description block and ignores indented bullets', () => {
+    const profile = parseResumeTemplate(`
+[PROJECT]
+Name: Tool
+Description: |
+  First paragraph.
+  - not a bullet
+
+  Second paragraph.
+- Real bullet
+`)
+
+    expect(profile.projects[0]?.description).toBe(
+      'First paragraph.\n- not a bullet\n\nSecond paragraph.',
+    )
+    expect(profile.projects[0]?.bullets).toEqual(['Real bullet'])
+  })
+
+  it('accepts an indented description block', () => {
+    const profile = parseResumeTemplate(`
+[PROJECT]
+  Name: Tool
+  Description: |
+    A small tool.
+  - Shipped it
+`)
+
+    expect(profile.projects[0]?.description).toBe('A small tool.')
+    expect(profile.projects[0]?.bullets).toEqual(['Shipped it'])
+  })
+
+  it('accepts a legacy inline description and defaults a missing one to empty', () => {
+    const inline = parseResumeTemplate(`
+[PROJECT]
+Name: Tool
+Description: A one-line tool.
+- Shipped it
+`)
+    const missing = parseResumeTemplate(`
+[PROJECT]
+Name: Tool
+- Shipped it
+`)
+
+    expect(inline.projects[0]?.description).toBe('A one-line tool.')
+    expect(inline.projects[0]?.bullets).toEqual(['Shipped it'])
+    expect(missing.projects[0]?.description).toBe('')
   })
 
   it('generates ids for repeatable entries', () => {

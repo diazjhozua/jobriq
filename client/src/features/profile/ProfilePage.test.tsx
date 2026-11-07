@@ -1033,6 +1033,13 @@ describe('ProfilePage', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('option', { name: 'Acme' }))
 
+    await user.type(
+      screen.getByLabelText('Description (optional)', {
+        selector: '#project-0-description',
+      }),
+      'A resume builder.',
+    )
+
     await user.click(
       screen.getByLabelText('Start date', { selector: '#project-0-start' }),
     )
@@ -1063,6 +1070,7 @@ describe('ProfilePage', () => {
         startDate: 'Aug 2022',
         endDate: 'Present',
         associatedWith: 'Acme',
+        description: 'A resume builder.',
       })
     })
   })
@@ -1142,6 +1150,7 @@ describe('ProfilePage', () => {
         startDate,
         endDate,
         associatedWith: '',
+        description: '',
         bullets: ['Built a thing'],
         skillsGained: [],
       }

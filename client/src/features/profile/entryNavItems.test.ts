@@ -50,6 +50,7 @@ function project(overrides: Partial<Project> = {}): Project {
     startDate: '',
     endDate: '',
     associatedWith: '',
+    description: '',
     bullets: [],
     skillsGained: [],
     ...overrides,

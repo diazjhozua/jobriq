@@ -206,6 +206,11 @@ export function ResumePreview({ resume }: { resume: GeneratedResume }) {
                   {meta ? (
                     <p className="text-[0.72rem] tabular-nums text-muted">{meta}</p>
                   ) : null}
+                  {project.description ? (
+                    <p className="mt-1 whitespace-pre-line break-words text-[0.84rem] leading-6 text-body">
+                      {project.description}
+                    </p>
+                  ) : null}
                   <ul className="mt-2 space-y-1.5">
                     {project.bullets.map((bullet, index) => (
                       <Bullet key={`${project.id}-${index}`} bullet={bullet} />

@@ -79,6 +79,7 @@ function project(id: string, startDate: string, endDate = ''): Project {
     startDate,
     endDate,
     associatedWith: '',
+    description: '',
     bullets: [''],
     skillsGained: [],
   }

@@ -53,6 +53,7 @@ export const projectSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   associatedWith: z.string(),
+  description: z.string(),
   bullets: z.array(z.string()),
   skillsGained: z.array(z.string()),
 })
@@ -149,6 +150,7 @@ const storedProjectSchema = projectSchema.extend({
   startDate: nullableString,
   endDate: nullableString,
   associatedWith: nullableString,
+  description: nullableString,
   skillsGained: nullableStringArray,
 })
 
@@ -191,6 +193,7 @@ export const generatedProjectSchema = z.object({
   startDate: nullableString,
   endDate: nullableString,
   associatedWith: nullableString,
+  description: nullableString,
   bullets: z.array(enhancedBulletSchema),
 })
 

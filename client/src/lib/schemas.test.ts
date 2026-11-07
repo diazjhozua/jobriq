@@ -266,6 +266,7 @@ describe('apiStateSchema', () => {
     expect(parsed.profile.projects[0]?.startDate).toBe('')
     expect(parsed.profile.projects[0]?.endDate).toBe('')
     expect(parsed.profile.projects[0]?.associatedWith).toBe('')
+    expect(parsed.profile.projects[0]?.description).toBe('')
   })
 
   it('defaults missing or null certifications and awards to empty arrays', () => {
@@ -375,6 +376,7 @@ describe('apiStateSchema', () => {
             startDate: '',
             endDate: '',
             associatedWith: '',
+            description: null,
             bullets: [],
           },
         ],
@@ -386,6 +388,7 @@ describe('apiStateSchema', () => {
     expect(parsed.education[0]?.skillsGained).toEqual([])
     expect(parsed.certifications[0]?.skillsGained).toEqual([])
     expect(parsed.projects[0]?.skillsGained).toEqual([])
+    expect(parsed.projects[0]?.description).toBe('')
   })
 
   it('defaults a missing standalone resume to null', () => {

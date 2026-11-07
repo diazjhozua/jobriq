@@ -83,6 +83,7 @@ describe('ResumePreview', () => {
               startDate: 'Aug 2022',
               endDate: 'Present',
               associatedWith: 'Acme',
+              description: '',
               bullets: [],
             },
           ],
@@ -151,6 +152,38 @@ describe('ResumePreview', () => {
     expect(screen.queryByText('Honors & awards')).not.toBeInTheDocument()
   })
 
+  it('renders the project description between metadata and bullets', () => {
+    render(
+      <ResumePreview
+        resume={{
+          ...resume,
+          projects: [
+            {
+              id: 'project-1',
+              name: 'Jobriq',
+              url: null,
+              startDate: 'Aug 2022',
+              endDate: 'Present',
+              associatedWith: 'Acme',
+              description: 'A resume builder.',
+              bullets: [
+                { original: 'Made it', enhanced: 'Enhanced: Made it' },
+              ],
+            },
+          ],
+        }}
+      />,
+    )
+
+    const description = screen.getByText('A resume builder.')
+    const bullet = screen.getByText('Enhanced: Made it')
+
+    expect(
+      description.compareDocumentPosition(bullet) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
   it('omits the project metadata line when it is empty', () => {
     render(
       <ResumePreview
@@ -164,6 +197,7 @@ describe('ResumePreview', () => {
               startDate: '',
               endDate: '',
               associatedWith: '',
+              description: '',
               bullets: [],
             },
           ],

@@ -61,6 +61,47 @@ function bullets(lines: string[]): string[] {
     .filter((line) => line.length > 0 && !line.startsWith('('))
 }
 
+function descriptionBlock(lines: string[]): {
+  description: string
+  rest: string[]
+} {
+  const start = lines.findIndex((line) =>
+    line.trimStart().startsWith('Description:'),
+  )
+  if (start === -1) {
+    return { description: '', rest: lines }
+  }
+
+  const header = lines[start]
+  const indent = header.slice(0, header.length - header.trimStart().length)
+  const marker = header.trimStart().slice('Description:'.length).trim()
+  if (marker !== '|') {
+    return { description: marker, rest: lines }
+  }
+
+  const continuation = `${indent}  `
+  const block: string[] = []
+  let end = start + 1
+  for (; end < lines.length; end += 1) {
+    const line = lines[end]
+    if (line.trim() === '') {
+      block.push('')
+      continue
+    }
+
+    if (!line.startsWith(continuation)) {
+      break
+    }
+
+    block.push(line.slice(continuation.length).trimEnd())
+  }
+
+  return {
+    description: block.join('\n').trim(),
+    rest: [...lines.slice(0, start), ...lines.slice(end)],
+  }
+}
+
 function normalizeUrl(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) {
@@ -113,18 +154,22 @@ function parseSkills(sections: Section[]): string[] {
 }
 
 function parseProjects(sections: Section[]): Project[] {
-  return sectionsNamed(sections, 'PROJECT').map((section) => ({
-    id: crypto.randomUUID(),
-    name: field(section.lines, 'Name'),
-    url: normalizeUrl(field(section.lines, 'URL')),
-    startDate: field(section.lines, 'Start'),
-    endDate: field(section.lines, 'End'),
-    associatedWith:
-      field(section.lines, 'Associated with') ||
-      field(section.lines, 'Associated'),
-    bullets: bullets(section.lines),
-    skillsGained: [],
-  }))
+  return sectionsNamed(sections, 'PROJECT').map((section) => {
+    const { description, rest } = descriptionBlock(section.lines)
+
+    return {
+      id: crypto.randomUUID(),
+      name: field(rest, 'Name'),
+      url: normalizeUrl(field(rest, 'URL')),
+      startDate: field(rest, 'Start'),
+      endDate: field(rest, 'End'),
+      associatedWith:
+        field(rest, 'Associated with') || field(rest, 'Associated'),
+      description,
+      bullets: bullets(rest),
+      skillsGained: [],
+    }
+  })
 }
 
 export function parseResumeTemplate(raw: string): Profile {

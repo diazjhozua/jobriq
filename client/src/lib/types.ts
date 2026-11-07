@@ -65,6 +65,7 @@ export interface Project {
   startDate: string
   endDate: string
   associatedWith: string
+  description: string
   bullets: string[]
   skillsGained: string[]
 }
@@ -130,6 +131,7 @@ export interface GeneratedProject {
   startDate: string
   endDate: string
   associatedWith: string
+  description: string
   bullets: EnhancedBullet[]
 }
 
