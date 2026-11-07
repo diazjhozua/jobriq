@@ -1127,9 +1127,42 @@ describe('ProfilePage', () => {
       return state
     }
 
+    type ProjectEntry = JobriqState['profile']['projects'][number]
+
+    function projectEntry(
+      id: string,
+      name: string,
+      startDate: string,
+      endDate = '',
+    ): ProjectEntry {
+      return {
+        id,
+        name,
+        url: '',
+        startDate,
+        endDate,
+        associatedWith: '',
+        bullets: ['Built a thing'],
+        skillsGained: [],
+      }
+    }
+
+    function stateWithProjects(entries: ProjectEntry[]): JobriqState {
+      const state = stateWithProfile()
+      state.profile.projects = entries
+      return state
+    }
+
     const companies = () =>
       screen
         .getAllByLabelText('Company')
+        .map((input) => (input as HTMLInputElement).value)
+
+    const projectNames = () =>
+      screen
+        .getAllByLabelText('Name', {
+          selector: 'input[id^="project-"][id$="-name"]',
+        })
         .map((input) => (input as HTMLInputElement).value)
 
     async function pickStartDate(
@@ -1188,26 +1221,69 @@ describe('ProfilePage', () => {
       ).toBe(false)
     })
 
-    it('uses Present as the newest end date for a start-date tie', async () => {
+    it('treats an unfilled end date as ongoing and newest', async () => {
       const user = userEvent.setup()
       installMockApi({
         state: stateWithExperience([
           experienceEntry('exp-ended', 'Ended Co', 'Jan 2020', 'Jan 2021'),
-          experienceEntry('exp-current', 'Current Co', 'Jan 2020'),
+          experienceEntry('exp-open', 'Open Co', 'Jan 2018'),
         ]),
       })
       await renderPage()
 
-      expect(companies()).toEqual(['Ended Co', 'Current Co'])
+      expect(companies()).toEqual(['Ended Co', 'Open Co'])
 
-      await user.click(
-        screen.getByLabelText('End date', { selector: '#experience-1-end' }),
-      )
-      await user.click(screen.getByRole('button', { name: 'Present' }))
+      await pickStartDate(user, 1, '2018', 'January 2018')
 
       await waitFor(() => {
-        expect(companies()).toEqual(['Current Co', 'Ended Co'])
+        expect(companies()).toEqual(['Open Co', 'Ended Co'])
       })
+    })
+
+    it('moves a project newest first when its end date is committed', async () => {
+      const user = userEvent.setup()
+      const api = installMockApi({
+        state: stateWithProjects([
+          projectEntry('project-alpha', 'Alpha', 'Jan 2020', 'Jan 2021'),
+          projectEntry('project-beta', 'Beta', 'Jan 2018', 'Jan 2019'),
+        ]),
+      })
+      await renderPage()
+
+      expect(projectNames()).toEqual(['Alpha', 'Beta'])
+
+      await user.click(
+        screen.getByLabelText('End date', { selector: '#project-1-end' }),
+      )
+      await user.selectOptions(
+        screen.getByLabelText('Project 2 end date year'),
+        '2025',
+      )
+      await user.click(screen.getByRole('button', { name: 'March 2025' }))
+
+      await waitFor(() => {
+        expect(projectNames()).toEqual(['Beta', 'Alpha'])
+      })
+      expect(
+        screen.getByText('Project moved to position 1 of 2.'),
+      ).toBeInTheDocument()
+
+      const nav = screen.getByRole('navigation', {
+        name: 'Project entries',
+      })
+      expect(within(nav).getByRole('link', { name: '1 · Beta' })).toHaveAttribute(
+        'href',
+        '#profile-projects-entry-1',
+      )
+      expect(
+        within(nav).getByRole('link', { name: '2 · Alpha' }),
+      ).toHaveAttribute('href', '#profile-projects-entry-2')
+
+      expect(
+        api.calls.some(
+          (call) => call.method === 'PUT' && call.path === '/api/profile',
+        ),
+      ).toBe(false)
     })
 
     it('keeps certifications ordered by issue date when an expiration changes', async () => {

@@ -20,11 +20,21 @@ describe('toDateSortKey', () => {
     })
   })
 
-  it('keeps Present as its own newest kind', () => {
-    expect(toDateSortKey('Present')).toEqual({ kind: 'present' })
+  it('keeps Present as its own ongoing kind', () => {
+    expect(toDateSortKey('Present')).toEqual({
+      kind: 'ongoing',
+      source: 'present',
+    })
   })
 
-  it('marks empty and legacy values as unparseable', () => {
+  it('treats an empty value as ongoing under the ongoing policy', () => {
+    expect(toDateSortKey('', 'ongoing')).toEqual({
+      kind: 'ongoing',
+      source: 'empty',
+    })
+  })
+
+  it('marks empty and legacy values as unparseable by default', () => {
     expect(toDateSortKey('')).toEqual({
       kind: 'unparseable',
       reason: 'empty',
@@ -46,7 +56,7 @@ describe('toDateSortKey', () => {
 describe('compareDateSortKeysDesc', () => {
   const key = toDateSortKey
 
-  it('orders Present above every dated value', () => {
+  it('orders ongoing values above every dated value', () => {
     expect(compareDateSortKeysDesc(key('Present'), key('Jan 2026'))).toBeLessThan(0)
     expect(compareDateSortKeysDesc(key('Jan 2026'), key('Present'))).toBeGreaterThan(0)
   })

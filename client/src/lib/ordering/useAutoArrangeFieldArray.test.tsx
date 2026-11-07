@@ -70,6 +70,16 @@ describe('useAutoArrangeFieldArray', () => {
     expect(ids).toEqual(['new', 'middle', 'old'])
   })
 
+  it('ranks an entry without an end date above an ended entry', () => {
+    const { moved, ids } = arrange([
+      entry('ended', 'Jan 2020', 'Jan 2021'),
+      entry('open', 'Jan 2015'),
+    ])
+
+    expect(moved).toBe(true)
+    expect(ids).toEqual(['open', 'ended'])
+  })
+
   it('composes several moves in one call', () => {
     const { moved, ids } = arrange([
       entry('third', 'Jan 2016'),

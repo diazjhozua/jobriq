@@ -87,17 +87,33 @@ function project(id: string, startDate: string, endDate = ''): Project {
 const ids = (entries: readonly { id: string }[]) => entries.map((entry) => entry.id)
 
 describe('PROFILE_SECTION_ORDER', () => {
-  it('maps ranges to start then end and single dates to the issue date', () => {
-    expect(PROFILE_SECTION_ORDER.experience.secondary).toBeDefined()
-    expect(PROFILE_SECTION_ORDER.education.secondary).toBeDefined()
-    expect(PROFILE_SECTION_ORDER.projects.secondary).toBeDefined()
-    expect(PROFILE_SECTION_ORDER.certifications.secondary).toBeUndefined()
-    expect(PROFILE_SECTION_ORDER.awards.secondary).toBeUndefined()
+  it('orders ranges by end date then start date and single dates by issue date', () => {
+    expect(PROFILE_SECTION_ORDER.experience.fields).toHaveLength(2)
+    expect(PROFILE_SECTION_ORDER.education.fields).toHaveLength(2)
+    expect(PROFILE_SECTION_ORDER.projects.fields).toHaveLength(2)
+    expect(PROFILE_SECTION_ORDER.certifications.fields).toHaveLength(1)
+    expect(PROFILE_SECTION_ORDER.awards.fields).toHaveLength(1)
+
+    expect(
+      PROFILE_SECTION_ORDER.projects.fields[0].read(
+        project('p', 'Jan 2020', 'Aug 2021'),
+      ),
+    ).toBe('Aug 2021')
+    expect(
+      PROFILE_SECTION_ORDER.projects.fields[1].read(
+        project('p', 'Jan 2020', 'Aug 2021'),
+      ),
+    ).toBe('Jan 2020')
+    expect(
+      PROFILE_SECTION_ORDER.certifications.fields[0].read(
+        certification('c', 'Jun 2023'),
+      ),
+    ).toBe('Jun 2023')
   })
 })
 
 describe('sortProfileEntries', () => {
-  it('orders range entries by start date, newest first', () => {
+  it('breaks end-date ties with the start date, newest first', () => {
     const entries = [
       experience('old', 'Jan 2018'),
       experience('new', 'Aug 2022'),
@@ -109,7 +125,7 @@ describe('sortProfileEntries', () => {
     ).toEqual(['new', 'middle', 'old'])
   })
 
-  it('breaks start-date ties with the end date, Present first', () => {
+  it('orders ranges by end date and ranks an empty end like Present', () => {
     const entries = [
       experience('ended', 'Jan 2020', 'Jan 2021'),
       experience('current', 'Jan 2020', 'Present'),
@@ -118,7 +134,44 @@ describe('sortProfileEntries', () => {
 
     expect(
       ids(sortProfileEntries(entries, PROFILE_SECTION_ORDER.experience)),
-    ).toEqual(['current', 'ended', 'undated-end'])
+    ).toEqual(['current', 'undated-end', 'ended'])
+  })
+
+  it('orders range entries by end date before start date', () => {
+    const entries = [
+      experience('newer-start-older-end', 'Aug 2022', 'Jan 2023'),
+      experience('older-start-newer-end', 'Jan 2018', 'Jun 2024'),
+    ]
+
+    expect(
+      ids(sortProfileEntries(entries, PROFILE_SECTION_ORDER.experience)),
+    ).toEqual(['older-start-newer-end', 'newer-start-older-end'])
+  })
+
+  it('orders education and projects by end date too', () => {
+    expect(
+      ids(
+        sortProfileEntries(
+          [
+            education('edu-newer-start', 'Aug 2022', 'Jan 2023'),
+            education('edu-newer-end', 'Jan 2018', 'Jun 2024'),
+          ],
+          PROFILE_SECTION_ORDER.education,
+        ),
+      ),
+    ).toEqual(['edu-newer-end', 'edu-newer-start'])
+
+    expect(
+      ids(
+        sortProfileEntries(
+          [
+            project('project-newer-start', 'Aug 2022', 'Jan 2023'),
+            project('project-newer-end', 'Jan 2018', 'Jun 2024'),
+          ],
+          PROFILE_SECTION_ORDER.projects,
+        ),
+      ),
+    ).toEqual(['project-newer-end', 'project-newer-start'])
   })
 
   it('places undated entries last and keeps them stable', () => {
@@ -134,7 +187,7 @@ describe('sortProfileEntries', () => {
     ).toEqual(['dated', 'legacy', 'empty', 'legacy-two'])
   })
 
-  it('ranks a year-only start below a month in the same year', () => {
+  it('ranks a year-only date below a month in the same year', () => {
     const entries = [
       experience('year-only', '2018'),
       experience('august', 'Aug 2018'),
@@ -206,8 +259,8 @@ describe('sortProfile', () => {
     ]
     profile.awards = [award('award-old', 'May 2015'), award('award-new', 'Nov 2021')]
     profile.projects = [
-      project('project-old', 'Feb 2020'),
-      project('project-new', 'Jul 2024'),
+      project('project-old', 'Feb 2020', 'Jun 2024'),
+      project('project-new', 'Jul 2024', 'Jan 2024'),
     ]
     return profile
   }
@@ -219,7 +272,7 @@ describe('sortProfile', () => {
     expect(ids(sorted.education)).toEqual(['edu-new', 'edu-old'])
     expect(ids(sorted.certifications)).toEqual(['cert-new', 'cert-old'])
     expect(ids(sorted.awards)).toEqual(['award-new', 'award-old'])
-    expect(ids(sorted.projects)).toEqual(['project-new', 'project-old'])
+    expect(ids(sorted.projects)).toEqual(['project-old', 'project-new'])
   })
 
   it('leaves the undated parts of the profile untouched', () => {
