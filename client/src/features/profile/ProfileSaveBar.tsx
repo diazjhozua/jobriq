@@ -17,7 +17,7 @@ export function ProfileSaveBar({ dirty, saved, submitting }: ProfileSaveBarProps
       id="profile-save-bar"
       role="region"
       aria-label="Profile save"
-      className="save-bar-enter sticky bottom-0 z-20 -mx-5 border-t border-border bg-canvas/95 px-5 py-3 backdrop-blur-sm sm:-mx-8 sm:px-8"
+      className="save-bar-enter px-5 py-3 sm:px-8"
     >
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center gap-1.5 text-[0.8rem] text-muted">

@@ -40,7 +40,7 @@ import {
 } from './ProfileEntryNavs'
 import { ProfileComboboxField } from './ProfileComboboxField'
 import { ProfileEntryCard } from './ProfileEntryCard'
-import { ProfileReviewPanel } from './ProfileReviewPanel'
+import { ProfileReviewLauncher } from './ProfileReviewLauncher'
 import { ProfileSaveBar } from './ProfileSaveBar'
 import { ProfileSectionNav } from './ProfileSectionNav'
 import { SkillsField } from './SkillsField'
@@ -149,9 +149,12 @@ export function ProfilePage() {
   const location = useLocation()
   const [importOpen, setImportOpen] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const { exporting, exportError, exportProfile } = useProfileExport()
   const [moveAnnouncement, setMoveAnnouncement] = useState('')
   const revealTimer = useRef<number | null>(null)
+
+  const openReview = () => setReviewOpen(true)
 
   useEffect(
     () => () => {
@@ -281,7 +284,14 @@ export function ProfilePage() {
       return
     }
 
-    const target = document.getElementById(location.hash.slice(1))
+    const id = location.hash.slice(1)
+
+    if (id === 'profile-review') {
+      openReview()
+      return
+    }
+
+    const target = document.getElementById(id)
     target?.scrollIntoView({ block: 'start' })
     target?.focus()
   }, [location.hash])
@@ -441,8 +451,16 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_21rem]">
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="min-w-0 space-y-9">
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className={
+          dirty || saved
+            ? 'min-w-0 space-y-9'
+            : 'min-w-0 space-y-9 pb-24'
+        }
+      >
       <p role="status" className="sr-only">
         {moveAnnouncement}
       </p>
@@ -1211,26 +1229,36 @@ export function ProfilePage() {
                 ? 'Profile saved.'
                 : ''}
         </p>
-        <ProfileSaveBar
-          dirty={dirty}
-          saved={saved}
-          submitting={isSubmitting}
-        />
+        {dirty || saved ? (
+          <div className="sticky bottom-0 z-20 -mx-5 border-t border-border bg-canvas/95 backdrop-blur-sm sm:-mx-8">
+            <ProfileSaveBar
+              dirty={dirty}
+              saved={saved}
+              submitting={isSubmitting}
+            />
+          </div>
+        ) : null}
       </form>
-      <StandaloneResumeDialog
-        open={resumeOpen}
-        onOpenChange={setResumeOpen}
-        getProfile={getProfile}
-      />
-      <ProfileReviewPanel
+      <ProfileReviewLauncher
         review={review}
         reviewedAt={reviewedAt}
         reviewing={reviewing}
         saving={isSubmitting}
         error={reviewError}
-        onReview={() => void reviewProfile(getProfile())}
+        saveBarVisible={dirty || saved}
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        onReview={() => {
+          void reviewProfile(getProfile())
+        }}
         onApply={applySuggestion}
       />
-    </div>
+      <StandaloneResumeDialog
+        open={resumeOpen}
+        onOpenChange={setResumeOpen}
+        getProfile={getProfile}
+        onOpenReview={openReview}
+      />
+    </>
   )
 }

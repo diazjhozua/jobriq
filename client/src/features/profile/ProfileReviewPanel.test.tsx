@@ -5,8 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ProfileReview, ReviewSuggestion } from '../../lib/types'
 import { ProfileReviewPanel } from './ProfileReviewPanel'
 
-const reviewedAt = '2026-10-27T10:15:00.000Z'
-
 function suggestion(
   overrides: Partial<ReviewSuggestion> & Pick<ReviewSuggestion, 'id' | 'section'>,
 ): ReviewSuggestion {
@@ -55,12 +53,11 @@ function renderPanel(
 ) {
   const props = {
     review,
-    reviewedAt,
     reviewing: false,
     saving: false,
-    error: null,
-    onReview: vi.fn(),
-    onApply: vi.fn(() => true),
+    applied: new Set<string>(),
+    staleId: null,
+    onApply: vi.fn(),
     ...overrides,
   }
 
@@ -69,41 +66,9 @@ function renderPanel(
 }
 
 describe('ProfileReviewPanel', () => {
-  it('invites the first review', async () => {
-    const user = userEvent.setup()
-    const props = renderPanel({ review: null, reviewedAt: null })
-
-    expect(screen.getByText(/job-agnostic feedback/i)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Review profile' }))
-
-    expect(props.onReview).toHaveBeenCalledOnce()
-  })
-
-  it('shows a status while reviewing', () => {
-    renderPanel({ review: null, reviewedAt: null, reviewing: true })
-
-    expect(screen.getByRole('status')).toHaveTextContent('Reviewing your profile...')
-    expect(screen.getByRole('button', { name: 'Review profile' })).toBeDisabled()
-  })
-
-  it('announces completed suggestions through the status region', () => {
+  it('groups suggestions by section', () => {
     renderPanel()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Review complete. Suggestions ready.',
-    )
-  })
-
-  it('shows review errors inside the panel', () => {
-    renderPanel({ error: 'OpenAI is unavailable.' })
-
-    expect(screen.getByRole('alert')).toHaveTextContent('OpenAI is unavailable.')
-  })
-
-  it('groups suggestions and reports the count', () => {
-    renderPanel()
-
-    expect(screen.getByText(/3 suggestions/)).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: 'Summary' })).getByText('Add a summary'),
     ).toBeInTheDocument()
@@ -125,31 +90,37 @@ describe('ProfileReviewPanel', () => {
     expect(screen.getByText('No suggestions right now.')).toBeInTheDocument()
   })
 
-  it('applies a proposal and marks it applied', async () => {
-    const user = userEvent.setup()
-    const props = renderPanel()
-    const apply = screen.getByRole('button', {
-      name: 'Apply suggestion: Add a summary',
-    })
+  it('invites a review when none exists yet', () => {
+    renderPanel({ review: null })
 
-    await user.click(apply)
-
-    expect(props.onApply).toHaveBeenCalledWith(review.suggestions[0])
-    expect(apply).toBeDisabled()
-    expect(apply).toHaveAccessibleName('Applied suggestion: Add a summary')
-    expect(apply).toHaveTextContent('Applied')
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Applied suggestion: Add a summary',
-    )
+    expect(
+      screen.getByText('No review yet. Run Review profile to get suggestions.'),
+    ).toBeInTheDocument()
   })
 
-  it('explains when a suggestion no longer matches the form', async () => {
+  it('applies a proposal', async () => {
     const user = userEvent.setup()
-    renderPanel({ onApply: vi.fn(() => false) })
+    const props = renderPanel()
 
     await user.click(
       screen.getByRole('button', { name: 'Apply suggestion: Add a summary' }),
     )
+
+    expect(props.onApply).toHaveBeenCalledWith(review.suggestions[0])
+  })
+
+  it('marks an applied suggestion and disables it', () => {
+    renderPanel({ applied: new Set(['summary-1']) })
+
+    const apply = screen.getByRole('button', {
+      name: 'Applied suggestion: Add a summary',
+    })
+    expect(apply).toHaveAttribute('aria-disabled', 'true')
+    expect(apply).toHaveTextContent('Applied')
+  })
+
+  it('explains when a suggestion no longer matches the form', () => {
+    renderPanel({ staleId: 'summary-1' })
 
     expect(
       screen.getByText(
@@ -172,7 +143,20 @@ describe('ProfileReviewPanel', () => {
     const apply = screen.getByRole('button', {
       name: 'Apply suggestion: Add a summary',
     })
-    expect(apply).toBeDisabled()
+    expect(apply).toHaveAttribute('aria-disabled', 'true')
+
+    await user.click(apply)
+    expect(props.onApply).not.toHaveBeenCalled()
+  })
+
+  it('blocks Apply while a review is running', async () => {
+    const user = userEvent.setup()
+    const props = renderPanel({ reviewing: true })
+
+    const apply = screen.getByRole('button', {
+      name: 'Apply suggestion: Add a summary',
+    })
+    expect(apply).toHaveAttribute('aria-disabled', 'true')
 
     await user.click(apply)
     expect(props.onApply).not.toHaveBeenCalled()

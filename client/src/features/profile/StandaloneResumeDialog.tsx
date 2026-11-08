@@ -14,12 +14,14 @@ interface StandaloneResumeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   getProfile: () => Profile
+  onOpenReview: () => void
 }
 
 export function StandaloneResumeDialog({
   open,
   onOpenChange,
   getProfile,
+  onOpenReview,
 }: StandaloneResumeDialogProps) {
   const { standaloneResume, generateStandaloneResume } = useJobriq()
   const [drafting, setDrafting] = useState(standaloneResume === null)
@@ -60,11 +62,7 @@ export function StandaloneResumeDialog({
 
   const openReview = () => {
     onOpenChange(false)
-    window.requestAnimationFrame(() => {
-      const review = document.getElementById('profile-review')
-      review?.scrollIntoView({ block: 'start' })
-      review?.focus()
-    })
+    window.requestAnimationFrame(onOpenReview)
   }
 
   const resume = drafting ? null : standaloneResume

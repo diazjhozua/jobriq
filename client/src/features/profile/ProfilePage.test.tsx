@@ -26,16 +26,16 @@ function ReadyPage() {
   return <ProfilePage />
 }
 
-async function renderPage() {
+async function renderPage(initialEntries: string[] = ['/profile']) {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <JobriqProvider>
         <ReadyPage />
       </JobriqProvider>
     </MemoryRouter>,
   )
 
-  await screen.findByRole('heading', { name: 'Profile' })
+  await screen.findByRole('heading', { name: 'Profile', hidden: true })
 }
 
 describe('ProfilePage', () => {
@@ -342,6 +342,7 @@ describe('ProfilePage', () => {
         name: 'Apply suggestion: Add a professional summary',
       }),
     )
+    await user.keyboard('{Escape}')
 
     expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
       'Deterministic reviewed summary.',
@@ -356,8 +357,12 @@ describe('ProfilePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/2 suggestions/)
+    await user.keyboard('{Escape}')
 
     await user.type(screen.getByRole('textbox', { name: 'Summary' }), 'Typed after review')
+    await user.click(
+      screen.getByRole('button', { name: 'Review suggestions (2)' }),
+    )
     await user.click(
       screen.getByRole('button', {
         name: 'Apply suggestion: Add a professional summary',
@@ -369,6 +374,7 @@ describe('ProfilePage', () => {
         'This suggestion no longer matches the form. Run the review again.',
       ),
     ).toBeInTheDocument()
+    await user.keyboard('{Escape}')
     expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
       'Typed after review',
     )
@@ -391,6 +397,7 @@ describe('ProfilePage', () => {
         name: 'Apply suggestion: Quantify your impact',
       }),
     )
+    await user.keyboard('{Escape}')
 
     expect(screen.getByLabelText('Experience 1 bullet 1')).toHaveValue(
       'Reviewed: Built a thing',
@@ -408,9 +415,13 @@ describe('ProfilePage', () => {
     await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Built a thing')
     await user.click(screen.getByRole('button', { name: 'Review profile' }))
     await screen.findByText(/3 suggestions/)
+    await user.keyboard('{Escape}')
 
     await user.clear(screen.getByLabelText('Experience 1 bullet 1'))
     await user.type(screen.getByLabelText('Experience 1 bullet 1'), 'Edited bullet')
+    await user.click(
+      screen.getByRole('button', { name: 'Review suggestions (3)' }),
+    )
     await user.click(
       screen.getByRole('button', {
         name: 'Apply suggestion: Quantify your impact',
@@ -422,6 +433,7 @@ describe('ProfilePage', () => {
         'This suggestion no longer matches the form. Run the review again.',
       ),
     ).toBeInTheDocument()
+    await user.keyboard('{Escape}')
     expect(screen.getByLabelText('Experience 1 bullet 1')).toHaveValue('Edited bullet')
   })
 
@@ -444,9 +456,14 @@ describe('ProfilePage', () => {
         name: 'Apply suggestion: Add a professional summary',
       }),
     )
+    await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     expect(await screen.findByText('Saved')).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Review suggestions (2)' }),
+    )
     expect(screen.getByText('Add a professional summary')).toBeInTheDocument()
   })
 
@@ -461,6 +478,71 @@ describe('ProfilePage', () => {
     const skills = document.getElementById('review-skills')
     expect(skills).not.toBeNull()
     expect(within(skills as HTMLElement).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('opens the review dialog after a review and closes it on Escape', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Review profile' }))
+    await screen.findByText(/2 suggestions/)
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    screen
+      .getByRole('button', { name: 'Apply suggestion: Add a professional summary' })
+      .focus()
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(document.getElementById('profile-review-action')).toHaveFocus(),
+    )
+  })
+
+  it('opens the review dialog from a deep link', async () => {
+    installMockApi()
+    await renderPage(['/profile#profile-review'])
+
+    expect(
+      await screen.findByText(
+        'No review yet. Run Review profile to get suggestions.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Review profile' }),
+    ).toBeInTheDocument()
+  })
+
+  it('opens the review dialog from the standalone resume dialog', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Open profile review' }),
+    )
+
+    expect(
+      await screen.findByText('No review yet. Run Review profile to get suggestions.'),
+    ).toBeInTheDocument()
+  })
+
+  it('lifts the floating review action above the save bar', async () => {
+    const user = userEvent.setup()
+    installMockApi()
+    await renderPage()
+
+    await user.type(screen.getByLabelText('Name'), ' Jr')
+
+    const reviewControls = screen.getByRole('region', {
+      name: 'Profile review controls',
+    })
+    expect(reviewControls).toHaveClass('bottom-32')
+    expect(screen.getByRole('region', { name: 'Profile save' })).toBeInTheDocument()
   })
 
   it('generates a standalone resume from unsaved form values', async () => {
