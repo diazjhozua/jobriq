@@ -544,6 +544,9 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
     page.getByRole('button', { name: 'Resume', exact: true }),
   ).toBeVisible()
   await expect(
+    page.getByRole('region', { name: 'Profile review controls' }),
+  ).toBeVisible()
+  await expect(
     page.getByRole('button', { name: 'Save profile' }),
   ).toHaveCount(0)
 
@@ -559,10 +562,30 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
     Promise.all(document.getAnimations().map((animation) => animation.finished)),
   )
 
+  const reviewBar = await page
+    .getByRole('region', { name: 'Profile review controls' })
+    .boundingBox()
   const bar = await page.getByRole('region', { name: 'Profile save' }).boundingBox()
+  expect(reviewBar).not.toBeNull()
   expect(bar).not.toBeNull()
+  expect(reviewBar!.y).toBeGreaterThanOrEqual(0)
+  expect(reviewBar!.y + reviewBar!.height).toBeLessThanOrEqual(bar!.y + 1)
   expect(bar!.y).toBeGreaterThanOrEqual(0)
   expect(bar!.y + bar!.height).toBeLessThanOrEqual(812)
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+  const scrolledReviewBar = await page
+    .getByRole('region', { name: 'Profile review controls' })
+    .boundingBox()
+  const scrolledBar = await page
+    .getByRole('region', { name: 'Profile save' })
+    .boundingBox()
+  expect(scrolledReviewBar).not.toBeNull()
+  expect(scrolledBar).not.toBeNull()
+  expect(scrolledReviewBar!.y + scrolledReviewBar!.height).toBeLessThanOrEqual(
+    scrolledBar!.y + 1,
+  )
+  await page.evaluate(() => window.scrollTo(0, 0))
 
   const headerOverflow = await page.evaluate(
     () =>
@@ -578,6 +601,21 @@ test('keeps the profile header and resume dialog usable at 320px', async ({ page
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(entryOverflow).toBe(0)
+
+  await page.getByRole('button', { name: 'Review profile' }).click()
+  const reviewDialog = page.getByRole('dialog')
+  await expect(reviewDialog).toBeVisible()
+  const reviewBox = await reviewDialog.boundingBox()
+  expect(reviewBox).not.toBeNull()
+  expect(reviewBox!.y).toBeGreaterThanOrEqual(0)
+  const reviewOverflow = await page.evaluate(() => {
+    const content = document.querySelector('[role="dialog"]')
+    return content ? content.scrollWidth - content.clientWidth : -1
+  })
+  expect(reviewOverflow).toBe(0)
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(reviewDialog).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
   const dialog = page.getByRole('dialog')
@@ -631,6 +669,8 @@ test('reviews the profile, applies a suggestion, and keeps the review in session
 
   await page.getByRole('button', { name: 'Review profile' }).click()
 
+  const reviewDialog = page.getByRole('dialog')
+  await expect(reviewDialog).toBeVisible()
   await expect(page.getByText('Deterministic reviewed summary.')).toBeVisible()
   await expect(page.getByText('Reviewed: Built a thing')).toBeVisible()
   await expect(page.getByText('Group related skills')).toBeVisible()
@@ -641,6 +681,9 @@ test('reviews the profile, applies a suggestion, and keeps the review in session
     })
     .click()
 
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(reviewDialog).toHaveCount(0)
+
   const summary = page.getByRole('textbox', { name: 'Summary' })
   await expect(summary).toHaveValue('Deterministic reviewed summary.')
   await expect(page.getByRole('button', { name: 'Save profile' })).toBeEnabled()
@@ -650,6 +693,7 @@ test('reviews the profile, applies a suggestion, and keeps the review in session
 
   await page.getByRole('link', { name: 'Applications' }).click()
   await page.getByRole('link', { name: 'Profile' }).click()
+  await page.getByRole('button', { name: /Review suggestions/ }).click()
   await expect(page.getByText('Add a professional summary')).toBeVisible()
 
   await page.reload()
@@ -657,6 +701,15 @@ test('reviews the profile, applies a suggestion, and keeps the review in session
     'Deterministic reviewed summary.',
   )
   await expect(page.getByText('Add a professional summary')).toHaveCount(0)
+})
+
+test('opens the review dialog from a deep link', async ({ page }) => {
+  await page.goto('/profile#profile-review')
+
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(
+    page.getByText('No review yet. Run Review profile to get suggestions.'),
+  ).toBeVisible()
 })
 
 test('ignores legacy localStorage data', async ({ page }) => {
